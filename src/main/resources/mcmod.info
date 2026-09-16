@@ -1,0 +1,16 @@
+[
+  {
+    "modid": "craftonica",
+    "name": "Craftonica: Robotics Lab",
+    "description": "Laboratorio educacional de eletronica e robotica construido no mundo do Minecraft.",
+    "version": "${version}",
+    "mcversion": "${mcversion}",
+    "url": "",
+    "updateUrl": "",
+    "authorList": ["Craftonica Lab"],
+    "credits": "",
+    "logoFile": "",
+    "screenshots": [],
+    "dependencies": []
+  }
+]
