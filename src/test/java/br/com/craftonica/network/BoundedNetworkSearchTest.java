@@ -42,6 +42,20 @@ public class BoundedNetworkSearchTest {
         assertTrue(result.isLimitExceeded());
     }
 
+    @Test
+    public void acceptsNetworkAtExactLimit() {
+        final Map<Integer, List<Integer>> graph = new HashMap<Integer, List<Integer>>();
+        for (int index = 0; index < 1023; index++) {
+            connect(graph, index, index + 1);
+        }
+
+        BoundedNetworkSearch.Result<Integer> result = new BoundedNetworkSearch<Integer>(1024)
+                .discover(0, provider(graph));
+
+        assertEquals(1024, result.getNodes().size());
+        assertFalse(result.isLimitExceeded());
+    }
+
     private BoundedNetworkSearch.NeighborProvider<Integer> provider(final Map<Integer, List<Integer>> graph) {
         return new BoundedNetworkSearch.NeighborProvider<Integer>() {
             @Override
