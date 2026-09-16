@@ -1,6 +1,9 @@
 package br.com.craftonica.proxy;
 
 import br.com.craftonica.registry.ModBlocks;
+import br.com.craftonica.network.ElectricalNetworkEvents;
+import cpw.mods.fml.common.FMLCommonHandler;
+import net.minecraftforge.common.MinecraftForge;
 
 public class CommonProxy {
     public void preInit() {
@@ -8,5 +11,8 @@ public class CommonProxy {
     }
 
     public void init() {
+        ElectricalNetworkEvents events = new ElectricalNetworkEvents();
+        MinecraftForge.EVENT_BUS.register(events);
+        FMLCommonHandler.instance().bus().register(events);
     }
 }

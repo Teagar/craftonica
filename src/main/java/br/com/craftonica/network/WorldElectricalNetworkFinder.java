@@ -22,7 +22,7 @@ public final class WorldElectricalNetworkFinder {
         });
     }
 
-    private List<BlockPosition> connectedNeighbors(World world, BlockPosition position) {
+    public List<BlockPosition> connectedNeighbors(World world, BlockPosition position) {
         List<BlockPosition> result = new ArrayList<BlockPosition>();
         Block current = world.getBlock(position.x, position.y, position.z);
         if (!(current instanceof IElectricalBlock)) {
@@ -36,6 +36,9 @@ public final class WorldElectricalNetworkFinder {
             int x = position.x + direction.offsetX;
             int y = position.y + direction.offsetY;
             int z = position.z + direction.offsetZ;
+            if (!world.blockExists(x, y, z)) {
+                continue;
+            }
             Block neighbor = world.getBlock(x, y, z);
             if (neighbor instanceof IElectricalBlock
                     && ((IElectricalBlock) neighbor).canConnectOnSide(world, x, y, z, direction.getOpposite().ordinal())) {
