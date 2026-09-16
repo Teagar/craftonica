@@ -1,5 +1,6 @@
 package br.com.craftonica;
 
+import br.com.craftonica.registry.ModBlocks;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.init.Items;
 import net.minecraft.item.Item;
@@ -13,6 +14,6 @@ public final class CraftonicaCreativeTab extends CreativeTabs {
 
     @Override
     public Item getTabIconItem() {
-        return Items.redstone;
+        return ModBlocks.WIRE == null ? Items.redstone : Item.getItemFromBlock(ModBlocks.WIRE);
     }
 }

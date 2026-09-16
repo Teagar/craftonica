@@ -1,1 +1,9 @@
 itemGroup.craftonica=Craftonica
+tile.electricalWire.name=Electrical Wire
+tile.powerSource.name=5 V DC Source
+tile.ground.name=Ground
+tile.electricalButton.name=Electrical Button
+tile.resistor220.name=220 ohm Resistor
+tile.resistor1k.name=1 kohm Resistor
+tile.resistor10k.name=10 kohm Resistor
+tile.led.name=LED

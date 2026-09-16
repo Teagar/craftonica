@@ -1,0 +1,34 @@
+package br.com.craftonica.registry;
+
+import br.com.craftonica.block.BlockElectricalButton;
+import br.com.craftonica.block.BlockElectricalWire;
+import br.com.craftonica.block.BlockGround;
+import br.com.craftonica.block.BlockLed;
+import br.com.craftonica.block.BlockPowerSource;
+import br.com.craftonica.block.BlockResistor;
+import cpw.mods.fml.common.registry.GameRegistry;
+
+public final class ModBlocks {
+    public static final BlockElectricalWire WIRE = new BlockElectricalWire();
+    public static final BlockPowerSource POWER_SOURCE = new BlockPowerSource();
+    public static final BlockGround GROUND = new BlockGround();
+    public static final BlockElectricalButton BUTTON = new BlockElectricalButton();
+    public static final BlockResistor RESISTOR_220 = new BlockResistor("resistor220", "minecraft:planks_oak", 220.0);
+    public static final BlockResistor RESISTOR_1K = new BlockResistor("resistor1k", "minecraft:planks_spruce", 1000.0);
+    public static final BlockResistor RESISTOR_10K = new BlockResistor("resistor10k", "minecraft:planks_birch", 10000.0);
+    public static final BlockLed LED = new BlockLed();
+
+    private ModBlocks() {
+    }
+
+    public static void register() {
+        GameRegistry.registerBlock(WIRE, "electrical_wire");
+        GameRegistry.registerBlock(POWER_SOURCE, "power_source");
+        GameRegistry.registerBlock(GROUND, "ground");
+        GameRegistry.registerBlock(BUTTON, "electrical_button");
+        GameRegistry.registerBlock(RESISTOR_220, "resistor_220");
+        GameRegistry.registerBlock(RESISTOR_1K, "resistor_1k");
+        GameRegistry.registerBlock(RESISTOR_10K, "resistor_10k");
+        GameRegistry.registerBlock(LED, "led");
+    }
+}
