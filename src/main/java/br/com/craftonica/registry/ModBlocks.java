@@ -6,6 +6,7 @@ import br.com.craftonica.block.BlockGround;
 import br.com.craftonica.block.BlockLed;
 import br.com.craftonica.block.BlockPowerSource;
 import br.com.craftonica.block.BlockResistor;
+import br.com.craftonica.tile.TileEntityLed;
 import cpw.mods.fml.common.registry.GameRegistry;
 
 public final class ModBlocks {
@@ -30,5 +31,6 @@ public final class ModBlocks {
         GameRegistry.registerBlock(RESISTOR_1K, "resistor_1k");
         GameRegistry.registerBlock(RESISTOR_10K, "resistor_10k");
         GameRegistry.registerBlock(LED, "led");
+        GameRegistry.registerTileEntity(TileEntityLed.class, "craftonica_led");
     }
 }

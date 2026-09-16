@@ -41,21 +41,27 @@ public final class SimpleCircuitSolver {
         double resistance = 0.0;
         double forwardDrop = 0.0;
         boolean open = false;
+        String openDetail = "component_open";
         boolean reversed = false;
         for (int index = 1; index < path.size() - 1; index++) {
             ElectricalComponent component = graph.get(path.get(index));
             resistance += component.getResistanceOhms();
             if (component.getKind() == ComponentKind.SWITCH && !component.isClosed()) {
                 open = true;
+                openDetail = "switch_open";
             }
             if (component.getKind() == ComponentKind.LED) {
                 forwardDrop += component.getForwardVoltage();
                 reversed = !path.get(index - 1).equals(component.getAnodeNeighborId());
+                if (!component.isClosed()) {
+                    open = true;
+                    openDetail = "led_burned";
+                }
             }
         }
 
         if (open) {
-            return result(CircuitStatus.OPEN_CIRCUIT, source.getSourceVoltage(), 0.0, resistance, "switch_open");
+            return result(CircuitStatus.OPEN_CIRCUIT, source.getSourceVoltage(), 0.0, resistance, openDetail);
         }
         if (reversed) {
             return result(CircuitStatus.REVERSED_POLARITY, source.getSourceVoltage(), 0.0, resistance, "led_reversed");

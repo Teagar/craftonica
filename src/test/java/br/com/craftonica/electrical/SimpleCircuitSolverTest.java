@@ -51,6 +51,15 @@ public class SimpleCircuitSolverTest {
     }
 
     @Test
+    public void burnedLedOpensCircuitPermanently() {
+        CircuitResult result = solver.solve(seriesCircuit(true, false, 220.0, false));
+
+        assertEquals(CircuitStatus.OPEN_CIRCUIT, result.getStatus());
+        assertEquals("led_burned", result.getDetail());
+        assertEquals(0.0, result.getCurrentAmps(), 0.0);
+    }
+
+    @Test
     public void branchIsUnsupported() {
         CircuitGraph graph = seriesCircuit(true, false, 220.0)
                 .add(BasicElectricalComponent.wire("branch"))
@@ -88,6 +97,11 @@ public class SimpleCircuitSolverTest {
     }
 
     private CircuitGraph seriesCircuit(boolean switchClosed, boolean reversedLed, Double resistance) {
+        return seriesCircuit(switchClosed, reversedLed, resistance, true);
+    }
+
+    private CircuitGraph seriesCircuit(boolean switchClosed, boolean reversedLed, Double resistance,
+                                       boolean ledFunctional) {
         CircuitGraph graph = new CircuitGraph()
                 .add(BasicElectricalComponent.source("source", 5.0))
                 .add(BasicElectricalComponent.wire("wire"))
@@ -104,7 +118,7 @@ public class SimpleCircuitSolverTest {
         }
 
         String anodeNeighbor = reversedLed ? "ground" : ledInput;
-        graph.add(BasicElectricalComponent.led("led", 2.0, anodeNeighbor))
+        graph.add(BasicElectricalComponent.led("led", 2.0, anodeNeighbor, ledFunctional))
                 .add(BasicElectricalComponent.ground("ground"))
                 .connect(ledInput, "led")
                 .connect("led", "ground");

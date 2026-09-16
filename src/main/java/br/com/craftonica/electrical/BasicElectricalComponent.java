@@ -48,10 +48,16 @@ public final class BasicElectricalComponent implements ElectricalComponent {
     }
 
     public static BasicElectricalComponent led(String id, double forwardVoltage, String anodeNeighborId) {
+        return led(id, forwardVoltage, anodeNeighborId, true);
+    }
+
+    public static BasicElectricalComponent led(String id, double forwardVoltage, String anodeNeighborId,
+                                               boolean functional) {
         if (forwardVoltage < 0.0 || anodeNeighborId == null) {
             throw new IllegalArgumentException("LED voltage and anode connection are required");
         }
-        return new BasicElectricalComponent(id, ComponentKind.LED, 0.0, 0.0, forwardVoltage, true, anodeNeighborId);
+        return new BasicElectricalComponent(id, ComponentKind.LED, 0.0, 0.0, forwardVoltage, functional,
+                anodeNeighborId);
     }
 
     @Override

@@ -13,6 +13,7 @@ import br.com.craftonica.electrical.CircuitStatus;
 import br.com.craftonica.electrical.SimpleCircuitSolver;
 import net.minecraft.block.Block;
 import net.minecraft.world.World;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 import net.minecraftforge.common.util.ForgeDirection;
@@ -35,6 +36,8 @@ public final class ElectricalNetworkManager {
     private final SimpleCircuitSolver solver = new SimpleCircuitSolver();
     private final Set<BlockPosition> dirty = new LinkedHashSet<BlockPosition>();
     private final Map<BlockPosition, CircuitResult> results = new HashMap<BlockPosition, CircuitResult>();
+    private final Map<BlockPosition, Set<BlockPosition>> networks =
+            new HashMap<BlockPosition, Set<BlockPosition>>();
     private long solveCount;
 
     private ElectricalNetworkManager(World world) {
@@ -59,12 +62,13 @@ public final class ElectricalNetworkManager {
             return;
         }
         dirty.add(position);
-        results.remove(position);
+        invalidateCachedNetwork(position);
         for (ForgeDirection direction : ForgeDirection.VALID_DIRECTIONS) {
             BlockPosition neighbor = offset(position, direction);
             if (world.blockExists(neighbor.x, neighbor.y, neighbor.z)
                     && world.getBlock(neighbor.x, neighbor.y, neighbor.z) instanceof IElectricalBlock) {
                 dirty.add(neighbor);
+                invalidateCachedNetwork(neighbor);
             }
         }
     }
@@ -96,6 +100,7 @@ public final class ElectricalNetworkManager {
         int minZ = chunk.zPosition << 4;
         removeChunkPositions(dirty, minX, minZ);
         removeChunkPositions(results.keySet(), minX, minZ);
+        removeChunkPositions(networks.keySet(), minX, minZ);
     }
 
     public void tick() {
@@ -115,8 +120,10 @@ public final class ElectricalNetworkManager {
             CircuitResult result = network.isLimitExceeded()
                     ? new CircuitResult(CircuitStatus.NETWORK_TOO_LARGE, 0.0, 0.0, 0.0, "network_limit")
                     : solve(network.getNodes());
+            Set<BlockPosition> snapshot = new HashSet<BlockPosition>(network.getNodes());
             for (BlockPosition position : network.getNodes()) {
                 results.put(position, result);
+                networks.put(position, snapshot);
             }
             solveCount++;
         }
@@ -168,7 +175,10 @@ public final class ElectricalNetworkManager {
         if (block instanceof BlockLed) {
             int side = ((BlockLed) block).getAnodeSide(world, position.x, position.y, position.z);
             ForgeDirection direction = ForgeDirection.getOrientation(side);
-            return BasicElectricalComponent.led(id, 2.0, offset(position, direction).toString());
+            TileEntity tile = world.getTileEntity(position.x, position.y, position.z);
+            boolean functional = !(tile instanceof br.com.craftonica.tile.TileEntityLed)
+                    || !((br.com.craftonica.tile.TileEntityLed) tile).isBurned();
+            return BasicElectricalComponent.led(id, 2.0, offset(position, direction).toString(), functional);
         }
         return BasicElectricalComponent.wire(id);
     }
@@ -185,6 +195,18 @@ public final class ElectricalNetworkManager {
                     && position.z >= minZ && position.z < minZ + 16) {
                 positions.remove(position);
             }
+        }
+    }
+
+    private void invalidateCachedNetwork(BlockPosition position) {
+        Set<BlockPosition> network = networks.remove(position);
+        if (network == null) {
+            results.remove(position);
+            return;
+        }
+        for (BlockPosition member : network) {
+            results.remove(member);
+            networks.remove(member);
         }
     }
 }
