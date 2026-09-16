@@ -8,18 +8,59 @@ import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.MathHelper;
+import net.minecraft.client.renderer.texture.IIconRegister;
+import net.minecraft.util.IIcon;
 import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
 
 import java.util.Random;
 
 public final class BlockLed extends BlockContainer implements IElectricalBlock {
+    private IIcon sideIcon;
+    private IIcon onIcon;
+    private IIcon burnedIcon;
+    private IIcon anodeIcon;
+    private IIcon cathodeIcon;
+
     public BlockLed() {
         super(Material.iron);
         setBlockName("led");
-        setBlockTextureName("minecraft:redstone_lamp_off");
+        setBlockTextureName("craftonica:led_off");
         setCreativeTab(CraftonicaCreativeTab.INSTANCE);
         setHardness(1.0F);
+    }
+
+    @Override
+    public void registerBlockIcons(IIconRegister register) {
+        sideIcon = register.registerIcon("craftonica:led_off");
+        onIcon = register.registerIcon("craftonica:led_on");
+        burnedIcon = register.registerIcon("craftonica:led_burned");
+        anodeIcon = register.registerIcon("craftonica:led_anode");
+        cathodeIcon = register.registerIcon("craftonica:led_cathode");
+        blockIcon = sideIcon;
+    }
+
+    @Override
+    public IIcon getIcon(int side, int metadata) {
+        int anode = metadata & 7;
+        return side == anode ? anodeIcon : side == opposite(anode) ? cathodeIcon : sideIcon;
+    }
+
+    @Override
+    public IIcon getIcon(IBlockAccess world, int x, int y, int z, int side) {
+        int anode = world.getBlockMetadata(x, y, z) & 7;
+        if (side == anode) {
+            return anodeIcon;
+        }
+        if (side == opposite(anode)) {
+            return cathodeIcon;
+        }
+        TileEntity tile = world.getTileEntity(x, y, z);
+        if (tile instanceof TileEntityLed) {
+            TileEntityLed led = (TileEntityLed) tile;
+            return led.isBurned() ? burnedIcon : led.getBrightness() > 0 ? onIcon : sideIcon;
+        }
+        return sideIcon;
     }
 
     @Override

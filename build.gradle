@@ -15,7 +15,7 @@ buildscript {
 
 apply plugin: "forge"
 
-version = "0.1.0"
+version = "0.1.1"
 group = "br.com.craftonica"
 archivesBaseName = "craftonica"
 
@@ -63,3 +63,20 @@ processResources {
         exclude "mcmod.info"
     }
 }
+
+task verifyReleaseJar(dependsOn: reobf) << {
+    def jarFile = file("${buildDir}/libs/${archivesBaseName}-${version}.jar")
+    def archive = new java.util.zip.ZipFile(jarFile)
+    try {
+        def entry = archive.getEntry("br/com/craftonica/block/BlockElectricalWire.class")
+        def bytes = archive.getInputStream(entry).bytes
+        def constants = new String(bytes, "ISO-8859-1")
+        if (constants.contains("circuits") || !constants.contains("field_151594_q")) {
+            throw new GradleException("Release JAR is not reobfuscated for Forge runtime")
+        }
+    } finally {
+        archive.close()
+    }
+}
+
+build.dependsOn verifyReleaseJar

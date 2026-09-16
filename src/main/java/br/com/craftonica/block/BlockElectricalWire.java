@@ -11,7 +11,7 @@ public final class BlockElectricalWire extends Block implements IElectricalBlock
     public BlockElectricalWire() {
         super(Material.circuits);
         setBlockName("electricalWire");
-        setBlockTextureName("minecraft:redstone_block");
+        setBlockTextureName("craftonica:electrical_wire");
         setCreativeTab(CraftonicaCreativeTab.INSTANCE);
         setHardness(0.2F);
         setStepSound(soundTypeCloth);

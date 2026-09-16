@@ -14,9 +14,9 @@ public final class ModBlocks {
     public static final BlockPowerSource POWER_SOURCE = new BlockPowerSource();
     public static final BlockGround GROUND = new BlockGround();
     public static final BlockElectricalButton BUTTON = new BlockElectricalButton();
-    public static final BlockResistor RESISTOR_220 = new BlockResistor("resistor220", "minecraft:planks_oak", 220.0);
-    public static final BlockResistor RESISTOR_1K = new BlockResistor("resistor1k", "minecraft:planks_spruce", 1000.0);
-    public static final BlockResistor RESISTOR_10K = new BlockResistor("resistor10k", "minecraft:planks_birch", 10000.0);
+    public static final BlockResistor RESISTOR_220 = new BlockResistor("resistor220", "craftonica:resistor_220", 220.0);
+    public static final BlockResistor RESISTOR_1K = new BlockResistor("resistor1k", "craftonica:resistor_1k", 1000.0);
+    public static final BlockResistor RESISTOR_10K = new BlockResistor("resistor10k", "craftonica:resistor_10k", 10000.0);
     public static final BlockLed LED = new BlockLed();
 
     private ModBlocks() {

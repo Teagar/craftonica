@@ -4,12 +4,27 @@ import br.com.craftonica.network.BlockPosition;
 import br.com.craftonica.network.ElectricalNetworkManager;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.world.World;
+import net.minecraft.client.renderer.texture.IIconRegister;
+import net.minecraft.util.IIcon;
 
 public final class BlockElectricalButton extends BlockTwoTerminal {
     private static final int CLOSED_BIT = 2;
+    private IIcon closedIcon;
 
     public BlockElectricalButton() {
-        super("electricalButton", "minecraft:stone");
+        super("electricalButton", "craftonica:button_open");
+    }
+
+    @Override
+    public void registerBlockIcons(IIconRegister register) {
+        super.registerBlockIcons(register);
+        closedIcon = register.registerIcon("craftonica:button_closed");
+    }
+
+    @Override
+    public IIcon getIcon(int side, int metadata) {
+        IIcon icon = super.getIcon(side, metadata);
+        return icon == bodyIcon && (metadata & CLOSED_BIT) != 0 ? closedIcon : icon;
     }
 
     @Override

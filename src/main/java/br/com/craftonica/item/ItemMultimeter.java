@@ -17,7 +17,7 @@ import java.util.Locale;
 public final class ItemMultimeter extends Item {
     public ItemMultimeter() {
         setUnlocalizedName("multimeter");
-        setTextureName("minecraft:compass");
+        setTextureName("craftonica:multimeter");
         setCreativeTab(CraftonicaCreativeTab.INSTANCE);
         setMaxStackSize(1);
     }

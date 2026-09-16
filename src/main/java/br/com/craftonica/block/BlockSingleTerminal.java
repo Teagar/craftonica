@@ -5,16 +5,37 @@ import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.item.ItemStack;
+import net.minecraft.client.renderer.texture.IIconRegister;
+import net.minecraft.util.IIcon;
 import net.minecraft.util.MathHelper;
 import net.minecraft.world.World;
 
 public class BlockSingleTerminal extends Block implements IElectricalBlock {
+    private IIcon bodyIcon;
+    private IIcon terminalIcon;
+
     protected BlockSingleTerminal(String name, String texture) {
         super(Material.iron);
         setBlockName(name);
         setBlockTextureName(texture);
         setCreativeTab(CraftonicaCreativeTab.INSTANCE);
         setHardness(1.5F);
+    }
+
+    @Override
+    public void registerBlockIcons(IIconRegister register) {
+        bodyIcon = register.registerIcon(getTextureName());
+        terminalIcon = register.registerIcon(getTerminalTexture());
+        blockIcon = bodyIcon;
+    }
+
+    protected String getTerminalTexture() {
+        return "craftonica:terminal_positive";
+    }
+
+    @Override
+    public IIcon getIcon(int side, int metadata) {
+        return side == (metadata & 7) ? terminalIcon : bodyIcon;
     }
 
     @Override

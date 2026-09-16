@@ -19,7 +19,18 @@ O projeto não suporta Java posterior ao 8 porque usa ForgeGradle 1.2.
 
 O script baixa uma distribuição Temurin 8 fixada, verifica o SHA-256 e a guarda
 em `~/.cache/craftonica`, sem alterar o Java padrão. O artefato instalável é
-`build/libs/craftonica-0.1.0.jar`.
+`build/libs/craftonica-0.1.1.jar`.
+
+Para reconstruir e instalar com segurança na instância dedicada do Prism:
+
+```sh
+./scripts/install-prism.sh
+```
+
+Esse comando força um build limpo, verifica se o JAR foi reobfuscado para o
+runtime Forge e só então substitui a versão anterior na pasta de mods. Isso é
+importante porque uma tarefa `runClient` de desenvolvimento pode recriar o JAR
+com nomes MCP, que não é instalável em launchers comuns.
 
 Para desenvolvimento:
 
@@ -45,8 +56,21 @@ reiniciar. Se o serviço legado de assets estiver indisponível, use:
 - LED orientado, com queda de 2 V, brilho por corrente e falha persistente.
 - Multímetro, usado com clique direito sobre um fio ou componente.
 
-Todos aparecem na aba criativa `Craftônica`. As texturas do MVP são
-provisórias.
+Todos aparecem na aba criativa `Craftônica` e possuem texturas autorais 16×16.
+
+## Texturas
+
+As texturas seguem o guia público de estilo Minecraft do Blockbench: resolução
+16×16, paleta curta, pixels deliberados sem antialiasing e iluminação partindo
+do canto superior esquerdo. O pipeline usa ImageMagick e pode ser reproduzido:
+
+```sh
+./scripts/generate-textures.sh
+```
+
+Para edição manual, Blockbench oferece preview 3D; Piskel é uma opção gratuita
+e open source no navegador; Aseprite oferece edição e automação por CLI, mas é
+comercial. O projeto não depende de geração por IA ou de uma API remota.
 
 ## Laboratório reproduzível
 
@@ -116,7 +140,6 @@ mais de 1.024 blocos retornam erro explícito.
 - Não há circuitos em paralelo, CA, capacitores, indutores ou transistores.
 - Não há RoboBoard, sensores, motores, programação ou mecânica.
 - Não há chave inglesa; para mudar orientação, quebre e recoloque o componente.
-- A aparência usa texturas vanilla provisórias e não desenha terminais distintos.
 - A fonte e o GND têm terminais apenas horizontais no fluxo normal de colocação.
 - O modelo sem resistor reporta corrente ideal sem limite; não inventa um valor
   numérico de curto-circuito.
