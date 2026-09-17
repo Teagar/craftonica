@@ -11,6 +11,7 @@ import br.com.craftonica.block.BlockTwoTerminal;
 import br.com.craftonica.block.BlockCircuitBreaker;
 import br.com.craftonica.block.BlockDiode;
 import br.com.craftonica.block.BlockElectricalLever;
+import br.com.craftonica.block.BlockPotentiometer;
 import br.com.craftonica.block.WireColor;
 import br.com.craftonica.render.CraftonicaRenderIds;
 import cpw.mods.fml.client.registry.ISimpleBlockRenderingHandler;
@@ -90,6 +91,8 @@ public final class ElectricalBlockRenderer implements ISimpleBlockRenderingHandl
             renderLever((BlockElectricalLever) block, metadata, parts);
         } else if (block instanceof BlockResistor) {
             renderResistor((BlockResistor) block, metadata, parts);
+        } else if (block instanceof BlockPotentiometer) {
+            renderPotentiometer((BlockPotentiometer) block, metadata, parts);
         } else if (block instanceof BlockSingleTerminal) {
             renderSingleTerminal((BlockSingleTerminal) block, metadata, parts);
         }
@@ -146,6 +149,20 @@ public final class ElectricalBlockRenderer implements ISimpleBlockRenderingHandl
             parts.render(0, 7 * P, 7 * P, 4 * P, 9 * P, 9 * P, lead);
             parts.render(12 * P, 7 * P, 7 * P, 1, 9 * P, 9 * P, lead);
         }
+    }
+
+    private void renderPotentiometer(BlockPotentiometer block, int metadata, PartRenderer parts) {
+        IIcon body = block.getBodyIcon(metadata);
+        IIcon lead = block.getTerminalIcon();
+        parts.render(4 * P, 4 * P, 4 * P, 12 * P, 12 * P, 12 * P, body);
+        if ((metadata & 1) == 0) {
+            parts.render(7 * P, 7 * P, 0, 9 * P, 9 * P, 4 * P, lead);
+            parts.render(7 * P, 7 * P, 12 * P, 9 * P, 9 * P, 1, lead);
+        } else {
+            parts.render(0, 7 * P, 7 * P, 4 * P, 9 * P, 9 * P, lead);
+            parts.render(12 * P, 7 * P, 7 * P, 1, 9 * P, 9 * P, lead);
+        }
+        parts.render(7 * P, 12 * P, 7 * P, 9 * P, 1, 9 * P, lead);
     }
 
     private void renderButton(BlockElectricalButton block, int metadata, PartRenderer parts) {

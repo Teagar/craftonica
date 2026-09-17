@@ -226,6 +226,13 @@ public final class ElectricalNetworkManager {
                 if ("source".equals(snapshot.getKind())) system.powerSource(id, a, NodeId.named("source:" + snapshot.getPosition()),
                         snapshot.getParameters().get("voltage"), snapshot.getParameters().get("internalResistance"));
                 else if ("resistor".equals(snapshot.getKind())) system.resistor(id, a, b, snapshot.getParameters().get("resistance"));
+                else if ("potentiometer".equals(snapshot.getKind())) {
+                    NodeId cursor = circuit.getNode(terminals.get(1).getId());
+                    NodeId terminalB = circuit.getNode(terminals.get(2).getId());
+                    system.resistor(id, a, cursor, snapshot.getParameters().get("resistanceA"));
+                    system.resistor(new BranchId(snapshot.getPosition(), snapshot.getKind(), 1), cursor, terminalB,
+                            snapshot.getParameters().get("resistanceB"));
+                }
                 else if ("switch".equals(snapshot.getKind())) system.switchBranch(id, a, b, Boolean.parseBoolean(snapshot.getState().get("closed")));
                 else if ("breaker".equals(snapshot.getKind())) system.breaker(id, a, b, Boolean.parseBoolean(snapshot.getState().get("closed")));
                 else if ("led".equals(snapshot.getKind())) system.led(id, a, b, Boolean.parseBoolean(snapshot.getState().get("burned")));
@@ -260,6 +267,7 @@ public final class ElectricalNetworkManager {
         String detail = "nodal_" + result.getStatus().name().toLowerCase(Locale.ENGLISH);
         for (ComponentSnapshot snapshot : circuit.getSnapshots()) {
             if ("resistor".equals(snapshot.getKind())) resistance += snapshot.getParameters().get("resistance");
+            if ("potentiometer".equals(snapshot.getKind())) resistance += snapshot.getParameters().get("nominalResistance");
             if ("source".equals(snapshot.getKind())) {
                 BranchResult branch = result.getBranchResult(new BranchId(snapshot.getPosition(), "source", 0));
                 if (branch != null) current = Math.abs(branch.getCurrent());

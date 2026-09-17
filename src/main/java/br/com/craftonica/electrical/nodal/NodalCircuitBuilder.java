@@ -34,7 +34,12 @@ public final class NodalCircuitBuilder {
         for(TerminalId id:ids){TerminalId root=uf.root(id);NodeId n=nodeSetNode(root,groundRoots.contains(root));terminalNodes.put(id,n);nodeSet.add(n);}
         if(!ground)errors.add(diag(DiagnosticCode.MISSING_REFERENCE,components));
         List<NodalBranch> branches=new ArrayList<NodalBranch>();
-        for(ComponentSnapshot c:components)if(c.getTerminals().size()>=2&&!isConductor(c.getKind())){List<TerminalSnapshot> ts=c.getTerminals();branches.add(new NodalBranch(new BranchId(c.getPosition(),c.getKind(),0),ts.get(0).getId(),ts.get(1).getId()));}
+        for(ComponentSnapshot c:components)if(c.getTerminals().size()>=2&&!isConductor(c.getKind())){
+            List<TerminalSnapshot> ts=c.getTerminals();
+            branches.add(new NodalBranch(new BranchId(c.getPosition(),c.getKind(),0),ts.get(0).getId(),ts.get(1).getId()));
+            if ("potentiometer".equalsIgnoreCase(c.getKind()) && ts.size() >= 3)
+                branches.add(new NodalBranch(new BranchId(c.getPosition(),c.getKind(),1),ts.get(1).getId(),ts.get(2).getId()));
+        }
         Collections.sort(branches,new Comparator<NodalBranch>(){public int compare(NodalBranch a,NodalBranch b){return a.getId().compareTo(b.getId());}});
         if(branches.size()>NodalLimits.MAX_BRANCHES)errors.add(diag(DiagnosticCode.BRANCH_LIMIT,components)); Collections.sort(errors);
         return new NodalCircuit(new ArrayList<NodeId>(nodeSet),branches,terminalNodes,components,errors,fingerprint(components,branches));
