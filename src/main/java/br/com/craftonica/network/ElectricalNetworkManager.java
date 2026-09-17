@@ -38,6 +38,7 @@ public final class ElectricalNetworkManager {
     private final Map<BlockPosition, CircuitResult> results = new HashMap<BlockPosition, CircuitResult>();
     private final Map<BlockPosition, Set<BlockPosition>> networks =
             new HashMap<BlockPosition, Set<BlockPosition>>();
+    private final Map<BlockPosition, CircuitResult> lastResults = new HashMap<BlockPosition, CircuitResult>();
     private long solveCount;
 
     private ElectricalNetworkManager(World world) {
@@ -120,9 +121,11 @@ public final class ElectricalNetworkManager {
             CircuitResult result = network.isLimitExceeded()
                     ? new CircuitResult(CircuitStatus.NETWORK_TOO_LARGE, 0.0, 0.0, 0.0, "network_limit")
                     : solve(network.getNodes());
+            ElectricalFeedback.networkTransition(world, root, lastResults.get(root), result);
             Set<BlockPosition> snapshot = new HashSet<BlockPosition>(network.getNodes());
             for (BlockPosition position : network.getNodes()) {
                 results.put(position, result);
+                lastResults.put(position, result);
                 networks.put(position, snapshot);
             }
             solveCount++;

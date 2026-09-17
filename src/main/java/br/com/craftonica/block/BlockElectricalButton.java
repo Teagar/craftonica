@@ -2,6 +2,7 @@ package br.com.craftonica.block;
 
 import br.com.craftonica.network.BlockPosition;
 import br.com.craftonica.network.ElectricalNetworkManager;
+import br.com.craftonica.network.ElectricalFeedback;
 import br.com.craftonica.registry.ModItems;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.world.World;
@@ -43,7 +44,9 @@ public final class BlockElectricalButton extends BlockTwoTerminal {
             }
         }
         if (!world.isRemote) {
+            boolean closed = (world.getBlockMetadata(x, y, z) & CLOSED_BIT) == 0;
             world.setBlockMetadataWithNotify(x, y, z, world.getBlockMetadata(x, y, z) ^ CLOSED_BIT, 3);
+            ElectricalFeedback.switched(world, new BlockPosition(x, y, z), closed);
             ElectricalNetworkManager.forWorld(world).invalidateAround(new BlockPosition(x, y, z));
         }
         return true;

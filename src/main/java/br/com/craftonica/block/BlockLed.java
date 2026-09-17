@@ -13,7 +13,6 @@ import net.minecraft.util.IIcon;
 import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
 
-import java.util.Random;
 
 public final class BlockLed extends BlockContainer implements IElectricalBlock, IRotatableElectricalBlock {
     private IIcon sideIcon;
@@ -134,15 +133,6 @@ public final class BlockLed extends BlockContainer implements IElectricalBlock, 
     public int getLightValue(IBlockAccess world, int x, int y, int z) {
         TileEntity tile = world.getTileEntity(x, y, z);
         return tile instanceof TileEntityLed ? ((TileEntityLed) tile).getBrightness() : 0;
-    }
-
-    @Override
-    public void randomDisplayTick(World world, int x, int y, int z, Random random) {
-        TileEntity tile = world.getTileEntity(x, y, z);
-        if (tile instanceof TileEntityLed && ((TileEntityLed) tile).getBrightness() == 15
-                && random.nextInt(4) == 0) {
-            world.spawnParticle("smoke", x + 0.5, y + 0.8, z + 0.5, 0.0, 0.02, 0.0);
-        }
     }
 
     private int opposite(int side) {
