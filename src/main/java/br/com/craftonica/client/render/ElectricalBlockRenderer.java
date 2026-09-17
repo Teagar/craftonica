@@ -8,6 +8,7 @@ import br.com.craftonica.block.BlockPowerSource;
 import br.com.craftonica.block.BlockResistor;
 import br.com.craftonica.block.BlockSingleTerminal;
 import br.com.craftonica.block.BlockTwoTerminal;
+import br.com.craftonica.block.BlockCircuitBreaker;
 import br.com.craftonica.block.WireColor;
 import br.com.craftonica.render.CraftonicaRenderIds;
 import cpw.mods.fml.client.registry.ISimpleBlockRenderingHandler;
@@ -79,6 +80,8 @@ public final class ElectricalBlockRenderer implements ISimpleBlockRenderingHandl
             renderLed((BlockLed) block, metadata, world, x, y, z, parts);
         } else if (block instanceof BlockElectricalButton) {
             renderButton((BlockElectricalButton) block, metadata, parts);
+        } else if (block instanceof BlockCircuitBreaker) {
+            renderBreaker((BlockCircuitBreaker) block, metadata, parts);
         } else if (block instanceof BlockResistor) {
             renderResistor((BlockResistor) block, metadata, parts);
         } else if (block instanceof BlockSingleTerminal) {
@@ -151,6 +154,20 @@ public final class ElectricalBlockRenderer implements ISimpleBlockRenderingHandl
         } else {
             parts.render(0, 6 * P, 7 * P, 3 * P, 9 * P, 9 * P, base);
             parts.render(13 * P, 6 * P, 7 * P, 1, 9 * P, 9 * P, base);
+        }
+    }
+
+    private void renderBreaker(BlockCircuitBreaker block, int metadata, PartRenderer parts) {
+        IIcon body = block.getIcon(0, metadata);
+        IIcon terminal = block.getIcon((metadata & 1) == 0 ? 2 : 4, metadata);
+        if ((metadata & 1) == 0) {
+            parts.render(4 * P, 4 * P, 3 * P, 12 * P, 10 * P, 13 * P, body);
+            parts.render(7 * P, 6 * P, 0, 9 * P, 8 * P, 3 * P, terminal);
+            parts.render(7 * P, 6 * P, 13 * P, 9 * P, 8 * P, 1, terminal);
+        } else {
+            parts.render(3 * P, 4 * P, 4 * P, 13 * P, 10 * P, 12 * P, body);
+            parts.render(0, 6 * P, 7 * P, 3 * P, 8 * P, 9 * P, terminal);
+            parts.render(13 * P, 6 * P, 7 * P, 1, 8 * P, 9 * P, terminal);
         }
     }
 

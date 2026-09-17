@@ -6,8 +6,10 @@ import br.com.craftonica.block.BlockGround;
 import br.com.craftonica.block.BlockLed;
 import br.com.craftonica.block.BlockPowerSource;
 import br.com.craftonica.block.BlockResistor;
+import br.com.craftonica.block.BlockCircuitBreaker;
 import br.com.craftonica.item.ItemBlockElectricalWire;
 import br.com.craftonica.tile.TileEntityLed;
+import br.com.craftonica.tile.TileEntityCircuitBreaker;
 import cpw.mods.fml.common.registry.GameRegistry;
 
 public final class ModBlocks {
@@ -19,6 +21,7 @@ public final class ModBlocks {
     public static final BlockResistor RESISTOR_1K = new BlockResistor("resistor1k", "craftonica:resistor_1k", 1000.0);
     public static final BlockResistor RESISTOR_10K = new BlockResistor("resistor10k", "craftonica:resistor_10k", 10000.0);
     public static final BlockLed LED = new BlockLed();
+    public static final BlockCircuitBreaker CIRCUIT_BREAKER = new BlockCircuitBreaker();
 
     private ModBlocks() {
     }
@@ -32,6 +35,8 @@ public final class ModBlocks {
         GameRegistry.registerBlock(RESISTOR_1K, "resistor_1k");
         GameRegistry.registerBlock(RESISTOR_10K, "resistor_10k");
         GameRegistry.registerBlock(LED, "led");
+        GameRegistry.registerBlock(CIRCUIT_BREAKER, "circuit_breaker");
         GameRegistry.registerTileEntity(TileEntityLed.class, "craftonica_led");
+        GameRegistry.registerTileEntity(TileEntityCircuitBreaker.class, "craftonica_circuit_breaker");
     }
 }

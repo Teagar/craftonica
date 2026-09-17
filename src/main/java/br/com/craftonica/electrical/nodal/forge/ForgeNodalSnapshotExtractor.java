@@ -4,6 +4,7 @@ import br.com.craftonica.block.*;
 import br.com.craftonica.electrical.nodal.*;
 import br.com.craftonica.network.BlockPosition;
 import br.com.craftonica.tile.TileEntityLed;
+import br.com.craftonica.tile.TileEntityCircuitBreaker;
 import net.minecraft.block.Block;
 import net.minecraft.tileentity.TileEntity;
 import java.util.*;
@@ -103,13 +104,19 @@ public final class ForgeNodalSnapshotExtractor {
             groups = Collections.singletonList(new int[]{0, 1, 2, 3, 4, 5});
         } else if (block instanceof BlockPowerSource) {
             kind = "source";
-            parameters.put("voltage", 5.0);
+            parameters.put("voltage", br.com.craftonica.block.BlockPowerSource.VOLTAGE);
+            parameters.put("internalResistance", br.com.craftonica.block.BlockPowerSource.INTERNAL_RESISTANCE_OHMS);
         } else if (block instanceof BlockGround) {
             kind = "ground";
         } else if (block instanceof BlockElectricalButton) {
             kind = "switch";
             state.put("closed", Boolean.toString((metadata & 2) != 0));
             if ((metadata & 2) != 0) groups = Collections.singletonList(new int[]{0, 1});
+        } else if (block instanceof BlockCircuitBreaker) {
+            kind = "breaker";
+            TileEntity tile = world.getTileEntity(p);
+            state.put("closed", Boolean.toString(!(tile instanceof TileEntityCircuitBreaker)
+                    || !((TileEntityCircuitBreaker) tile).isTripped()));
         } else if (block instanceof BlockResistor) {
             kind = "resistor";
             parameters.put("resistance", ((BlockResistor) block).getResistanceOhms());
@@ -130,7 +137,7 @@ public final class ForgeNodalSnapshotExtractor {
             for (int side = 0; side < 6; side++) terminals.add(new TerminalSnapshot(p, face(side), side));
         } else if (block instanceof BlockSingleTerminal) {
             terminals.add(new TerminalSnapshot(p, face(metadata & 7), 0));
-        } else if (block instanceof BlockTwoTerminal) {
+        } else if (block instanceof BlockTwoTerminal || block instanceof BlockCircuitBreaker) {
             int first = (metadata & 1) == 0 ? 2 : 4;
             terminals.add(new TerminalSnapshot(p, face(first), 0));
             terminals.add(new TerminalSnapshot(p, face(opposite(first)), 1));

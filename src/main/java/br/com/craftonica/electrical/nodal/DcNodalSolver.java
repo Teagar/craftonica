@@ -81,7 +81,7 @@ public strictfp final class DcNodalSolver {
 
     private static boolean conductive(MnaSystem.Element e, List<MnaSystem.Element> leds, boolean[] active) {
         if (e.getKind() == MnaSystem.Element.Kind.RESISTOR) return true;
-        if (e.getKind() == MnaSystem.Element.Kind.SWITCH) return e.isClosed();
+        if (e.getKind() == MnaSystem.Element.Kind.SWITCH || e.getKind() == MnaSystem.Element.Kind.BREAKER) return e.isClosed();
         if (e.getKind() == MnaSystem.Element.Kind.VOLTAGE_SOURCE) return true;
         int index = leds.indexOf(e);
         return index >= 0 && active[index] && !e.isBurned();
@@ -107,7 +107,7 @@ public strictfp final class DcNodalSolver {
             int index = leds.indexOf(e);
             return index >= 0 && active[index] && !e.isBurned() ? (voltage - LED_VF) / LED_RD : 0.0;
         }
-        if (e.getKind() == MnaSystem.Element.Kind.SWITCH && !e.isClosed()) return 0.0;
+        if ((e.getKind() == MnaSystem.Element.Kind.SWITCH || e.getKind() == MnaSystem.Element.Kind.BREAKER) && !e.isClosed()) return 0.0;
         return voltage / e.getValue();
     }
 
@@ -138,7 +138,7 @@ public strictfp final class DcNodalSolver {
             if (branch == null) continue;
             if (element.getKind() == MnaSystem.Element.Kind.VOLTAGE_SOURCE && Math.abs(branch.getCurrent()) > 0.1)
                 diagnostics.add(diagnostic(DiagnosticCode.SOURCE_OVERCURRENT, element.getId().getPosition()));
-            if ((element.getKind() == MnaSystem.Element.Kind.RESISTOR || element.getKind() == MnaSystem.Element.Kind.SWITCH)
+            if ((element.getKind() == MnaSystem.Element.Kind.RESISTOR || element.getKind() == MnaSystem.Element.Kind.SWITCH || element.getKind() == MnaSystem.Element.Kind.BREAKER)
                     && element.getValue() < 1.0 && Math.abs(branch.getCurrent()) > 0.1)
                 diagnostics.add(diagnostic(DiagnosticCode.SHORT_CIRCUIT, element.getId().getPosition()));
         }

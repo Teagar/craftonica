@@ -11,6 +11,7 @@ import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 import br.com.craftonica.block.IElectricalBlock;
+import br.com.craftonica.tile.TileEntityCircuitBreaker;
 
 import java.util.*;
 
@@ -129,6 +130,7 @@ public final class ElectricalNetworkManager {
                 CircuitResult local = getLocalResult(member);
                 ElectricalFeedback.networkTransition(world, member, lastResults.get(member), local);
                 lastResults.put(member, local);
+                observeProtection(member, cache);
             }
             solvedNetworks++;
             solveCount++;
@@ -221,9 +223,11 @@ public final class ElectricalNetworkManager {
                 NodeId a = circuit.getNode(terminals.get(0).getId());
                 NodeId b = terminals.size() > 1 ? circuit.getNode(terminals.get(1).getId()) : NodeId.REFERENCE;
                 BranchId id = new BranchId(snapshot.getPosition(), snapshot.getKind(), 0);
-                if ("source".equals(snapshot.getKind())) system.powerSource(id, a, NodeId.named("source:" + snapshot.getPosition()));
+                if ("source".equals(snapshot.getKind())) system.powerSource(id, a, NodeId.named("source:" + snapshot.getPosition()),
+                        snapshot.getParameters().get("voltage"), snapshot.getParameters().get("internalResistance"));
                 else if ("resistor".equals(snapshot.getKind())) system.resistor(id, a, b, snapshot.getParameters().get("resistance"));
                 else if ("switch".equals(snapshot.getKind())) system.switchBranch(id, a, b, Boolean.parseBoolean(snapshot.getState().get("closed")));
+                else if ("breaker".equals(snapshot.getKind())) system.breaker(id, a, b, Boolean.parseBoolean(snapshot.getState().get("closed")));
                 else if ("led".equals(snapshot.getKind())) system.led(id, a, b, Boolean.parseBoolean(snapshot.getState().get("burned")));
             }
         } catch (IllegalArgumentException invalidComponent) {
@@ -235,6 +239,17 @@ public final class ElectricalNetworkManager {
             if (element.getKind() == MnaSystem.Element.Kind.VOLTAGE_SOURCE) unknowns++;
         NodalCircuitResult result = solver.solve(system.build());
         return new Prepared(result, project(result, circuit, extraction), unknowns, circuit);
+    }
+
+    private void observeProtection(BlockPosition position, NetworkCache cache) {
+        TileEntityCircuitBreaker breaker = null;
+        if (world.getTileEntity(position.x, position.y, position.z) instanceof TileEntityCircuitBreaker)
+            breaker = (TileEntityCircuitBreaker) world.getTileEntity(position.x, position.y, position.z);
+        if (breaker == null) return;
+        BranchResult branch = null;
+        for (BranchResult candidate : cache.nodal.getBranchResults().values())
+            if (position.equals(candidate.getBranch().getPosition()) && "breaker".equals(candidate.getBranch().getComponentKind())) { branch = candidate; break; }
+        if (branch != null) breaker.observe(branch.getCurrent(), branch.getAbsorbedPower());
     }
 
     private CircuitResult project(NodalCircuitResult result, NodalCircuit circuit, NodalExtractionResult extraction) {
@@ -267,6 +282,10 @@ public final class ElectricalNetworkManager {
         }
         if (result.getStatus() == SolveStatus.MATRIX_LIMIT) status = CircuitStatus.NETWORK_TOO_LARGE;
         if (status == CircuitStatus.OVERCURRENT) detail = "led_overcurrent";
+        if (current > ProtectionModel.MAX_CURRENT_AMPS) {
+            status = CircuitStatus.OVERCURRENT;
+            detail = "source_protection_limit";
+        }
         if (resistance == 0.0 && current > 0.0) resistance = voltage / current;
         return new CircuitResult(status, voltage, current, resistance, detail);
     }

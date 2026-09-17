@@ -46,6 +46,10 @@ public final class ModRecipes {
                 'T', Blocks.redstone_torch,
                 'I', Items.iron_ingot);
 
+        GameRegistry.addRecipe(new ItemStack(ModBlocks.CIRCUIT_BREAKER),
+                "IRI", "RCR", "IRI",
+                'I', Items.iron_ingot, 'R', Items.redstone, 'C', Items.comparator);
+
         GameRegistry.addRecipe(new ItemStack(ModItems.MULTIMETER),
                 "GIG",
                 "RCR",
