@@ -8,7 +8,6 @@ import net.minecraft.block.material.Material;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.MathHelper;
 import net.minecraft.client.renderer.texture.IIconRegister;
 import net.minecraft.util.IIcon;
 import net.minecraft.world.IBlockAccess;
@@ -71,9 +70,8 @@ public final class BlockLed extends BlockContainer implements IElectricalBlock, 
 
     @Override
     public void onBlockPlacedBy(World world, int x, int y, int z, EntityLivingBase placer, ItemStack stack) {
-        int facing = MathHelper.floor_double(placer.rotationYaw * 4.0F / 360.0F + 0.5D) & 3;
-        int anodeSide = facing == 0 ? 3 : facing == 1 ? 4 : facing == 2 ? 2 : 5;
-        world.setBlockMetadataWithNotify(x, y, z, anodeSide, 2);
+        int metadata = world.getBlockMetadata(x, y, z);
+        world.setBlockMetadataWithNotify(x, y, z, getPlacementMetadata(placer.rotationYaw, metadata), 2);
     }
 
     @Override
@@ -120,6 +118,11 @@ public final class BlockLed extends BlockContainer implements IElectricalBlock, 
     @Override
     public int rotateMetadata(int metadata) {
         return HorizontalRotation.rotateSideMetadata(metadata);
+    }
+
+    @Override
+    public int getPlacementMetadata(float rotationYaw, int metadata) {
+        return HorizontalRotation.placementSideMetadata(rotationYaw, metadata);
     }
 
     public boolean isBurned(IBlockAccess world, int x, int y, int z) {

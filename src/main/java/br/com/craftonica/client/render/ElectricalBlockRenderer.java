@@ -29,10 +29,21 @@ public final class ElectricalBlockRenderer implements ISimpleBlockRenderingHandl
             @Override
             public void render(double minX, double minY, double minZ, double maxX, double maxY, double maxZ,
                                IIcon icon) {
-                renderInventoryPart(block, renderer, minX, minY, minZ, maxX, maxY, maxZ, icon, color);
+                renderPart(block, renderer, minX, minY, minZ, maxX, maxY, maxZ, icon, color, 255);
             }
         });
         GL11.glTranslatef(0.5F, 0.5F, 0.5F);
+    }
+
+    public void renderPlacementPreview(final Block block, int metadata) {
+        final RenderBlocks renderer = new RenderBlocks();
+        renderModel(block, metadata, null, 0, 0, 0, new PartRenderer() {
+            @Override
+            public void render(double minX, double minY, double minZ, double maxX, double maxY, double maxZ,
+                               IIcon icon) {
+                renderPart(block, renderer, minX, minY, minZ, maxX, maxY, maxZ, icon, 0xFFFFFF, 150);
+            }
+        });
     }
 
     @Override
@@ -174,40 +185,40 @@ public final class ElectricalBlockRenderer implements ISimpleBlockRenderingHandl
         return side == 2 ? 3 : side == 3 ? 2 : side == 4 ? 5 : 4;
     }
 
-    private void renderInventoryPart(Block block, RenderBlocks renderer,
-                                     double minX, double minY, double minZ,
-                                     double maxX, double maxY, double maxZ,
-                                     IIcon icon, int color) {
+    private void renderPart(Block block, RenderBlocks renderer,
+                            double minX, double minY, double minZ,
+                            double maxX, double maxY, double maxZ,
+                            IIcon icon, int color, int alpha) {
         Tessellator tessellator = Tessellator.instance;
         renderer.setRenderBounds(minX, minY, minZ, maxX, maxY, maxZ);
         tessellator.startDrawingQuads();
         tessellator.setNormal(0, -1, 0);
-        tessellator.setColorOpaque_I(color);
+        tessellator.setColorRGBA_I(color, alpha);
         renderer.renderFaceYNeg(block, 0, 0, 0, icon);
         tessellator.draw();
         tessellator.startDrawingQuads();
         tessellator.setNormal(0, 1, 0);
-        tessellator.setColorOpaque_I(color);
+        tessellator.setColorRGBA_I(color, alpha);
         renderer.renderFaceYPos(block, 0, 0, 0, icon);
         tessellator.draw();
         tessellator.startDrawingQuads();
         tessellator.setNormal(0, 0, -1);
-        tessellator.setColorOpaque_I(color);
+        tessellator.setColorRGBA_I(color, alpha);
         renderer.renderFaceZNeg(block, 0, 0, 0, icon);
         tessellator.draw();
         tessellator.startDrawingQuads();
         tessellator.setNormal(0, 0, 1);
-        tessellator.setColorOpaque_I(color);
+        tessellator.setColorRGBA_I(color, alpha);
         renderer.renderFaceZPos(block, 0, 0, 0, icon);
         tessellator.draw();
         tessellator.startDrawingQuads();
         tessellator.setNormal(-1, 0, 0);
-        tessellator.setColorOpaque_I(color);
+        tessellator.setColorRGBA_I(color, alpha);
         renderer.renderFaceXNeg(block, 0, 0, 0, icon);
         tessellator.draw();
         tessellator.startDrawingQuads();
         tessellator.setNormal(1, 0, 0);
-        tessellator.setColorOpaque_I(color);
+        tessellator.setColorRGBA_I(color, alpha);
         renderer.renderFaceXPos(block, 0, 0, 0, icon);
         tessellator.draw();
     }

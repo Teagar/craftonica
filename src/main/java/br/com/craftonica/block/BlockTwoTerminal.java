@@ -8,7 +8,6 @@ import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.item.ItemStack;
 import net.minecraft.client.renderer.texture.IIconRegister;
 import net.minecraft.util.IIcon;
-import net.minecraft.util.MathHelper;
 import net.minecraft.world.World;
 import net.minecraft.world.IBlockAccess;
 
@@ -40,9 +39,8 @@ public class BlockTwoTerminal extends Block implements IElectricalBlock, IRotata
 
     @Override
     public void onBlockPlacedBy(World world, int x, int y, int z, EntityLivingBase placer, ItemStack stack) {
-        int facing = MathHelper.floor_double(placer.rotationYaw * 4.0F / 360.0F + 0.5D) & 3;
-        int axis = facing == 0 || facing == 2 ? 0 : 1;
-        world.setBlockMetadataWithNotify(x, y, z, axis, 2);
+        int metadata = world.getBlockMetadata(x, y, z);
+        world.setBlockMetadataWithNotify(x, y, z, getPlacementMetadata(placer.rotationYaw, metadata), 2);
     }
 
     @Override
@@ -71,6 +69,11 @@ public class BlockTwoTerminal extends Block implements IElectricalBlock, IRotata
     @Override
     public int rotateMetadata(int metadata) {
         return HorizontalRotation.rotateAxisMetadata(metadata);
+    }
+
+    @Override
+    public int getPlacementMetadata(float rotationYaw, int metadata) {
+        return HorizontalRotation.placementAxisMetadata(rotationYaw, metadata);
     }
 
     @Override
