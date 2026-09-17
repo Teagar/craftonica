@@ -125,28 +125,31 @@ public strictfp final class DcNodalSolver {
             BranchResult branch = result.getBranchResult(led.getId());
             if (branch == null) continue;
             if (!active[i] && branch.getVoltage() < -LED_REVERSE_TOLERANCE)
-                diagnostics.add(diagnostic(DiagnosticCode.POLARITY_INCORRECT));
+                diagnostics.add(diagnostic(DiagnosticCode.POLARITY_INCORRECT, led.getId().getPosition()));
             if (active[i] && branch.getCurrent() > 0.02)
-                diagnostics.add(diagnostic(DiagnosticCode.LED_ABOVE_RECOMMENDED_CURRENT));
+                diagnostics.add(diagnostic(DiagnosticCode.LED_ABOVE_RECOMMENDED_CURRENT, led.getId().getPosition()));
             if (active[i] && branch.getCurrent() > 0.03)
-                diagnostics.add(diagnostic(DiagnosticCode.LED_OVERCURRENT));
+                diagnostics.add(diagnostic(DiagnosticCode.LED_OVERCURRENT, led.getId().getPosition()));
             if (active[i] && branch.getAbsorbedPower() > 0.1)
-                diagnostics.add(diagnostic(DiagnosticCode.POWER_EXCEEDED));
+                diagnostics.add(diagnostic(DiagnosticCode.POWER_EXCEEDED, led.getId().getPosition()));
         }
         for (MnaSystem.Element element : elements) {
             BranchResult branch = result.getBranchResult(element.getId());
             if (branch == null) continue;
             if (element.getKind() == MnaSystem.Element.Kind.VOLTAGE_SOURCE && Math.abs(branch.getCurrent()) > 0.1)
-                diagnostics.add(diagnostic(DiagnosticCode.SOURCE_OVERCURRENT));
+                diagnostics.add(diagnostic(DiagnosticCode.SOURCE_OVERCURRENT, element.getId().getPosition()));
             if ((element.getKind() == MnaSystem.Element.Kind.RESISTOR || element.getKind() == MnaSystem.Element.Kind.SWITCH)
                     && element.getValue() < 1.0 && Math.abs(branch.getCurrent()) > 0.1)
-                diagnostics.add(diagnostic(DiagnosticCode.SHORT_CIRCUIT));
+                diagnostics.add(diagnostic(DiagnosticCode.SHORT_CIRCUIT, element.getId().getPosition()));
         }
         Collections.sort(diagnostics);
         return diagnostics;
     }
 
     private static CircuitDiagnostic diagnostic(DiagnosticCode code) { return new CircuitDiagnostic(code, CircuitDiagnostic.Severity.WARNING, Collections.emptyList()); }
+    private static CircuitDiagnostic diagnostic(DiagnosticCode code, br.com.craftonica.network.BlockPosition position) {
+        return new CircuitDiagnostic(code, CircuitDiagnostic.Severity.WARNING, Collections.singletonList(position));
+    }
     private static NodalCircuitResult withDiagnostics(NodalCircuitResult result, List<CircuitDiagnostic> diagnostics) {
         return new NodalCircuitResult(result.getStatus(), result.getNodeResults(), result.getBranchResults(), diagnostics,
                 result.getResidual(), result.getConditionEstimate());

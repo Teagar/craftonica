@@ -9,6 +9,7 @@ import br.com.craftonica.electrical.MultimeterMode;
 import br.com.craftonica.electrical.MultimeterReading;
 import br.com.craftonica.network.BlockPosition;
 import br.com.craftonica.network.ElectricalNetworkManager;
+import br.com.craftonica.electrical.nodal.BranchResult;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -25,6 +26,7 @@ public final class ItemMultimeter extends Item {
     private static final String TAG_PROBE_X = "CraftonicaProbeX";
     private static final String TAG_PROBE_Y = "CraftonicaProbeY";
     private static final String TAG_PROBE_Z = "CraftonicaProbeZ";
+    private static final String TAG_PROBE_SIDE = "CraftonicaProbeSide";
 
     public ItemMultimeter() {
         setUnlocalizedName("multimeter");
@@ -52,7 +54,7 @@ public final class ItemMultimeter extends Item {
         NBTTagCompound tag = tag(stack);
         BlockPosition position = new BlockPosition(x, y, z);
         if (!tag.getBoolean(TAG_PROBE_SET)) {
-            setFirstProbe(tag, world.provider.dimensionId, position);
+            setFirstProbe(tag, world.provider.dimensionId, position, side);
             player.addChatMessage(new ChatComponentTranslation("message.craftonica.multimeter.probe_a", x, y, z));
             return true;
         }
@@ -65,6 +67,7 @@ public final class ItemMultimeter extends Item {
 
         BlockPosition first = new BlockPosition(tag.getInteger(TAG_PROBE_X), tag.getInteger(TAG_PROBE_Y),
                 tag.getInteger(TAG_PROBE_Z));
+        int firstSide = tag.getInteger(TAG_PROBE_SIDE);
         if (first.equals(position)) {
             player.addChatMessage(new ChatComponentTranslation("message.craftonica.multimeter.same_probe"));
             return true;
@@ -97,8 +100,19 @@ public final class ItemMultimeter extends Item {
         }
 
         player.addChatMessage(new ChatComponentTranslation("message.craftonica.multimeter.probe_b", x, y, z));
-        player.addChatMessage(new ChatComponentTranslation(CircuitDiagnosis.translationKey(result)));
-        showReading(player, mode(tag), result);
+        Double firstVoltage = manager.getTerminalVoltage(first, firstSide);
+        Double secondVoltage = manager.getTerminalVoltage(position, side);
+        BranchResult firstBranch = manager.getBranchResult(first);
+        BranchResult secondBranch = manager.getBranchResult(position);
+        if (firstVoltage == null || secondVoltage == null) {
+            showUnsupported(player);
+        } else {
+            BranchResult branch = firstBranch != null && secondBranch == null ? firstBranch
+                    : secondBranch != null && firstBranch == null ? secondBranch : null;
+            CircuitResult local = measurement(mode(tag), firstVoltage, secondVoltage, branch, result);
+            player.addChatMessage(new ChatComponentTranslation(CircuitDiagnosis.translationKey(local)));
+            showReading(player, mode(tag), local);
+        }
         clearProbe(tag);
         return true;
     }
@@ -120,6 +134,19 @@ public final class ItemMultimeter extends Item {
                 new ChatComponentTranslation("mode.craftonica.multimeter." + next.getId())));
     }
 
+    private CircuitResult measurement(MultimeterMode mode, double firstVoltage, double secondVoltage,
+                                      BranchResult branch, CircuitResult fallback) {
+        double voltage = Math.abs(firstVoltage - secondVoltage);
+        if (mode == MultimeterMode.VOLTAGE)
+            return new CircuitResult(CircuitStatus.CLOSED, voltage, branch == null ? 0.0 : Math.abs(branch.getCurrent()), 0.0, "nodal_probe_voltage");
+        if (branch == null)
+            return new CircuitResult(CircuitStatus.UNSUPPORTED_TOPOLOGY, voltage, Double.NaN, Double.NaN, "ambiguous_or_no_branch");
+        double current = Math.abs(branch.getCurrent());
+        CircuitStatus status = current > 1e-12 ? CircuitStatus.CLOSED : CircuitStatus.OPEN_CIRCUIT;
+        double resistance = current < 1e-15 ? Double.POSITIVE_INFINITY : Math.abs(branch.getVoltage() / branch.getCurrent());
+        return new CircuitResult(status, voltage, current, resistance, "nodal_probe_branch");
+    }
+
     private void showReading(EntityPlayer player, MultimeterMode mode, CircuitResult result) {
         MultimeterReading reading = MultimeterReading.fromNetworkResult(mode, result);
         switch (reading.getKind()) {
@@ -137,10 +164,15 @@ public final class ItemMultimeter extends Item {
                 player.addChatMessage(new ChatComponentTranslation("message.craftonica.multimeter.no_resistor"));
                 break;
             case UNSUPPORTED:
+                showUnsupported(player);
                 break;
             default:
                 throw new IllegalStateException("Unknown multimeter reading: " + reading.getKind());
         }
+    }
+
+    private void showUnsupported(EntityPlayer player) {
+        player.addChatMessage(new ChatComponentTranslation("message.craftonica.multimeter.unsupported_measurement"));
     }
 
     private MultimeterMode mode(NBTTagCompound tag) {
@@ -158,12 +190,13 @@ public final class ItemMultimeter extends Item {
         return stack.getTagCompound();
     }
 
-    private void setFirstProbe(NBTTagCompound tag, int dimension, BlockPosition position) {
+    private void setFirstProbe(NBTTagCompound tag, int dimension, BlockPosition position, int side) {
         tag.setBoolean(TAG_PROBE_SET, true);
         tag.setInteger(TAG_PROBE_DIMENSION, dimension);
         tag.setInteger(TAG_PROBE_X, position.x);
         tag.setInteger(TAG_PROBE_Y, position.y);
         tag.setInteger(TAG_PROBE_Z, position.z);
+        tag.setInteger(TAG_PROBE_SIDE, side);
     }
 
     private void clearProbe(NBTTagCompound tag) {
@@ -172,6 +205,7 @@ public final class ItemMultimeter extends Item {
         tag.removeTag(TAG_PROBE_X);
         tag.removeTag(TAG_PROBE_Y);
         tag.removeTag(TAG_PROBE_Z);
+        tag.removeTag(TAG_PROBE_SIDE);
     }
 
     private String decimal(double value, int places) {

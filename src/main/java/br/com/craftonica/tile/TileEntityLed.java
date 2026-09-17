@@ -20,7 +20,7 @@ public final class TileEntityLed extends TileEntity {
             return;
         }
         BlockPosition position = new BlockPosition(xCoord, yCoord, zCoord);
-        CircuitResult result = ElectricalNetworkManager.forWorld(worldObj).getResult(position);
+        CircuitResult result = ElectricalNetworkManager.forWorld(worldObj).getLocalResult(position);
         boolean wasBurned = state.isBurned();
         if (state.update(result)) {
             markDirty();

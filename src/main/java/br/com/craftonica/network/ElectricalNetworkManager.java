@@ -125,11 +125,13 @@ public final class ElectricalNetworkManager {
             }
             if (unknowns > MAX_UNKNOWNS_PER_TICK) unknowns = MAX_UNKNOWNS_PER_TICK;
             usedUnknowns += unknowns;
-            NetworkCache cache = new NetworkCache(++generation, members, prepared.nodal, prepared.legacy);
+            NetworkCache cache = new NetworkCache(++generation, members, prepared.nodal, prepared.legacy, prepared.circuit);
             publish(cache);
-            CircuitResult previous = lastResults.get(root);
-            ElectricalFeedback.networkTransition(world, root, previous, prepared.legacy);
-            for (BlockPosition member : members) lastResults.put(member, prepared.legacy);
+            for (BlockPosition member : members) {
+                CircuitResult local = getLocalResult(member);
+                ElectricalFeedback.networkTransition(world, member, lastResults.get(member), local);
+                lastResults.put(member, local);
+            }
             solvedNetworks++;
             solveCount++;
         }
@@ -146,6 +148,68 @@ public final class ElectricalNetworkManager {
     }
 
     public long getSolveCount() { return solveCount; }
+
+    public NodalCircuitResult getNodalResult(BlockPosition position) {
+        NetworkCache cache = published.get(position);
+        return cache == null ? null : cache.nodal;
+    }
+
+    public BranchResult getBranchResult(BlockPosition position) {
+        NetworkCache cache = published.get(position);
+        if (cache == null) return null;
+        BranchResult found = null;
+        for (BranchResult branch : cache.nodal.getBranchResults().values()) {
+            if (!position.equals(branch.getBranch().getPosition())) continue;
+            if ("source_internal".equals(branch.getBranch().getComponentKind())) continue;
+            if (found != null) return null;
+            found = branch;
+        }
+        return found;
+    }
+
+    public Double getTerminalVoltage(BlockPosition position, int side) {
+        NetworkCache cache = published.get(position);
+        if (cache == null || side < 0 || side >= Face.values().length) return null;
+        for (Map.Entry<TerminalId, NodeId> entry : cache.circuit.getTerminalToNode().entrySet()) {
+            TerminalId terminal = entry.getKey();
+            if (position.equals(terminal.getPosition()) && terminal.getFace() == Face.values()[side]) {
+                NodeResult node = cache.nodal.getNodeResult(entry.getValue());
+                return node == null ? 0.0 : node.getVoltage();
+            }
+        }
+        return null;
+    }
+
+    public CircuitResult getLocalResult(BlockPosition position) {
+        NetworkCache cache = published.get(position);
+        if (cache == null) return null;
+        BranchResult branch = getBranchResult(position);
+        if (branch == null) return cache.legacy;
+        CircuitStatus status = Math.abs(branch.getCurrent()) > 1e-12
+                ? CircuitStatus.CLOSED : CircuitStatus.OPEN_CIRCUIT;
+        String detail = "nodal_branch";
+        if ("led".equals(branch.getBranch().getComponentKind())) {
+            boolean burned = false;
+            for (ComponentSnapshot snapshot : cache.circuit.getSnapshots()) {
+                if (position.equals(snapshot.getPosition()) && Boolean.parseBoolean(snapshot.getState().get("burned"))) {
+                    burned = true;
+                }
+            }
+            if (burned) {
+                status = CircuitStatus.OPEN_CIRCUIT;
+                detail = "led_burned";
+            } else if (branch.getVoltage() < -1e-12) {
+                status = CircuitStatus.REVERSED_POLARITY;
+                detail = "led_reversed";
+            } else if (branch.getCurrent() > 0.03) {
+                status = CircuitStatus.OVERCURRENT;
+                detail = "led_overcurrent";
+            }
+        }
+        return new CircuitResult(status, branch.getVoltage(), Math.abs(branch.getCurrent()),
+                Math.abs(branch.getCurrent()) < 1e-15 ? Double.POSITIVE_INFINITY
+                        : Math.abs(branch.getVoltage() / branch.getCurrent()), detail);
+    }
 
     private Prepared prepare(NodalExtractionResult extraction) {
         NodalCircuitBuilder builder = new NodalCircuitBuilder();
@@ -166,13 +230,13 @@ public final class ElectricalNetworkManager {
             }
         } catch (IllegalArgumentException invalidComponent) {
             NodalCircuitResult invalid = solver.solve(MnaSystem.builder().build());
-            return new Prepared(invalid, project(invalid, circuit, extraction), 0);
+            return new Prepared(invalid, project(invalid, circuit, extraction), 0, circuit);
         }
         int unknowns = circuit.getNodes().size();
         for (MnaSystem.Element element : system.build().getElements())
             if (element.getKind() == MnaSystem.Element.Kind.VOLTAGE_SOURCE) unknowns++;
         NodalCircuitResult result = solver.solve(system.build());
-        return new Prepared(result, project(result, circuit, extraction), unknowns);
+        return new Prepared(result, project(result, circuit, extraction), unknowns, circuit);
     }
 
     private CircuitResult project(NodalCircuitResult result, NodalCircuit circuit, NodalExtractionResult extraction) {
@@ -251,16 +315,16 @@ public final class ElectricalNetworkManager {
     }
 
     private static final class Prepared {
-        private final NodalCircuitResult nodal; private final CircuitResult legacy; private final int unknowns;
-        private Prepared(NodalCircuitResult nodal, CircuitResult legacy, int unknowns) { this.nodal = nodal; this.legacy = legacy; this.unknowns = unknowns; }
+        private final NodalCircuitResult nodal; private final CircuitResult legacy; private final int unknowns; private final NodalCircuit circuit;
+        private Prepared(NodalCircuitResult nodal, CircuitResult legacy, int unknowns, NodalCircuit circuit) { this.nodal = nodal; this.legacy = legacy; this.unknowns = unknowns; this.circuit = circuit; }
     }
     private static final class NetworkCache {
         private final long generation; private final Set<BlockPosition> members;
-        private final NodalCircuitResult nodal; private final CircuitResult legacy;
-        private NetworkCache(long generation, Set<BlockPosition> members, NodalCircuitResult nodal, CircuitResult legacy) {
+        private final NodalCircuitResult nodal; private final CircuitResult legacy; private final NodalCircuit circuit;
+        private NetworkCache(long generation, Set<BlockPosition> members, NodalCircuitResult nodal, CircuitResult legacy, NodalCircuit circuit) {
             this.generation = generation;
             this.members = Collections.unmodifiableSet(new TreeSet<BlockPosition>(members));
-            this.nodal = nodal; this.legacy = legacy;
+            this.nodal = nodal; this.legacy = legacy; this.circuit = circuit;
         }
     }
 }
