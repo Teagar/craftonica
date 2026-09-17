@@ -1,48 +1,45 @@
 package br.com.craftonica.network;
 
-import br.com.craftonica.block.BlockElectricalButton;
-import br.com.craftonica.block.BlockGround;
-import br.com.craftonica.block.BlockLed;
-import br.com.craftonica.block.BlockPowerSource;
-import br.com.craftonica.block.BlockResistor;
-import br.com.craftonica.block.IElectricalBlock;
-import br.com.craftonica.electrical.BasicElectricalComponent;
-import br.com.craftonica.electrical.CircuitGraph;
 import br.com.craftonica.electrical.CircuitResult;
 import br.com.craftonica.electrical.CircuitStatus;
-import br.com.craftonica.electrical.SimpleCircuitSolver;
+import br.com.craftonica.electrical.nodal.*;
+import br.com.craftonica.electrical.nodal.forge.ForgeNodalSnapshotExtractor;
+import br.com.craftonica.electrical.nodal.forge.NodalExtractionResult;
+import br.com.craftonica.electrical.nodal.forge.WorldForgeAccess;
 import net.minecraft.block.Block;
 import net.minecraft.world.World;
-import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
-import net.minecraftforge.common.util.ForgeDirection;
+import br.com.craftonica.block.IElectricalBlock;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.WeakHashMap;
+import java.util.*;
 
+/** Server-owned network cache. A cache is only visible after its complete solve. */
 public final class ElectricalNetworkManager {
+    static final int MAX_NETWORKS_PER_TICK_FOR_TEST = 4;
+    private static final int MAX_UNKNOWNS_PER_TICK = 512;
     private static final Map<World, ElectricalNetworkManager> MANAGERS =
             new WeakHashMap<World, ElectricalNetworkManager>();
+    private static final Comparator<BlockPosition> POSITION_ORDER = new Comparator<BlockPosition>() {
+        @Override public int compare(BlockPosition a, BlockPosition b) {
+            int c = Integer.compare(a.x, b.x);
+            if (c == 0) c = Integer.compare(a.y, b.y);
+            return c == 0 ? Integer.compare(a.z, b.z) : c;
+        }
+    };
 
     private final World world;
-    private final WorldElectricalNetworkFinder finder = new WorldElectricalNetworkFinder();
-    private final SimpleCircuitSolver solver = new SimpleCircuitSolver();
-    private final Set<BlockPosition> dirty = new LinkedHashSet<BlockPosition>();
-    private final Map<BlockPosition, CircuitResult> results = new HashMap<BlockPosition, CircuitResult>();
-    private final Map<BlockPosition, Set<BlockPosition>> networks =
-            new HashMap<BlockPosition, Set<BlockPosition>>();
+    private final ForgeNodalSnapshotExtractor extractor;
+    private final DcNodalSolver solver = new DcNodalSolver();
+    private final NavigableSet<BlockPosition> dirty = new TreeSet<BlockPosition>(POSITION_ORDER);
     private final Map<BlockPosition, CircuitResult> lastResults = new HashMap<BlockPosition, CircuitResult>();
+    private volatile Map<BlockPosition, NetworkCache> published = Collections.emptyMap();
+    private long generation;
     private long solveCount;
 
     private ElectricalNetworkManager(World world) {
         this.world = world;
+        this.extractor = new ForgeNodalSnapshotExtractor(new WorldForgeAccess(world));
     }
 
     public static ElectricalNetworkManager forWorld(World world) {
@@ -54,167 +51,216 @@ public final class ElectricalNetworkManager {
         return manager;
     }
 
-    public static void unload(World world) {
-        MANAGERS.remove(world);
-    }
+    public static void unload(World world) { MANAGERS.remove(world); }
 
-    public void invalidateAround(BlockPosition position) {
-        if (world.isRemote) {
-            return;
-        }
-        dirty.add(position);
-        invalidateCachedNetwork(position);
-        for (ForgeDirection direction : ForgeDirection.VALID_DIRECTIONS) {
-            BlockPosition neighbor = offset(position, direction);
-            if (world.blockExists(neighbor.x, neighbor.y, neighbor.z)
-                    && world.getBlock(neighbor.x, neighbor.y, neighbor.z) instanceof IElectricalBlock) {
-                dirty.add(neighbor);
-                invalidateCachedNetwork(neighbor);
-            }
-        }
-    }
-
-    public void loadChunk(Chunk chunk) {
-        if (world.isRemote) {
-            return;
-        }
-        ExtendedBlockStorage[] sections = chunk.getBlockStorageArray();
-        for (ExtendedBlockStorage section : sections) {
-            if (section == null || section.isEmpty()) {
-                continue;
-            }
-            for (int localY = 0; localY < 16; localY++) {
-                for (int localZ = 0; localZ < 16; localZ++) {
-                    for (int localX = 0; localX < 16; localX++) {
-                        if (section.getBlockByExtId(localX, localY, localZ) instanceof IElectricalBlock) {
-                            dirty.add(new BlockPosition((chunk.xPosition << 4) + localX,
-                                    section.getYLocation() + localY, (chunk.zPosition << 4) + localZ));
-                        }
-                    }
+    public synchronized void invalidateAround(BlockPosition position) {
+        if (world.isRemote) return;
+        Set<BlockPosition> seeds = new TreeSet<BlockPosition>(POSITION_ORDER);
+        seeds.add(position);
+        for (int side = 0; side < 6; side++) seeds.add(offset(position, side));
+        Map<BlockPosition, NetworkCache> next = new HashMap<BlockPosition, NetworkCache>(published);
+        for (BlockPosition seed : seeds) {
+            NetworkCache cache = published.get(seed);
+            if (cache != null) {
+                for (BlockPosition member : cache.members) {
+                    next.remove(member);
+                    dirty.add(member);
                 }
             }
+            if (isElectricalAndLoaded(seed)) dirty.add(seed);
+        }
+        generation++;
+        published = immutable(next);
+    }
+
+    public synchronized void loadChunk(Chunk chunk) {
+        if (world.isRemote) return;
+        ExtendedBlockStorage[] sections = chunk.getBlockStorageArray();
+        for (ExtendedBlockStorage section : sections) {
+            if (section == null || section.isEmpty()) continue;
+            for (int y = 0; y < 16; y++) for (int z = 0; z < 16; z++) for (int x = 0; x < 16; x++) {
+                if (section.getBlockByExtId(x, y, z) instanceof IElectricalBlock)
+                    dirty.add(new BlockPosition((chunk.xPosition << 4) + x, section.getYLocation() + y,
+                            (chunk.zPosition << 4) + z));
+            }
         }
     }
 
-    public void unloadChunk(Chunk chunk) {
-        int minX = chunk.xPosition << 4;
-        int minZ = chunk.zPosition << 4;
+    public synchronized void unloadChunk(Chunk chunk) {
+        if (world.isRemote) return;
+        int minX = chunk.xPosition << 4, minZ = chunk.zPosition << 4;
         removeChunkPositions(dirty, minX, minZ);
-        removeChunkPositions(results.keySet(), minX, minZ);
-        removeChunkPositions(networks.keySet(), minX, minZ);
+        Map<BlockPosition, NetworkCache> next = new HashMap<BlockPosition, NetworkCache>(published);
+        Set<NetworkCache> removed = new HashSet<NetworkCache>();
+        for (NetworkCache cache : published.values()) {
+            for (BlockPosition member : cache.members) {
+                if (inChunk(member, minX, minZ)) { removed.add(cache); break; }
+            }
+        }
+        for (NetworkCache cache : removed) for (BlockPosition member : cache.members) {
+            next.remove(member);
+            lastResults.remove(member);
+        }
+        removeChunkPositions(lastResults.keySet(), minX, minZ);
+        generation++;
+        published = immutable(next);
     }
 
-    public void tick() {
-        if (world.isRemote || dirty.isEmpty()) {
-            return;
-        }
-        List<BlockPosition> roots = new ArrayList<BlockPosition>(dirty);
-        dirty.clear();
-        Set<BlockPosition> processed = new HashSet<BlockPosition>();
-        for (BlockPosition root : roots) {
-            if (processed.contains(root) || !world.blockExists(root.x, root.y, root.z)
-                    || !(world.getBlock(root.x, root.y, root.z) instanceof IElectricalBlock)) {
-                continue;
+    public synchronized void tick() {
+        if (world.isRemote || dirty.isEmpty()) return;
+        int solvedNetworks = 0, usedUnknowns = 0;
+        while (solvedNetworks < MAX_NETWORKS_PER_TICK_FOR_TEST && !dirty.isEmpty()) {
+            BlockPosition root = dirty.first();
+            dirty.remove(root);
+            if (!isElectricalAndLoaded(root)) continue;
+            NodalExtractionResult extraction = extractor.extract(root);
+            Set<BlockPosition> members = positions(extraction);
+            dirty.removeAll(members);
+            Prepared prepared = prepare(extraction);
+            int unknowns = prepared.unknowns;
+            if (solvedNetworks > 0 && usedUnknowns + unknowns > MAX_UNKNOWNS_PER_TICK) {
+                dirty.add(root);
+                dirty.addAll(members);
+                break;
             }
-            BoundedNetworkSearch.Result<BlockPosition> network = finder.discover(world, root);
-            processed.addAll(network.getNodes());
-            CircuitResult result = network.isLimitExceeded()
-                    ? new CircuitResult(CircuitStatus.NETWORK_TOO_LARGE, 0.0, 0.0, 0.0, "network_limit")
-                    : solve(network.getNodes());
-            ElectricalFeedback.networkTransition(world, root, lastResults.get(root), result);
-            Set<BlockPosition> snapshot = new HashSet<BlockPosition>(network.getNodes());
-            for (BlockPosition position : network.getNodes()) {
-                results.put(position, result);
-                lastResults.put(position, result);
-                networks.put(position, snapshot);
-            }
+            if (unknowns > MAX_UNKNOWNS_PER_TICK) unknowns = MAX_UNKNOWNS_PER_TICK;
+            usedUnknowns += unknowns;
+            NetworkCache cache = new NetworkCache(++generation, members, prepared.nodal, prepared.legacy);
+            publish(cache);
+            CircuitResult previous = lastResults.get(root);
+            ElectricalFeedback.networkTransition(world, root, previous, prepared.legacy);
+            for (BlockPosition member : members) lastResults.put(member, prepared.legacy);
+            solvedNetworks++;
             solveCount++;
         }
     }
 
     public CircuitResult getResult(BlockPosition position) {
-        return results.get(position);
+        NetworkCache cache = published.get(position);
+        return cache == null ? null : cache.legacy;
     }
 
     public boolean shareNetwork(BlockPosition first, BlockPosition second) {
-        Set<BlockPosition> network = networks.get(first);
-        return network != null && network.contains(second);
+        NetworkCache cache = published.get(first);
+        return cache != null && cache.members.contains(second);
     }
 
-    public long getSolveCount() {
-        return solveCount;
-    }
+    public long getSolveCount() { return solveCount; }
 
-    private CircuitResult solve(Set<BlockPosition> positions) {
+    private Prepared prepare(NodalExtractionResult extraction) {
+        NodalCircuitBuilder builder = new NodalCircuitBuilder();
+        for (ComponentSnapshot snapshot : extraction.getSnapshots()) builder.add(snapshot);
+        NodalCircuit circuit = builder.build();
+        MnaSystem.Builder system = MnaSystem.builder();
         try {
-            CircuitGraph graph = new CircuitGraph();
-            for (BlockPosition position : positions) {
-                graph.add(componentAt(position));
+            for (ComponentSnapshot snapshot : circuit.getSnapshots()) {
+                List<TerminalSnapshot> terminals = snapshot.getTerminals();
+                if (terminals.isEmpty()) continue;
+                NodeId a = circuit.getNode(terminals.get(0).getId());
+                NodeId b = terminals.size() > 1 ? circuit.getNode(terminals.get(1).getId()) : NodeId.REFERENCE;
+                BranchId id = new BranchId(snapshot.getPosition(), snapshot.getKind(), 0);
+                if ("source".equals(snapshot.getKind())) system.powerSource(id, a, NodeId.named("source:" + snapshot.getPosition()));
+                else if ("resistor".equals(snapshot.getKind())) system.resistor(id, a, b, snapshot.getParameters().get("resistance"));
+                else if ("switch".equals(snapshot.getKind())) system.switchBranch(id, a, b, Boolean.parseBoolean(snapshot.getState().get("closed")));
+                else if ("led".equals(snapshot.getKind())) system.led(id, a, b, Boolean.parseBoolean(snapshot.getState().get("burned")));
             }
-            for (BlockPosition position : positions) {
-                for (BlockPosition neighbor : finder.connectedNeighbors(world, position)) {
-                    if (positions.contains(neighbor) && position.toString().compareTo(neighbor.toString()) < 0) {
-                        graph.connect(position.toString(), neighbor.toString());
-                    }
-                }
-            }
-            return solver.solve(graph);
-        } catch (IllegalArgumentException error) {
-            return new CircuitResult(CircuitStatus.UNSUPPORTED_TOPOLOGY, 0.0, 0.0, 0.0, "invalid_world_graph");
+        } catch (IllegalArgumentException invalidComponent) {
+            NodalCircuitResult invalid = solver.solve(MnaSystem.builder().build());
+            return new Prepared(invalid, project(invalid, circuit, extraction), 0);
         }
+        int unknowns = circuit.getNodes().size();
+        for (MnaSystem.Element element : system.build().getElements())
+            if (element.getKind() == MnaSystem.Element.Kind.VOLTAGE_SOURCE) unknowns++;
+        NodalCircuitResult result = solver.solve(system.build());
+        return new Prepared(result, project(result, circuit, extraction), unknowns);
     }
 
-    private BasicElectricalComponent componentAt(BlockPosition position) {
-        Block block = world.getBlock(position.x, position.y, position.z);
-        String id = position.toString();
-        if (block instanceof BlockPowerSource) {
-            return BasicElectricalComponent.source(id, 5.0);
+    private CircuitResult project(NodalCircuitResult result, NodalCircuit circuit, NodalExtractionResult extraction) {
+        double current = 0.0, voltage = 5.0, resistance = 0.0;
+        CircuitStatus status = CircuitStatus.UNSUPPORTED_TOPOLOGY;
+        String detail = "nodal_" + result.getStatus().name().toLowerCase(Locale.ENGLISH);
+        for (ComponentSnapshot snapshot : circuit.getSnapshots()) {
+            if ("resistor".equals(snapshot.getKind())) resistance += snapshot.getParameters().get("resistance");
+            if ("source".equals(snapshot.getKind())) {
+                BranchResult branch = result.getBranchResult(new BranchId(snapshot.getPosition(), "source", 0));
+                if (branch != null) current = Math.abs(branch.getCurrent());
+            }
         }
-        if (block instanceof BlockGround) {
-            return BasicElectricalComponent.ground(id);
+        for (CircuitDiagnostic diagnostic : extraction.getDiagnostics()) {
+            if (diagnostic.getCode() == DiagnosticCode.NETWORK_TOO_LARGE) status = CircuitStatus.NETWORK_TOO_LARGE;
+            detail = diagnostic.getCode().name().toLowerCase(Locale.ENGLISH);
         }
-        if (block instanceof BlockElectricalButton) {
-            boolean closed = ((BlockElectricalButton) block).isClosed(world, position.x, position.y, position.z);
-            return BasicElectricalComponent.electricalSwitch(id, closed);
+        for (CircuitDiagnostic diagnostic : result.getDiagnostics()) {
+            switch (diagnostic.getCode()) {
+                case POLARITY_INCORRECT: status = CircuitStatus.REVERSED_POLARITY; break;
+                case LED_OVERCURRENT: status = CircuitStatus.OVERCURRENT; break;
+                default: break;
+            }
+            detail = diagnostic.getCode().name().toLowerCase(Locale.ENGLISH);
         }
-        if (block instanceof BlockResistor) {
-            return BasicElectricalComponent.resistor(id, ((BlockResistor) block).getResistanceOhms());
+        if (result.isSolved() && status == CircuitStatus.UNSUPPORTED_TOPOLOGY
+                && extraction.isComplete() && circuit.isValid()) {
+            status = current > 1e-12 ? CircuitStatus.CLOSED : CircuitStatus.OPEN_CIRCUIT;
+            detail = status == CircuitStatus.CLOSED ? "nodal_solved" : "switch_open_or_no_current";
         }
-        if (block instanceof BlockLed) {
-            int side = ((BlockLed) block).getAnodeSide(world, position.x, position.y, position.z);
-            ForgeDirection direction = ForgeDirection.getOrientation(side);
-            TileEntity tile = world.getTileEntity(position.x, position.y, position.z);
-            boolean functional = !(tile instanceof br.com.craftonica.tile.TileEntityLed)
-                    || !((br.com.craftonica.tile.TileEntityLed) tile).isBurned();
-            return BasicElectricalComponent.led(id, 2.0, offset(position, direction).toString(), functional);
-        }
-        return BasicElectricalComponent.wire(id);
+        if (result.getStatus() == SolveStatus.MATRIX_LIMIT) status = CircuitStatus.NETWORK_TOO_LARGE;
+        if (status == CircuitStatus.OVERCURRENT) detail = "led_overcurrent";
+        if (resistance == 0.0 && current > 0.0) resistance = voltage / current;
+        return new CircuitResult(status, voltage, current, resistance, detail);
     }
 
-    private BlockPosition offset(BlockPosition position, ForgeDirection direction) {
-        return new BlockPosition(position.x + direction.offsetX, position.y + direction.offsetY,
-                position.z + direction.offsetZ);
+    private void publish(NetworkCache cache) {
+        Map<BlockPosition, NetworkCache> next = new HashMap<BlockPosition, NetworkCache>(published);
+        for (BlockPosition member : cache.members) next.put(member, cache);
+        published = immutable(next);
+    }
+
+    private Set<BlockPosition> positions(NodalExtractionResult extraction) {
+        Set<BlockPosition> result = new TreeSet<BlockPosition>(POSITION_ORDER);
+        for (ComponentSnapshot snapshot : extraction.getSnapshots()) result.add(snapshot.getPosition());
+        return result;
+    }
+
+    private boolean isElectricalAndLoaded(BlockPosition p) {
+        return world.getChunkProvider().chunkExists(p.x >> 4, p.z >> 4)
+                && world.getBlock(p.x, p.y, p.z) instanceof IElectricalBlock;
+    }
+
+    private Map<BlockPosition, NetworkCache> immutable(Map<BlockPosition, NetworkCache> source) {
+        return Collections.unmodifiableMap(new HashMap<BlockPosition, NetworkCache>(source));
+    }
+
+    private boolean inChunk(BlockPosition p, int minX, int minZ) {
+        return p.x >= minX && p.x < minX + 16 && p.z >= minZ && p.z < minZ + 16;
     }
 
     private void removeChunkPositions(Set<BlockPosition> positions, int minX, int minZ) {
-        List<BlockPosition> copy = new ArrayList<BlockPosition>(positions);
-        for (BlockPosition position : copy) {
-            if (position.x >= minX && position.x < minX + 16
-                    && position.z >= minZ && position.z < minZ + 16) {
-                positions.remove(position);
-            }
+        for (Iterator<BlockPosition> iterator = positions.iterator(); iterator.hasNext();)
+            if (inChunk(iterator.next(), minX, minZ)) iterator.remove();
+    }
+
+    private BlockPosition offset(BlockPosition p, int side) {
+        switch (side) {
+            case 0: return new BlockPosition(p.x, p.y - 1, p.z);
+            case 1: return new BlockPosition(p.x, p.y + 1, p.z);
+            case 2: return new BlockPosition(p.x, p.y, p.z - 1);
+            case 3: return new BlockPosition(p.x, p.y, p.z + 1);
+            case 4: return new BlockPosition(p.x - 1, p.y, p.z);
+            default: return new BlockPosition(p.x + 1, p.y, p.z);
         }
     }
 
-    private void invalidateCachedNetwork(BlockPosition position) {
-        Set<BlockPosition> network = networks.remove(position);
-        if (network == null) {
-            results.remove(position);
-            return;
-        }
-        for (BlockPosition member : network) {
-            results.remove(member);
-            networks.remove(member);
+    private static final class Prepared {
+        private final NodalCircuitResult nodal; private final CircuitResult legacy; private final int unknowns;
+        private Prepared(NodalCircuitResult nodal, CircuitResult legacy, int unknowns) { this.nodal = nodal; this.legacy = legacy; this.unknowns = unknowns; }
+    }
+    private static final class NetworkCache {
+        private final long generation; private final Set<BlockPosition> members;
+        private final NodalCircuitResult nodal; private final CircuitResult legacy;
+        private NetworkCache(long generation, Set<BlockPosition> members, NodalCircuitResult nodal, CircuitResult legacy) {
+            this.generation = generation;
+            this.members = Collections.unmodifiableSet(new TreeSet<BlockPosition>(members));
+            this.nodal = nodal; this.legacy = legacy;
         }
     }
 }
