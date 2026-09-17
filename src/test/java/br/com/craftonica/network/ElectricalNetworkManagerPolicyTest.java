@@ -2,14 +2,21 @@ package br.com.craftonica.network;
 
 import br.com.craftonica.electrical.nodal.NodalCircuit;
 import br.com.craftonica.electrical.nodal.NodalCircuitBuilder;
+import br.com.craftonica.electrical.nodal.NodalCircuitResult;
 import br.com.craftonica.electrical.nodal.ComponentSnapshot;
 import br.com.craftonica.electrical.nodal.Face;
 import br.com.craftonica.electrical.nodal.TerminalSnapshot;
+import br.com.craftonica.electrical.CircuitResult;
 import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -32,6 +39,23 @@ public class ElectricalNetworkManagerPolicyTest {
         assertEquals(first.getTopologyFingerprint(), second.getTopologyFingerprint());
         assertEquals(first.getBranches().size(), second.getBranches().size());
         assertTrue(first.getNodes().size() > 0);
+    }
+
+    @Test public void networkCacheOrdersBlockPositionsDuringConstruction() throws Exception {
+        Constructor<?> constructor = Class.forName("br.com.craftonica.network.ElectricalNetworkManager$NetworkCache")
+                .getDeclaredConstructor(long.class, Set.class, NodalCircuitResult.class,
+                        CircuitResult.class, NodalCircuit.class);
+        constructor.setAccessible(true);
+        Object cache = constructor.newInstance(1L, new HashSet<BlockPosition>(Arrays.asList(
+                new BlockPosition(2, 0, 0), new BlockPosition(1, 5, 0),
+                new BlockPosition(1, 4, 9))), null, null, null);
+        Field members = cache.getClass().getDeclaredField("members");
+        members.setAccessible(true);
+        @SuppressWarnings("unchecked")
+        Set<BlockPosition> ordered = (Set<BlockPosition>) members.get(cache);
+
+        assertEquals(Arrays.asList(new BlockPosition(1, 4, 9), new BlockPosition(1, 5, 0),
+                new BlockPosition(2, 0, 0)), new ArrayList<BlockPosition>(ordered));
     }
 
     private NodalCircuit build(List<ComponentSnapshot> snapshots) {

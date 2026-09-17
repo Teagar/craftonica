@@ -22,9 +22,7 @@ public final class ElectricalNetworkManager {
             new WeakHashMap<World, ElectricalNetworkManager>();
     private static final Comparator<BlockPosition> POSITION_ORDER = new Comparator<BlockPosition>() {
         @Override public int compare(BlockPosition a, BlockPosition b) {
-            int c = Integer.compare(a.x, b.x);
-            if (c == 0) c = Integer.compare(a.y, b.y);
-            return c == 0 ? Integer.compare(a.z, b.z) : c;
+            return a.compareTo(b);
         }
     };
 

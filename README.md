@@ -1,4 +1,4 @@
-# Craftônica: Robotics Lab 0.3.0
+# Craftônica: Robotics Lab 0.3.1
 
 MVP educacional para Minecraft 1.7.10 e Forge 10.13.4.1614. O mundo funciona
 como uma bancada: fonte, fios, botão, resistores, LED e GND são blocos reais. A
@@ -22,7 +22,7 @@ O projeto não suporta Java posterior ao 8 porque usa ForgeGradle 1.2.
 
 O script baixa uma distribuição Temurin 8 fixada, verifica o SHA-256 e a guarda
 em `~/.cache/craftonica`, sem alterar o Java padrão. O artefato instalável é
-`build/libs/craftonica-0.3.0.jar`.
+`build/libs/craftonica-0.3.1.jar`.
 
 Para reconstruir e instalar com segurança na instância dedicada do Prism:
 
