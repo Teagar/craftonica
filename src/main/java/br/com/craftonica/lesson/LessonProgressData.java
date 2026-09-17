@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
 
 public final class LessonProgressData extends WorldSavedData {
@@ -52,6 +53,15 @@ public final class LessonProgressData extends WorldSavedData {
                 : Collections.unmodifiableSet(new LinkedHashSet<String>(progress.completed));
     }
 
+    public Map<String, Integer> getCompletionCounts() {
+        Map<String, Integer> counts = new TreeMap<String, Integer>();
+        for (Progress progress : players.values()) for (String lessonId : progress.completed) {
+            Integer count = counts.get(lessonId);
+            counts.put(lessonId, count == null ? 1 : count + 1);
+        }
+        return Collections.unmodifiableMap(counts);
+    }
+
     public boolean start(UUID player, String lessonId) {
         ensureWritable();
         Progress progress = progress(player);
@@ -85,11 +95,11 @@ public final class LessonProgressData extends WorldSavedData {
                 UUID id = UUID.fromString(tag.getString("UUID"));
                 Progress progress = new Progress();
                 String active = tag.getString("ActiveLesson");
-                if (LessonCatalog.get(active) != null) progress.active = active;
+                if (isPersistentLessonId(active)) progress.active = active;
                 NBTTagList completed = tag.getTagList("Completed", 10);
                 for (int j = 0; j < Math.min(completed.tagCount(), MAX_COMPLETED); j++) {
                     String lessonId = completed.getCompoundTagAt(j).getString("Id");
-                    if (LessonCatalog.get(lessonId) != null) progress.completed.add(lessonId);
+                    if (isPersistentLessonId(lessonId)) progress.completed.add(lessonId);
                 }
                 players.put(id, progress);
             } catch (IllegalArgumentException malformedUuid) {
@@ -126,6 +136,11 @@ public final class LessonProgressData extends WorldSavedData {
 
     private void ensureWritable() {
         if (!writable) throw new IllegalStateException("Dados de licao usam schema nao suportado");
+    }
+
+    private boolean isPersistentLessonId(String id) {
+        return LessonCatalog.get(id) != null || id != null && id.startsWith("teacher-")
+                && TeacherActivityParser.isValidLessonId(id);
     }
 
     private static final class Progress {

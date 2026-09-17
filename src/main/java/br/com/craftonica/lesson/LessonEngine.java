@@ -13,7 +13,13 @@ public final class LessonEngine {
     private final LessonEvaluator evaluator = new LessonEvaluator();
 
     public void start(EntityPlayerMP player, String lessonId) {
-        LessonDefinition lesson = LessonCatalog.get(lessonId);
+        TeacherActivityData teacher = TeacherActivityData.get(player.worldObj);
+        if ("assigned".equals(lessonId)) lessonId = teacher.getAssignedId();
+        if (lessonId != null && lessonId.startsWith("teacher-") && !lessonId.equals(teacher.getAssignedId())) {
+            player.addChatMessage(new ChatComponentTranslation("message.craftonica.teacher.not_assigned"));
+            return;
+        }
+        LessonDefinition lesson = resolve(lessonId, teacher);
         if (lesson == null) {
             player.addChatMessage(new ChatComponentTranslation("message.craftonica.lesson.unknown", lessonId));
             return;
@@ -44,7 +50,12 @@ public final class LessonEngine {
             return;
         }
         ElectricalNetworkSnapshot snapshot = ElectricalNetworkManager.forWorld(player.worldObj).getSnapshot(anchor);
-        LessonEvaluation result = evaluator.evaluate(LessonCatalog.get(active), snapshot);
+        LessonDefinition lesson = resolve(active, TeacherActivityData.get(player.worldObj));
+        if (lesson == null) {
+            player.addChatMessage(new ChatComponentTranslation("message.craftonica.lesson.unknown", active));
+            return;
+        }
+        LessonEvaluation result = evaluator.evaluate(lesson, snapshot);
         if (result.isSuccess()) {
             try {
                 data.complete(player.getUniqueID(), active);
@@ -92,4 +103,9 @@ public final class LessonEngine {
     }
 
     private String number(double value) { return String.format(Locale.ROOT, "%.6f", value); }
+
+    private LessonDefinition resolve(String id, TeacherActivityData teacher) {
+        LessonDefinition builtIn = LessonCatalog.get(id);
+        return builtIn == null ? teacher.getActivity(id) : builtIn;
+    }
 }

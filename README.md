@@ -1,4 +1,4 @@
-# Craftônica: Robotics Lab 0.4.1
+# Craftônica: Robotics Lab 0.4.2
 
 MVP educacional para Minecraft 1.7.10 e Forge 10.13.4.1614. O mundo funciona
 como uma bancada: fonte, fios, botão, resistores, LED e GND são blocos reais. A
@@ -22,7 +22,7 @@ O projeto não suporta Java posterior ao 8 porque usa ForgeGradle 1.2.
 
 O script baixa uma distribuição Temurin 8 fixada, verifica o SHA-256 e a guarda
 em `~/.cache/craftonica`, sem alterar o Java padrão. O artefato instalável é
-`build/libs/craftonica-0.4.1.jar`.
+`build/libs/craftonica-0.4.2.jar`.
 
 Para reconstruir e instalar com segurança na instância dedicada do Prism:
 
@@ -96,6 +96,31 @@ logout, morte e reinício do servidor.
 O percurso completo de circuito fechado, Lei de Ohm, polaridade, série, paralelo
 e diagnóstico está em
 [`docs/curriculum/0.4-laboratorios.md`](docs/curriculum/0.4-laboratorios.md).
+
+### Modo professor
+
+Operadores com permissão 2 podem criar atividades autoritativas no servidor. O
+exemplo exige uma fonte, um GND, entre um e três resistores e um ou dois LEDs;
+todos os LEDs devem conduzir `13 mA` com tolerância absoluta de `1 mA` e relativa
+de `5%`:
+
+```text
+/craftonica teacher create lamp s:1:1,g:1:1,r:1:3,l:1:2 l:i:.013:.001:.05:all
+/craftonica teacher assign teacher-lamp
+/craftonica lesson start assigned
+/craftonica teacher list
+/craftonica teacher export
+```
+
+Definições e atribuição são persistidas no mundo. A exportação possui caminho
+fixo `craftonica/exports/lesson-completions.csv` dentro do save e contém somente
+`lesson_id` e total de conclusões. UUID, nome, posição e medição individual não
+são exportados por padrão.
+
+A forma compacta respeita o limite de 100 caracteres do chat legado. Aliases de
+componentes: `w` fio, `s` fonte, `g` GND, `k` chave, `b` disjuntor, `r` resistor,
+`p` potenciômetro, `l` LED e `d` diodo. Grandezas: `i` corrente, `v` tensão e `p`
+potência; quantificadores: `a` qualquer ramo ou `all` todos os ramos.
 
 ## Automação local via MCP
 

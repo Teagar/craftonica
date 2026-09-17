@@ -61,6 +61,8 @@ public final class LessonDefinition {
         public String getComponentKind() { return componentKind; }
         public Quantity getQuantity() { return quantity; }
         public double getExpected() { return expected; }
+        public double getAbsoluteTolerance() { return absoluteTolerance; }
+        public double getRelativeTolerance() { return relativeTolerance; }
         public double getTolerance() { return Math.max(absoluteTolerance, relativeTolerance * Math.abs(expected)); }
         public boolean isMagnitude() { return magnitude; }
         public Quantifier getQuantifier() { return quantifier; }

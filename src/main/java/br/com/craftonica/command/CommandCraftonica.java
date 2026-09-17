@@ -3,6 +3,10 @@ package br.com.craftonica.command;
 import br.com.craftonica.block.IElectricalBlock;
 import br.com.craftonica.lesson.LessonCatalog;
 import br.com.craftonica.lesson.LessonEngine;
+import br.com.craftonica.lesson.LessonDefinition;
+import br.com.craftonica.lesson.TeacherActivityData;
+import br.com.craftonica.lesson.TeacherActivityParser;
+import br.com.craftonica.lesson.TeacherProgressExporter;
 import br.com.craftonica.network.BlockPosition;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.ICommandSender;
@@ -11,6 +15,9 @@ import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.ChatComponentTranslation;
 import net.minecraft.world.WorldServer;
+
+import java.io.File;
+import java.io.IOException;
 
 public final class CommandCraftonica extends CommandBase {
     private final LessonEngine lessons = new LessonEngine();
@@ -26,8 +33,12 @@ public final class CommandCraftonica extends CommandBase {
             return;
         }
         EntityPlayerMP player = (EntityPlayerMP) sender;
-        if (args.length == 2 && "lesson".equals(args[0]) && "list".equals(args[1])) {
+        if (args.length >= 2 && "teacher".equals(args[0])) {
+            teacher(player, args);
+        } else if (args.length == 2 && "lesson".equals(args[0]) && "list".equals(args[1])) {
             for (String id : LessonCatalog.ids()) player.addChatMessage(new ChatComponentText(id));
+            String assigned = TeacherActivityData.get(player.worldObj).getAssignedId();
+            if (assigned != null) player.addChatMessage(new ChatComponentText("assigned -> " + assigned));
         } else if (args.length == 3 && "lesson".equals(args[0]) && "start".equals(args[1])) {
             lessons.start(player, args[2]);
         } else if (args.length == 2 && "lesson".equals(args[0]) && "status".equals(args[1])) {
@@ -59,5 +70,45 @@ public final class CommandCraftonica extends CommandBase {
             return;
         }
         lessons.check(player, new BlockPosition(x, y, z));
+    }
+
+    private void teacher(EntityPlayerMP player, String[] args) {
+        if (!player.canCommandSenderUseCommand(2, getCommandName())) {
+            player.addChatMessage(new ChatComponentTranslation("message.craftonica.teacher.denied"));
+            return;
+        }
+        TeacherActivityData data = TeacherActivityData.get(player.worldObj);
+        try {
+            if ((args.length == 5 || args.length == 10) && "create".equals(args[1])) {
+                LessonDefinition activity = args.length == 5
+                        ? TeacherActivityParser.parseCompact(args[2], args[3], args[4])
+                        : TeacherActivityParser.parse(args[2], args[3], args[4], args[5],
+                                args[6], args[7], args[8], args[9]);
+                data.put(activity);
+                player.addChatMessage(new ChatComponentTranslation("message.craftonica.teacher.created", activity.getId()));
+            } else if (args.length == 3 && "assign".equals(args[1])) {
+                if (LessonCatalog.get(args[2]) == null && data.getActivity(args[2]) == null)
+                    throw new IllegalArgumentException("Licao desconhecida");
+                data.assign(args[2]);
+                player.addChatMessage(new ChatComponentTranslation("message.craftonica.teacher.assigned", args[2]));
+            } else if (args.length == 2 && "list".equals(args[1])) {
+                player.addChatMessage(new ChatComponentTranslation("message.craftonica.teacher.assignment",
+                        data.getAssignedId() == null ? "-" : data.getAssignedId()));
+                for (String id : data.getActivityIds()) player.addChatMessage(new ChatComponentText(id));
+            } else if (args.length == 2 && "export".equals(args[1])) {
+                File exported = TeacherProgressExporter.export((WorldServer) player.worldObj);
+                player.addChatMessage(new ChatComponentTranslation("message.craftonica.teacher.exported",
+                        exported.getName()));
+            } else {
+                throw new WrongUsageException(getCommandUsage(player));
+            }
+        } catch (IllegalArgumentException invalidActivity) {
+            player.addChatMessage(new ChatComponentTranslation("message.craftonica.teacher.invalid",
+                    invalidActivity.getMessage()));
+        } catch (IllegalStateException readOnly) {
+            player.addChatMessage(new ChatComponentTranslation("message.craftonica.teacher.readonly"));
+        } catch (IOException exportFailure) {
+            player.addChatMessage(new ChatComponentTranslation("message.craftonica.teacher.export_failed"));
+        }
     }
 }

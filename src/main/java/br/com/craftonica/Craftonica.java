@@ -17,7 +17,7 @@ import cpw.mods.fml.common.event.FMLServerStartingEvent;
 public final class Craftonica {
     public static final String MOD_ID = "craftonica";
     public static final String MOD_NAME = "Craftonica: Robotics Lab";
-    public static final String VERSION = "0.4.1";
+    public static final String VERSION = "0.4.2";
 
     @SidedProxy(
             clientSide = "br.com.craftonica.proxy.ClientProxy",
