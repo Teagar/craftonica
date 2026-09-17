@@ -133,6 +133,11 @@ public final class ElectricalNetworkManager {
         return results.get(position);
     }
 
+    public boolean shareNetwork(BlockPosition first, BlockPosition second) {
+        Set<BlockPosition> network = networks.get(first);
+        return network != null && network.contains(second);
+    }
+
     public long getSolveCount() {
         return solveCount;
     }

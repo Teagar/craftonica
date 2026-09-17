@@ -32,6 +32,11 @@ Entregas:
 - receitas e integração com NEI para descoberta no modo sobrevivência;
 - sons e partículas moderados para conexão, chaveamento e falhas.
 
+Nesta fase, as duas pontas confirmam que os blocos pertencem à mesma rede e os
+modos exibem as grandezas globais do modelo em série. Diferenças de potencial
+entre pontos e correntes por ramo dependem do solver por nós da versão 0.3; o
+jogo deve declarar esse limite em vez de inventar valores locais.
+
 Critérios de saída:
 
 - todos os componentes podem ser orientados e diagnosticados sem serem
