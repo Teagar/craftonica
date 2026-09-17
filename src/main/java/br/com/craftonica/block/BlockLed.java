@@ -16,7 +16,7 @@ import net.minecraft.world.World;
 
 import java.util.Random;
 
-public final class BlockLed extends BlockContainer implements IElectricalBlock {
+public final class BlockLed extends BlockContainer implements IElectricalBlock, IRotatableElectricalBlock {
     private IIcon sideIcon;
     private IIcon onIcon;
     private IIcon burnedIcon;
@@ -115,6 +115,11 @@ public final class BlockLed extends BlockContainer implements IElectricalBlock {
 
     public IIcon getCathodeIcon() {
         return cathodeIcon;
+    }
+
+    @Override
+    public int rotateMetadata(int metadata) {
+        return HorizontalRotation.rotateSideMetadata(metadata);
     }
 
     public boolean isBurned(IBlockAccess world, int x, int y, int z) {

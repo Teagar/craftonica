@@ -34,5 +34,6 @@ OUTPUT="$BLOCKS/led_anode.png" pixel xc:'#2b3337' +antialias -fill '#a9473f' -dr
 OUTPUT="$BLOCKS/led_cathode.png" pixel xc:'#2b3337' +antialias -fill '#315d78' -draw 'rectangle 2,2 13,13' -fill '#5695ad' -draw 'rectangle 4,4 11,11' -fill '#d7f0ef' -draw 'rectangle 5,7 10,8'
 
 OUTPUT="$ITEMS/multimeter.png" pixel xc:none +antialias -fill '#172329' -draw 'rectangle 3,1 12,14 rectangle 2,3 13,12' -fill '#d59a2f' -draw 'rectangle 3,2 12,12' -fill '#f0bc48' -draw 'rectangle 4,2 11,4' -fill '#9dd8c8' -draw 'rectangle 5,4 10,7' -fill '#24454b' -draw 'rectangle 6,5 9,6' -fill '#30373a' -draw 'rectangle 5,9 10,12' -fill '#d94b45' -draw 'rectangle 6,10 7,11' -fill '#32383b' -draw 'rectangle 9,10 10,11' -fill '#d94b45' -draw 'rectangle 3,13 4,15' -fill '#202629' -draw 'rectangle 11,13 12,15'
+OUTPUT="$ITEMS/wrench.png" pixel xc:none +antialias -fill '#323b40' -draw 'polygon 2,1 5,1 7,4 5,6 13,14 11,16 3,8 1,9 0,6 2,4' -fill '#98a6aa' -draw 'polygon 3,1 5,2 6,4 4,6 2,5 1,6 2,8 4,7 12,15 13,14 5,6 7,4 5,1' -fill '#d9e0de' -draw 'polygon 3,2 5,3 5,4 4,5 2,4'
 
 echo "Texturas 16x16 geradas em assets/craftonica/textures"

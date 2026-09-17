@@ -8,6 +8,7 @@ tile.resistor1k.name=1 kohm Resistor
 tile.resistor10k.name=10 kohm Resistor
 tile.led.name=LED
 item.multimeter.name=Multimeter
+item.wrench.name=Wrench
 message.craftonica.multimeter.closed=Closed circuit with correct polarity.
 message.craftonica.multimeter.open=Open circuit: no current is flowing.
 message.craftonica.multimeter.burned=Burned-out LED: the circuit remains open.

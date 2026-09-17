@@ -36,9 +36,11 @@ public final class BlockElectricalButton extends BlockTwoTerminal {
     @Override
     public boolean onBlockActivated(World world, int x, int y, int z, EntityPlayer player,
                                     int side, float hitX, float hitY, float hitZ) {
-        if (player.getCurrentEquippedItem() != null
-                && player.getCurrentEquippedItem().getItem() == ModItems.MULTIMETER) {
-            return false;
+        if (player.getCurrentEquippedItem() != null) {
+            if (player.getCurrentEquippedItem().getItem() == ModItems.MULTIMETER
+                    || player.getCurrentEquippedItem().getItem() == ModItems.WRENCH) {
+                return false;
+            }
         }
         if (!world.isRemote) {
             world.setBlockMetadataWithNotify(x, y, z, world.getBlockMetadata(x, y, z) ^ CLOSED_BIT, 3);

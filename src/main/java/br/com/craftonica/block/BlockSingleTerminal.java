@@ -12,7 +12,7 @@ import net.minecraft.util.MathHelper;
 import net.minecraft.world.World;
 import net.minecraft.world.IBlockAccess;
 
-public class BlockSingleTerminal extends Block implements IElectricalBlock {
+public class BlockSingleTerminal extends Block implements IElectricalBlock, IRotatableElectricalBlock {
     private IIcon bodyIcon;
     private IIcon terminalIcon;
 
@@ -70,6 +70,11 @@ public class BlockSingleTerminal extends Block implements IElectricalBlock {
 
     public IIcon getTerminalIcon() {
         return terminalIcon;
+    }
+
+    @Override
+    public int rotateMetadata(int metadata) {
+        return HorizontalRotation.rotateSideMetadata(metadata);
     }
 
     @Override

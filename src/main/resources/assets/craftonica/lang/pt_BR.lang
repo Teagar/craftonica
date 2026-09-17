@@ -8,6 +8,7 @@ tile.resistor1k.name=Resistor 1 kohm
 tile.resistor10k.name=Resistor 10 kohms
 tile.led.name=LED
 item.multimeter.name=Multímetro
+item.wrench.name=Chave inglesa
 message.craftonica.multimeter.closed=Circuito fechado e polaridade correta.
 message.craftonica.multimeter.open=Circuito aberto: não há corrente.
 message.craftonica.multimeter.burned=LED queimado: o circuito permanece aberto.
