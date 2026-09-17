@@ -17,5 +17,6 @@ public final class ComponentSnapshot {
         List<int[]> groups=new ArrayList<int[]>(); for(int[] g: conductorGroups) groups.add(g.clone()); this.conductorGroups=Collections.unmodifiableList(groups);
     }
     public BlockPosition getPosition(){return position;} public String getKind(){return kind;} public List<TerminalSnapshot> getTerminals(){return terminals;}
-    public Map<String,Double> getParameters(){return parameters;} public Map<String,String> getState(){return state;} public List<int[]> getConductorGroups(){return conductorGroups;}
+    public Map<String,Double> getParameters(){return parameters;} public Map<String,String> getState(){return state;}
+    public List<int[]> getConductorGroups(){List<int[]> copy=new ArrayList<int[]>();for(int[] group:conductorGroups)copy.add(group.clone());return Collections.unmodifiableList(copy);}
 }

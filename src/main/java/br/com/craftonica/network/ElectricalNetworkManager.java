@@ -162,6 +162,13 @@ public final class ElectricalNetworkManager {
         return cache == null ? null : cache.nodal;
     }
 
+    public ElectricalNetworkSnapshot getSnapshot(BlockPosition position) {
+        NetworkCache cache = published.get(position);
+        if (cache == null) return null;
+        return new ElectricalNetworkSnapshot(cache.generation, cache.circuit.getSnapshots(), cache.nodal.getStatus(),
+                cache.nodal.getBranchResults(), cache.nodal.getDiagnostics());
+    }
+
     public BranchResult getBranchResult(BlockPosition position) {
         NetworkCache cache = published.get(position);
         if (cache == null || !cache.nodal.isSolved()) return null;

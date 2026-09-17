@@ -1,4 +1,4 @@
-# Craftônica: Robotics Lab 0.3.5
+# Craftônica: Robotics Lab 0.4.0
 
 MVP educacional para Minecraft 1.7.10 e Forge 10.13.4.1614. O mundo funciona
 como uma bancada: fonte, fios, botão, resistores, LED e GND são blocos reais. A
@@ -22,7 +22,7 @@ O projeto não suporta Java posterior ao 8 porque usa ForgeGradle 1.2.
 
 O script baixa uma distribuição Temurin 8 fixada, verifica o SHA-256 e a guarda
 em `~/.cache/craftonica`, sem alterar o Java padrão. O artefato instalável é
-`build/libs/craftonica-0.3.5.jar`.
+`build/libs/craftonica-0.4.0.jar`.
 
 Para reconstruir e instalar com segurança na instância dedicada do Prism:
 
@@ -70,6 +70,28 @@ Ao passar o cursor sobre um componente, o inventário explica sua função, valo
 limites. Ao segurar um componente direcional, uma prévia translúcida mostra no
 mundo a orientação resultante antes da colocação; os símbolos `+`, `-` e GND
 mantêm os terminais distinguíveis sem depender somente de cor.
+
+## Lições verificáveis
+
+O motor de lições usa exclusivamente o snapshot elétrico publicado pelo servidor.
+Ele valida componentes permitidos e grandezas com tolerâncias explícitas, sem
+comparar coordenadas ou uma sequência fixa de blocos. Assim, montagens físicas
+diferentes que produzam o mesmo comportamento elétrico podem concluir o desafio.
+
+```text
+/craftonica lesson list
+/craftonica lesson start ohm-led-220
+/craftonica lesson status
+/craftonica lesson check <x> <y> <z>
+```
+
+As coordenadas devem apontar para qualquer bloco elétrico carregado da montagem,
+a no máximo 64 blocos do jogador. O primeiro desafio aceita circuitos com fonte,
+GND, chave, resistores, fios e LEDs quando ao menos um ramo de LED conduz
+`12,987 mA` dentro da tolerância declarada. Falhas informam componente proibido,
+contagem incorreta, rede pendente, erro do solver ou grandeza fora da tolerância.
+O progresso é salvo por UUID no mundo, com formato NBT versionado, e sobrevive a
+logout, morte e reinício do servidor.
 
 ## Automação local via MCP
 
