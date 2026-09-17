@@ -1,0 +1,2 @@
+package br.com.craftonica.electrical.nodal;
+public enum DiagnosticCode { NETWORK_TOO_LARGE, TERMINAL_LIMIT, BRANCH_LIMIT, MATRIX_LIMIT, NONLINEAR_LIMIT, MISSING_REFERENCE, INVALID_COMPONENT_DATA }
