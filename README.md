@@ -97,6 +97,10 @@ MCP para iniciar o adaptador sem dependências externas:
 O servidor MCP oferece `minecraft_state`, `minecraft_screenshot` e
 `minecraft_action`. Ações disponíveis: chat/comando, olhar, selecionar a hotbar,
 pressionar ou soltar teclas de movimento, usar, atacar e fechar a tela atual.
+O arquivo `tools/mcp/opencode.example.json` contém a entrada pronta para mesclar
+na configuração do OpenCode. No Prism, configure o mesmo segredo em
+`Settings > Environment variables` da instância e mantenha somente `enabled` e
+`port` nos argumentos JVM, evitando expor o token na linha de comando.
 
 Os componentes usam modelos próprios em vez de cubos pintados: resistores têm
 corpo axial e terminais, o botão possui base e atuador móvel, e o LED possui
