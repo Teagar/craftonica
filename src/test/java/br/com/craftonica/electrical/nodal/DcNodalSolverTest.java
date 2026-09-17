@@ -21,12 +21,28 @@ public class DcNodalSolverTest {
     }
     @Test public void twoSourcesShortAndFailuresAreDiagnosed(){
         MnaSystem.Builder two=MnaSystem.builder();two.voltageSource(branch("a",0),OUT,NodeId.REFERENCE,5);two.voltageSource(branch("b",1),OUT,NodeId.REFERENCE,10);NodalCircuitResult conflict=solve(two);assertEquals(SolveStatus.CONFLICTING_CONSTRAINTS,conflict.getStatus());
-        MnaSystem.Builder shorted=MnaSystem.builder();shorted.thevenin(branch("source",0),OUT,NodeId.named("i"),5,10);shorted.resistor(branch("short",1),OUT,NodeId.REFERENCE,1e-9);NodalCircuitResult sr=solve(shorted);assertTrue(sr.isSolved());assertEquals(0.5,sr.getBranchResult(branch("short",1)).getCurrent(),1e-9);assertEquals(0.0,sr.getNodeResult(OUT).getVoltage(),1e-9);
+        MnaSystem.Builder shorted=MnaSystem.builder();shorted.thevenin(branch("source",0),OUT,NodeId.named("i"),5,10);shorted.resistor(branch("short",1),OUT,NodeId.REFERENCE,1e-9);NodalCircuitResult sr=solve(shorted);assertTrue(sr.isSolved());assertEquals(0.5,sr.getBranchResult(branch("short",1)).getCurrent(),1e-9);assertEquals(0.0,sr.getNodeResult(OUT).getVoltage(),1e-9);assertEquals(DiagnosticCode.SHORT_CIRCUIT,sr.getDiagnostics().get(1).getCode());
         MnaSystem.Builder floating=MnaSystem.builder();floating.resistor(branch("floating",0),OUT,MID,10);assertEquals(SolveStatus.MISSING_REFERENCE,solve(floating).getStatus());
     }
     @Test public void insertionOrderDoesNotChangeResults(){
         MnaSystem.Builder a=MnaSystem.builder();a.resistor(branch("load",1),OUT,NodeId.REFERENCE,220);a.thevenin(branch("source",0),OUT,NodeId.named("i"),5,10);
         MnaSystem.Builder b=MnaSystem.builder();b.thevenin(branch("source",0),OUT,NodeId.named("i"),5,10);b.resistor(branch("load",1),OUT,NodeId.REFERENCE,220);
         assertEquals(solve(a).getNodeResult(OUT).getVoltage(),solve(b).getNodeResult(OUT).getVoltage(),0);assertEquals(solve(a).getBranchResults().keySet(),solve(b).getBranchResults().keySet());
+    }
+
+    @Test public void orientedCurrentsAndPowerObeyMnaSigns() {
+        NodeId internalFive = NodeId.named("internal-five");
+        NodeId internalTen = NodeId.named("internal-ten");
+        BranchId five = branch("five", 0), ten = branch("ten", 1);
+        MnaSystem.Builder builder = MnaSystem.builder();
+        builder.thevenin(five, OUT, internalFive, 5.0, 10.0);
+        builder.thevenin(ten, OUT, internalTen, 10.0, 10.0);
+        NodalCircuitResult result = solve(builder);
+        assertTrue(result.isSolved());
+        assertEquals(7.5, result.getNodeResult(OUT).getVoltage(), 1e-12);
+        assertEquals(0.25, result.getBranchResult(five).getCurrent(), 1e-12);
+        assertEquals(-0.25, result.getBranchResult(ten).getCurrent(), 1e-12);
+        assertTrue(result.getBranchResult(five).getAbsorbedPower() > 0.0);
+        assertTrue(result.getBranchResult(ten).getAbsorbedPower() < 0.0);
     }
 }

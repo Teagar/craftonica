@@ -1,4 +1,4 @@
-# Craftônica: Robotics Lab 0.3.3
+# Craftônica: Robotics Lab 0.3.5
 
 MVP educacional para Minecraft 1.7.10 e Forge 10.13.4.1614. O mundo funciona
 como uma bancada: fonte, fios, botão, resistores, LED e GND são blocos reais. A
@@ -22,7 +22,7 @@ O projeto não suporta Java posterior ao 8 porque usa ForgeGradle 1.2.
 
 O script baixa uma distribuição Temurin 8 fixada, verifica o SHA-256 e a guarda
 em `~/.cache/craftonica`, sem alterar o Java padrão. O artefato instalável é
-`build/libs/craftonica-0.3.3.jar`.
+`build/libs/craftonica-0.3.5.jar`.
 
 Para reconstruir e instalar com segurança na instância dedicada do Prism:
 
@@ -168,8 +168,9 @@ sul
 5. Clique no botão para fechar o circuito.
 6. Use o multímetro no resistor, LED ou em um fio intercalado.
 
-O resultado esperado é fonte `5,00 V`, resistência `220,00 ohms`, corrente
-aproximada `13,64 mA`, LED aceso e diagnóstico `Circuito fechado`. Abrir o botão
+O resultado esperado é fonte `5,00 V`, resistência externa `220,00 ohms`, corrente
+aproximada `12,99 mA`, LED aceso e diagnóstico `Circuito fechado`. O modelo 0.3
+inclui `10 ohms` internos na fonte e `1 ohm` dinâmico no LED. Abrir o botão
 produz corrente zero. Se a medição ainda estiver sendo atualizada, aguarde um
 tick e use o item novamente.
 
@@ -177,13 +178,13 @@ tick e use o item novamente.
 
 | Cenário | Procedimento | Resultado esperado |
 | --- | --- | --- |
-| Nominal | Montagem acima com 220 ohms | LED aceso, brilho 11/15 e 13,64 mA |
+| Nominal | Montagem acima com 220 ohms | LED aceso e aproximadamente 12,99 mA |
 | Circuito aberto | Abrir o botão | LED apagado, 0 mA e diagnóstico de circuito aberto |
 | Polaridade | Recolocar o LED olhando para o sul | LED apagado, 0 mA e polaridade incorreta |
 | Sobrecorrente | Remover o resistor e fechar o caminho | LED em brilho máximo e fumaça moderada |
 | Queima | Manter a sobrecorrente por 20 ticks | LED apaga e passa a abrir o circuito |
 | Persistência | Salvar e reabrir o mundo | LED queimado continua apagado |
-| Topologia inválida | Criar uma derivação de fio ou segunda fonte | Multímetro informa circuito não suportado |
+| Paralelo | Criar dois ramos resistivos | Tensões nodais e correntes de cada ramo são resolvidas independentemente |
 | Isolamento | Repetir a montagem em outro local | Alterar uma rede não muda a outra |
 | Limite | Construir uma rede com mais de 1.024 blocos | Multímetro informa limite excedido sem travar |
 | Idioma | Selecionar English (US) | Nomes e diagnósticos aparecem em inglês |
@@ -214,15 +215,22 @@ multímetro são consultados e enviados pelo servidor.
 
 ## Modelo suportado
 
-O MVP aceita um único caminho DC em série com exatamente uma fonte, um GND e um
-LED, além de botão, fios e um ou mais resistores. A corrente usa
-`I = (5 V - 2 V) / Rtotal`. Redes ramificadas, múltiplas fontes/GND, ciclos e
-mais de 1.024 blocos retornam erro explícito.
+O modelo 0.3 aceita redes DC resistivas em série e paralelo, múltiplas cargas,
+fontes de Thévenin, LEDs, diodos, chaves, disjuntores e potenciômetros. A fonte
+inclui resistência interna de `10 ohms`; o LED usa queda de `2 V` e resistência
+dinâmica de `1 ohm`. Redes acima de 1.024 blocos ou 256 incógnitas MNA retornam
+erro explícito.
+
+O multímetro preserva o sinal da tensão conforme a ordem das pontas. Resistência
+e continuidade usam uma análise auxiliar desenergizada com fonte-teste de `1 V`;
+redes com LED ou diodo são recusadas explicitamente nesse modo. O relatório do
+gate de precisão e desempenho está em
+[`docs/reports/crl-26-simulation-gate-0.3.5.md`](docs/reports/crl-26-simulation-gate-0.3.5.md).
 
 ## Limitações conhecidas
 
-- Não há circuitos em paralelo, CA, capacitores, indutores ou transistores.
+- Não há CA, capacitores, indutores ou transistores.
 - Não há RoboBoard, sensores, motores, programação ou mecânica.
 - A fonte e o GND têm terminais apenas horizontais no fluxo normal de colocação.
-- O modelo sem resistor reporta corrente ideal sem limite; não inventa um valor
-  numérico de curto-circuito.
+- Curtos são limitados pela resistência interna simplificada da fonte; não há
+  ainda um modelo não linear de limitação de corrente.

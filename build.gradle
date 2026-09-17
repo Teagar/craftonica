@@ -15,7 +15,7 @@ buildscript {
 
 apply plugin: "forge"
 
-version = "0.3.3"
+version = "0.3.5"
 group = "br.com.craftonica"
 archivesBaseName = "craftonica"
 
@@ -79,4 +79,32 @@ task verifyReleaseJar(dependsOn: reobf) << {
     }
 }
 
+task verifyElectricalGates(type: Test, dependsOn: testClasses) {
+    include "**/ElectricalSimulationGateTest.class"
+    include "**/DenseLuSolverTest.class"
+    include "**/ResistanceMeasurementTest.class"
+    include "**/ItemMultimeterMeasurementTest.class"
+}
+
+task electricalProfile(dependsOn: verifyElectricalGates) << {
+    def report = file("${buildDir}/reports/electrical/crl-26-profile.txt")
+    report.parentFile.mkdirs()
+    report.text = """Craftonica electrical deterministic profile v1
+maxBlocks=1024
+maxTerminals=6144
+maxBranches=2048
+maxUnknownsPerNetwork=256
+maxMatrixCells=65536
+maxActiveLeds=64
+maxActiveSetIterations=16
+maxNetworksPerTick=4
+maxUnknownsPerTick=512
+topologyContactLookup=O(terminals)
+auxiliaryResistanceSourceVolts=1
+auxiliaryNonlinearPolicy=reject
+wallClockGate=false
+"""
+}
+
 build.dependsOn verifyReleaseJar
+build.dependsOn verifyElectricalGates

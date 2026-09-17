@@ -13,4 +13,5 @@ public final class NodalCircuitResult {
     public NodeResult getNodeResult(NodeId n){return nodes.get(n);} public BranchResult getBranchResult(BranchId b){return branches.get(b);}
     public List<CircuitDiagnostic> getDiagnostics(){return diagnostics;} public double getResidual(){return residual;} public double getConditionEstimate(){return condition;}
     public boolean isSolved(){return status==SolveStatus.SOLVED;}
+    public static NodalCircuitResult unsolved(SolveStatus status,List<CircuitDiagnostic> diagnostics){return new NodalCircuitResult(status,Collections.<NodeId,NodeResult>emptyMap(),Collections.<BranchId,BranchResult>emptyMap(),diagnostics,Double.NaN,Double.NaN);}
 }

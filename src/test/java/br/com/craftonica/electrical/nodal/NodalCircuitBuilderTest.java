@@ -34,6 +34,29 @@ public class NodalCircuitBuilderTest {
         assertEquals(DiagnosticCode.NETWORK_TOO_LARGE,many.build().getDiagnostics().get(0).getCode());
     }
 
+    @Test public void nodeOrderIsNumericAndFingerprintIncludesElectricalState() {
+        TerminalId negativeTen = new TerminalId(new BlockPosition(-10, 0, 0), Face.UP, 0);
+        TerminalId negativeTwo = new TerminalId(new BlockPosition(-2, 0, 0), Face.UP, 0);
+        assertTrue(new NodeId(negativeTen).compareTo(new NodeId(negativeTwo)) < 0);
+
+        ComponentSnapshot open = statefulSwitch(false, Collections.<int[]>emptyList());
+        ComponentSnapshot closed = statefulSwitch(true, Collections.<int[]>emptyList());
+        ComponentSnapshot incorrectlyShorted = statefulSwitch(true, Collections.singletonList(new int[]{0, 1}));
+        assertNotEquals(new NodalCircuitBuilder().add(open).build().getTopologyFingerprint(),
+                new NodalCircuitBuilder().add(closed).build().getTopologyFingerprint());
+        assertNotEquals(new NodalCircuitBuilder().add(closed).build().getTopologyFingerprint(),
+                new NodalCircuitBuilder().add(incorrectlyShorted).build().getTopologyFingerprint());
+    }
+
+    private ComponentSnapshot statefulSwitch(boolean closed, List<int[]> groups) {
+        BlockPosition position = new BlockPosition(0, 0, 0);
+        List<TerminalSnapshot> terminals = Arrays.asList(new TerminalSnapshot(position, Face.WEST, 0),
+                new TerminalSnapshot(position, Face.EAST, 1));
+        Map<String, String> state = new HashMap<String, String>();
+        state.put("closed", Boolean.toString(closed));
+        return new ComponentSnapshot(position, "switch", terminals, Collections.<String, Double>emptyMap(), state, groups);
+    }
+
     private ComponentSnapshot component(int x,int y,int z,String kind,Face first,Face second,int[] group) {
         List<TerminalSnapshot> t=new ArrayList<TerminalSnapshot>(); t.add(new TerminalSnapshot(new BlockPosition(x,y,z),first));
         if(second!=null)t.add(new TerminalSnapshot(new BlockPosition(x,y,z),second));

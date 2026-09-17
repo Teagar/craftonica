@@ -113,14 +113,12 @@ public final class ForgeNodalSnapshotExtractor {
         } else if (block instanceof BlockElectricalButton) {
             kind = "switch";
             state.put("closed", Boolean.toString((metadata & 2) != 0));
-            if ((metadata & 2) != 0) groups = Collections.singletonList(new int[]{0, 1});
         } else if (block instanceof BlockElectricalLever) {
             kind = "switch";
             TileEntity tile = world.getTileEntity(p);
             boolean closed = tile instanceof TileEntityElectricalLever
                     ? ((TileEntityElectricalLever) tile).isClosed() : (metadata & 2) != 0;
             state.put("closed", Boolean.toString(closed));
-            if (closed) groups = Collections.singletonList(new int[]{0, 1});
         } else if (block instanceof BlockCircuitBreaker) {
             kind = "breaker";
             TileEntity tile = world.getTileEntity(p);

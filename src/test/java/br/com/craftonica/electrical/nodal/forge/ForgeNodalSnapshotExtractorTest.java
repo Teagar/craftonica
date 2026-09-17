@@ -36,6 +36,10 @@ public class ForgeNodalSnapshotExtractorTest {
         NodalCircuit circuit = builder.build();
         assertEquals(5, circuit.getSnapshots().size());
         assertEquals(3, circuit.getBranches().size());
+        ComponentSnapshot closedSwitch = find(result, "switch");
+        assertNotEquals(circuit.getNode(closedSwitch.getTerminals().get(0).getId()),
+                circuit.getNode(closedSwitch.getTerminals().get(1).getId()));
+        assertTrue(closedSwitch.getConductorGroups().isEmpty());
         assertTrue(circuit.getTopologyFingerprint().length() > 0);
     }
 

@@ -25,8 +25,9 @@ public strictfp final class DcNodalSolver {
                 MnaSystem.Element led = leds.get(i);
                 if (led.isBurned()) continue;
                 BranchResult branch = last.result.getBranchResult(led.getId());
-                boolean shouldBeOn = branch != null && branch.getVoltage() > led.getValue() + LED_ON_TOLERANCE;
-                if (active[i] && branch != null && branch.getCurrent() < -LED_REVERSE_TOLERANCE) shouldBeOn = false;
+                boolean shouldBeOn = active[i]
+                        ? branch != null && branch.getCurrent() >= -LED_REVERSE_TOLERANCE
+                        : branch != null && branch.getVoltage() > led.getValue() + LED_ON_TOLERANCE;
                 if (active[i] != shouldBeOn) { active[i] = shouldBeOn; changed = true; }
             }
             if (!changed) return withDiagnostics(last.result, diagnostics(elements, last.result, leds, active));
@@ -125,11 +126,11 @@ public strictfp final class DcNodalSolver {
             if (branch == null) continue;
             if (!active[i] && branch.getVoltage() < -LED_REVERSE_TOLERANCE)
                 diagnostics.add(diagnostic(DiagnosticCode.POLARITY_INCORRECT, led.getId().getPosition()));
-            if (active[i] && branch.getCurrent() > 0.02)
+            if (led.getKind() == MnaSystem.Element.Kind.LED && active[i] && branch.getCurrent() > 0.02)
                 diagnostics.add(diagnostic(DiagnosticCode.LED_ABOVE_RECOMMENDED_CURRENT, led.getId().getPosition()));
-            if (active[i] && branch.getCurrent() > 0.03)
+            if (led.getKind() == MnaSystem.Element.Kind.LED && active[i] && branch.getCurrent() > 0.03)
                 diagnostics.add(diagnostic(DiagnosticCode.LED_OVERCURRENT, led.getId().getPosition()));
-            if (active[i] && branch.getAbsorbedPower() > 0.1)
+            if (led.getKind() == MnaSystem.Element.Kind.LED && active[i] && branch.getAbsorbedPower() > 0.1)
                 diagnostics.add(diagnostic(DiagnosticCode.POWER_EXCEEDED, led.getId().getPosition()));
         }
         for (MnaSystem.Element element : elements) {
@@ -137,9 +138,14 @@ public strictfp final class DcNodalSolver {
             if (branch == null) continue;
             if (element.getKind() == MnaSystem.Element.Kind.VOLTAGE_SOURCE && Math.abs(branch.getCurrent()) > 0.1)
                 diagnostics.add(diagnostic(DiagnosticCode.SOURCE_OVERCURRENT, element.getId().getPosition()));
-            if ((element.getKind() == MnaSystem.Element.Kind.RESISTOR || element.getKind() == MnaSystem.Element.Kind.SWITCH || element.getKind() == MnaSystem.Element.Kind.BREAKER)
-                    && element.getValue() < 1.0 && Math.abs(branch.getCurrent()) > 0.1)
-                diagnostics.add(diagnostic(DiagnosticCode.SHORT_CIRCUIT, element.getId().getPosition()));
+            if (countSources(elements) == 1 && element.getKind() == MnaSystem.Element.Kind.RESISTOR
+                    && element.getId().getComponentKind().endsWith("_internal")
+                    && Math.abs(branch.getCurrent()) > 1e-12) {
+                NodeResult output = result.getNodeResult(element.getB());
+                double outputVoltage = element.getB().isReference() ? 0.0 : output == null ? Double.NaN : output.getVoltage();
+                if (!Double.isNaN(outputVoltage) && Math.abs(outputVoltage / branch.getCurrent()) < 1.0)
+                    diagnostics.add(diagnostic(DiagnosticCode.SHORT_CIRCUIT, element.getId().getPosition()));
+            }
         }
         Collections.sort(diagnostics);
         return diagnostics;

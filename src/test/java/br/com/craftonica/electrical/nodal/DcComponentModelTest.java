@@ -69,4 +69,15 @@ public class DcComponentModelTest {
         NodalCircuitResult result = new DcNodalSolver().solve(builder.build());
         assertEquals(SolveStatus.NONLINEAR_LIMIT, result.getStatus());
     }
+
+    @Test public void diodeDoesNotReceiveLedGameplayDiagnostics() {
+        MnaSystem.Builder builder = base();
+        builder.diode(id("diode", 1), OUT, NodeId.REFERENCE, 0.7, 1.0);
+        NodalCircuitResult result = new DcNodalSolver().solve(builder.build());
+        assertTrue(result.isSolved());
+        for (CircuitDiagnostic diagnostic : result.getDiagnostics()) {
+            assertNotEquals(DiagnosticCode.LED_ABOVE_RECOMMENDED_CURRENT, diagnostic.getCode());
+            assertNotEquals(DiagnosticCode.LED_OVERCURRENT, diagnostic.getCode());
+        }
+    }
 }

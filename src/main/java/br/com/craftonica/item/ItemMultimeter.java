@@ -10,6 +10,7 @@ import br.com.craftonica.electrical.MultimeterReading;
 import br.com.craftonica.network.BlockPosition;
 import br.com.craftonica.network.ElectricalNetworkManager;
 import br.com.craftonica.electrical.nodal.BranchResult;
+import br.com.craftonica.electrical.nodal.ResistanceMeasurement;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -68,7 +69,7 @@ public final class ItemMultimeter extends Item {
         BlockPosition first = new BlockPosition(tag.getInteger(TAG_PROBE_X), tag.getInteger(TAG_PROBE_Y),
                 tag.getInteger(TAG_PROBE_Z));
         int firstSide = tag.getInteger(TAG_PROBE_SIDE);
-        if (first.equals(position)) {
+        if (first.equals(position) && firstSide == side) {
             player.addChatMessage(new ChatComponentTranslation("message.craftonica.multimeter.same_probe"));
             return true;
         }
@@ -100,6 +101,21 @@ public final class ItemMultimeter extends Item {
         }
 
         player.addChatMessage(new ChatComponentTranslation("message.craftonica.multimeter.probe_b", x, y, z));
+        MultimeterMode selectedMode = mode(tag);
+        if (selectedMode == MultimeterMode.RESISTANCE || selectedMode == MultimeterMode.CONTINUITY) {
+            ResistanceMeasurement resistance = manager.measureResistance(first, firstSide, position, side);
+            if (resistance.getStatus() == ResistanceMeasurement.Status.NONLINEAR_UNSUPPORTED) {
+                player.addChatMessage(new ChatComponentTranslation("message.craftonica.multimeter.nonlinear_unsupported"));
+            } else if (resistance.getStatus() == ResistanceMeasurement.Status.UNAVAILABLE) {
+                showUnsupported(player);
+            } else {
+                CircuitResult local = resistanceMeasurement(resistance);
+                player.addChatMessage(new ChatComponentTranslation(CircuitDiagnosis.translationKey(local)));
+                showReading(player, selectedMode, local);
+            }
+            clearProbe(tag);
+            return true;
+        }
         Double firstVoltage = manager.getTerminalVoltage(first, firstSide);
         Double secondVoltage = manager.getTerminalVoltage(position, side);
         BranchResult firstBranch = manager.getBranchResult(first);
@@ -107,11 +123,12 @@ public final class ItemMultimeter extends Item {
         if (firstVoltage == null || secondVoltage == null) {
             showUnsupported(player);
         } else {
-            BranchResult branch = firstBranch != null && secondBranch == null ? firstBranch
+            BranchResult branch = first.equals(position) ? firstBranch
+                    : firstBranch != null && secondBranch == null ? firstBranch
                     : secondBranch != null && firstBranch == null ? secondBranch : null;
-            CircuitResult local = measurement(mode(tag), firstVoltage, secondVoltage, branch, result);
+            CircuitResult local = measurement(selectedMode, firstVoltage, secondVoltage, branch, result);
             player.addChatMessage(new ChatComponentTranslation(CircuitDiagnosis.translationKey(local)));
-            showReading(player, mode(tag), local);
+            showReading(player, selectedMode, local);
         }
         clearProbe(tag);
         return true;
@@ -134,17 +151,23 @@ public final class ItemMultimeter extends Item {
                 new ChatComponentTranslation("mode.craftonica.multimeter." + next.getId())));
     }
 
-    private CircuitResult measurement(MultimeterMode mode, double firstVoltage, double secondVoltage,
-                                      BranchResult branch, CircuitResult fallback) {
-        double voltage = Math.abs(firstVoltage - secondVoltage);
+    static CircuitResult measurement(MultimeterMode mode, double firstVoltage, double secondVoltage,
+                                     BranchResult branch, CircuitResult fallback) {
+        double voltage = firstVoltage - secondVoltage;
         if (mode == MultimeterMode.VOLTAGE)
-            return new CircuitResult(CircuitStatus.CLOSED, voltage, branch == null ? 0.0 : Math.abs(branch.getCurrent()), 0.0, "nodal_probe_voltage");
+            return new CircuitResult(fallback.getStatus(), voltage, branch == null ? 0.0 : Math.abs(branch.getCurrent()), 0.0, "nodal_probe_voltage");
         if (branch == null)
             return new CircuitResult(CircuitStatus.UNSUPPORTED_TOPOLOGY, voltage, Double.NaN, Double.NaN, "ambiguous_or_no_branch");
         double current = Math.abs(branch.getCurrent());
         CircuitStatus status = current > 1e-12 ? CircuitStatus.CLOSED : CircuitStatus.OPEN_CIRCUIT;
-        double resistance = current < 1e-15 ? Double.POSITIVE_INFINITY : Math.abs(branch.getVoltage() / branch.getCurrent());
-        return new CircuitResult(status, voltage, current, resistance, "nodal_probe_branch");
+        return new CircuitResult(status, voltage, current, Double.NaN, "nodal_probe_branch");
+    }
+
+    static CircuitResult resistanceMeasurement(ResistanceMeasurement measurement) {
+        double resistance = measurement.getOhms();
+        CircuitStatus status = measurement.getStatus() == ResistanceMeasurement.Status.VALID && resistance <= 10.0
+                ? CircuitStatus.CLOSED : CircuitStatus.OPEN_CIRCUIT;
+        return new CircuitResult(status, 0.0, 0.0, resistance, "nodal_auxiliary_resistance");
     }
 
     private void showReading(EntityPlayer player, MultimeterMode mode, CircuitResult result) {

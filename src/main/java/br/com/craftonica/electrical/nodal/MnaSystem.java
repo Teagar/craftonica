@@ -20,6 +20,23 @@ public final class MnaSystem {
     private final List<NodeId> nodes; private final List<Element> elements;
     private MnaSystem(List<NodeId> nodes,List<Element> elements){this.nodes=Collections.unmodifiableList(new ArrayList<NodeId>(nodes));this.elements=Collections.unmodifiableList(new ArrayList<Element>(elements));}
     public List<NodeId> getNodes(){return nodes;} public List<Element> getElements(){return elements;}
+    public int getUnknownCount(){int count=nodes.size();for(Element element:elements)if(element.kind==Element.Kind.VOLTAGE_SOURCE)count++;return count;}
+    public boolean hasNonlinearElements(){for(Element element:elements)if(element.kind==Element.Kind.LED||element.kind==Element.Kind.DIODE)return true;return false;}
+    public MnaSystem deenergizedWithTestSource(BranchId testId,NodeId positive,NodeId negative){
+        if(testId==null||positive==null||negative==null||positive.equals(negative)||hasNonlinearElements())return null;
+        Builder builder=builder();
+        for(Element element:elements){
+            switch(element.kind){
+                case RESISTOR: builder.resistor(element.id,element.a,element.b,element.value); break;
+                case VOLTAGE_SOURCE: builder.voltageSource(element.id,element.a,element.b,0.0); break;
+                case SWITCH: builder.switchBranch(element.id,element.a,element.b,element.closed); break;
+                case BREAKER: builder.breaker(element.id,element.a,element.b,element.closed); break;
+                default: return null;
+            }
+        }
+        builder.voltageSource(testId,positive,negative,1.0);
+        return builder.build();
+    }
     public static Builder builder(){return new Builder();}
     public static final class Builder {
         private final Set<NodeId> nodes=new TreeSet<NodeId>(); private final List<Element> elements=new ArrayList<Element>();

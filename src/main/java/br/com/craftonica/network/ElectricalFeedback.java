@@ -28,8 +28,8 @@ public final class ElectricalFeedback {
 
     public static void networkTransition(World world, BlockPosition position,
                                          CircuitResult previous, CircuitResult current) {
-        if (world.isRemote || !FeedbackThrottle.allow(key(world, position), world.getTotalWorldTime(),
-                EVENT_COOLDOWN_TICKS) || previous != null && previous.getStatus() == current.getStatus()) {
+        if (world.isRemote || !isTransition(previous, current)
+                || !FeedbackThrottle.allow(key(world, position), world.getTotalWorldTime(), EVENT_COOLDOWN_TICKS)) {
             return;
         }
         if (current.getStatus() == CircuitStatus.CLOSED) {
@@ -45,6 +45,10 @@ public final class ElectricalFeedback {
                     "random.fizz", 0.45F, 1.2F);
             particles(world, "smoke", position, 2);
         }
+    }
+
+    static boolean isTransition(CircuitResult previous, CircuitResult current) {
+        return current != null && (previous == null || previous.getStatus() != current.getStatus());
     }
 
     private static boolean isFailure(CircuitStatus status) {

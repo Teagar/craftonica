@@ -24,7 +24,8 @@ import static org.junit.Assert.assertTrue;
 /** Contract tests for the deterministic policy used by the Forge manager. */
 public class ElectricalNetworkManagerPolicyTest {
     @Test public void exposesTheRequiredPerTickBudgets() {
-        assertEquals(512, br.com.craftonica.electrical.nodal.NodalLimits.MAX_UNKNOWNS);
+        assertEquals(256, br.com.craftonica.electrical.nodal.NodalLimits.MAX_UNKNOWNS);
+        assertEquals(512, ElectricalNetworkManager.MAX_UNKNOWNS_PER_TICK_FOR_TEST);
         assertEquals(4, ElectricalNetworkManager.MAX_NETWORKS_PER_TICK_FOR_TEST);
     }
 
@@ -44,11 +45,11 @@ public class ElectricalNetworkManagerPolicyTest {
     @Test public void networkCacheOrdersBlockPositionsDuringConstruction() throws Exception {
         Constructor<?> constructor = Class.forName("br.com.craftonica.network.ElectricalNetworkManager$NetworkCache")
                 .getDeclaredConstructor(long.class, Set.class, NodalCircuitResult.class,
-                        CircuitResult.class, NodalCircuit.class);
+                        CircuitResult.class, NodalCircuit.class, br.com.craftonica.electrical.nodal.MnaSystem.class, Set.class);
         constructor.setAccessible(true);
         Object cache = constructor.newInstance(1L, new HashSet<BlockPosition>(Arrays.asList(
                 new BlockPosition(2, 0, 0), new BlockPosition(1, 5, 0),
-                new BlockPosition(1, 4, 9))), null, null, null);
+                new BlockPosition(1, 4, 9))), null, null, null, null, Collections.emptySet());
         Field members = cache.getClass().getDeclaredField("members");
         members.setAccessible(true);
         @SuppressWarnings("unchecked")
