@@ -22,7 +22,7 @@ O projeto não suporta Java posterior ao 8 porque usa ForgeGradle 1.2.
 
 O script baixa uma distribuição Temurin 8 fixada, verifica o SHA-256 e a guarda
 em `~/.cache/craftonica`, sem alterar o Java padrão. O artefato instalável é
-`build/libs/craftonica-0.2.2.jar`.
+`build/libs/craftonica-0.2.3.jar`.
 
 Para reconstruir e instalar com segurança na instância dedicada do Prism:
 
@@ -66,6 +66,37 @@ Ao passar o cursor sobre um componente, o inventário explica sua função, valo
 limites. Ao segurar um componente direcional, uma prévia translúcida mostra no
 mundo a orientação resultante antes da colocação; os símbolos `+`, `-` e GND
 mantêm os terminais distinguíveis sem depender somente de cor.
+
+## Automação local via MCP
+
+A integração de desenvolvimento é desativada por padrão. Para habilitá-la no
+cliente, defina um segredo local de pelo menos 16 caracteres no ambiente do
+launcher e adicione os argumentos JVM:
+
+```text
+- environment: CRAFTONICA_AUTOMATION_TOKEN=troque-por-um-segredo-local
+-Dcraftonica.automation.enabled=true
+-Dcraftonica.automation.port=8765
+```
+
+A bridge aceita conexões apenas em `127.0.0.1`, exige o segredo em todas as
+requisições e executa ações do jogo na thread do cliente. Configure um cliente
+MCP para iniciar o adaptador sem dependências externas:
+
+```json
+{
+  "command": "python3",
+  "args": ["/caminho/para/craftonica/tools/mcp/craftonica_mcp.py"],
+  "env": {
+    "CRAFTONICA_AUTOMATION_TOKEN": "troque-por-um-segredo-local",
+    "CRAFTONICA_AUTOMATION_URL": "http://127.0.0.1:8765"
+  }
+}
+```
+
+O servidor MCP oferece `minecraft_state`, `minecraft_screenshot` e
+`minecraft_action`. Ações disponíveis: chat/comando, olhar, selecionar a hotbar,
+pressionar ou soltar teclas de movimento, usar, atacar e fechar a tela atual.
 
 Os componentes usam modelos próprios em vez de cubos pintados: resistores têm
 corpo axial e terminais, o botão possui base e atuador móvel, e o LED possui
