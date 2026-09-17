@@ -5,6 +5,7 @@ import br.com.craftonica.electrical.nodal.*;
 import br.com.craftonica.network.BlockPosition;
 import br.com.craftonica.tile.TileEntityLed;
 import br.com.craftonica.tile.TileEntityCircuitBreaker;
+import br.com.craftonica.tile.TileEntityElectricalLever;
 import net.minecraft.block.Block;
 import net.minecraft.tileentity.TileEntity;
 import java.util.*;
@@ -112,6 +113,13 @@ public final class ForgeNodalSnapshotExtractor {
             kind = "switch";
             state.put("closed", Boolean.toString((metadata & 2) != 0));
             if ((metadata & 2) != 0) groups = Collections.singletonList(new int[]{0, 1});
+        } else if (block instanceof BlockElectricalLever) {
+            kind = "switch";
+            TileEntity tile = world.getTileEntity(p);
+            boolean closed = tile instanceof TileEntityElectricalLever
+                    ? ((TileEntityElectricalLever) tile).isClosed() : (metadata & 2) != 0;
+            state.put("closed", Boolean.toString(closed));
+            if (closed) groups = Collections.singletonList(new int[]{0, 1});
         } else if (block instanceof BlockCircuitBreaker) {
             kind = "breaker";
             TileEntity tile = world.getTileEntity(p);
@@ -125,6 +133,10 @@ public final class ForgeNodalSnapshotExtractor {
             parameters.put("forwardVoltage", 2.0);
             TileEntity tile = world.getTileEntity(p);
             state.put("burned", Boolean.toString(tile instanceof TileEntityLed && ((TileEntityLed) tile).isBurned()));
+        } else if (block instanceof BlockDiode) {
+            kind = "diode";
+            parameters.put("forwardVoltage", DcComponentParameters.DIODE_FORWARD_VOLTAGE);
+            parameters.put("dynamicResistance", DcComponentParameters.DIODE_DYNAMIC_RESISTANCE_OHMS);
         } else {
             throw new IllegalArgumentException("Bloco eletrico desconhecido: " + block.getClass().getName());
         }
@@ -137,6 +149,10 @@ public final class ForgeNodalSnapshotExtractor {
             for (int side = 0; side < 6; side++) terminals.add(new TerminalSnapshot(p, face(side), side));
         } else if (block instanceof BlockSingleTerminal) {
             terminals.add(new TerminalSnapshot(p, face(metadata & 7), 0));
+        } else if (block instanceof BlockDiode) {
+            int anode = metadata & 7;
+            terminals.add(new TerminalSnapshot(p, face(anode), 0));
+            terminals.add(new TerminalSnapshot(p, face(opposite(anode)), 1));
         } else if (block instanceof BlockTwoTerminal || block instanceof BlockCircuitBreaker) {
             int first = (metadata & 1) == 0 ? 2 : 4;
             terminals.add(new TerminalSnapshot(p, face(first), 0));

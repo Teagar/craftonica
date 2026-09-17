@@ -4,8 +4,6 @@ import java.util.*;
 
 /** Deterministic DC MNA solver, including the bounded LED active-set model. */
 public strictfp final class DcNodalSolver {
-    private static final double LED_VF = 2.0;
-    private static final double LED_RD = 1.0;
     private static final double LED_ON_TOLERANCE = 1e-9;
     private static final double LED_REVERSE_TOLERANCE = 1e-12;
 
@@ -27,7 +25,7 @@ public strictfp final class DcNodalSolver {
                 MnaSystem.Element led = leds.get(i);
                 if (led.isBurned()) continue;
                 BranchResult branch = last.result.getBranchResult(led.getId());
-                boolean shouldBeOn = branch != null && branch.getVoltage() > LED_VF + LED_ON_TOLERANCE;
+                boolean shouldBeOn = branch != null && branch.getVoltage() > led.getValue() + LED_ON_TOLERANCE;
                 if (active[i] && branch != null && branch.getCurrent() < -LED_REVERSE_TOLERANCE) shouldBeOn = false;
                 if (active[i] != shouldBeOn) { active[i] = shouldBeOn; changed = true; }
             }
@@ -88,14 +86,15 @@ public strictfp final class DcNodalSolver {
     }
 
     private static void stampConductive(double[][] a, double[] z, Map<NodeId, Integer> ix, MnaSystem.Element e) {
-        double conductance = e.getKind() == MnaSystem.Element.Kind.LED ? 1.0 / LED_RD : 1.0 / e.getValue();
+        boolean diode = e.getKind() == MnaSystem.Element.Kind.LED || e.getKind() == MnaSystem.Element.Kind.DIODE;
+        double conductance = diode ? 1.0 / e.getDynamicResistance() : 1.0 / e.getValue();
         add(a, ix, e.getA(), e.getA(), conductance);
         add(a, ix, e.getB(), e.getB(), conductance);
         add(a, ix, e.getA(), e.getB(), -conductance);
         add(a, ix, e.getB(), e.getA(), -conductance);
-        if (e.getKind() == MnaSystem.Element.Kind.LED) {
-            add(z, ix, e.getA(), conductance * LED_VF);
-            add(z, ix, e.getB(), -conductance * LED_VF);
+        if (diode) {
+            add(z, ix, e.getA(), conductance * e.getValue());
+            add(z, ix, e.getB(), -conductance * e.getValue());
         }
     }
 
@@ -103,9 +102,9 @@ public strictfp final class DcNodalSolver {
                                   Map<MnaSystem.Element, Integer> sourceIndices,
                                   List<MnaSystem.Element> leds, boolean[] active) {
         if (e.getKind() == MnaSystem.Element.Kind.VOLTAGE_SOURCE) return x[sourceIndices.get(e)];
-        if (e.getKind() == MnaSystem.Element.Kind.LED) {
+        if (e.getKind() == MnaSystem.Element.Kind.LED || e.getKind() == MnaSystem.Element.Kind.DIODE) {
             int index = leds.indexOf(e);
-            return index >= 0 && active[index] && !e.isBurned() ? (voltage - LED_VF) / LED_RD : 0.0;
+            return index >= 0 && active[index] && !e.isBurned() ? (voltage - e.getValue()) / e.getDynamicResistance() : 0.0;
         }
         if ((e.getKind() == MnaSystem.Element.Kind.SWITCH || e.getKind() == MnaSystem.Element.Kind.BREAKER) && !e.isClosed()) return 0.0;
         return voltage / e.getValue();
@@ -113,7 +112,7 @@ public strictfp final class DcNodalSolver {
 
     private static List<MnaSystem.Element> leds(List<MnaSystem.Element> elements) {
         List<MnaSystem.Element> result = new ArrayList<MnaSystem.Element>();
-        for (MnaSystem.Element e : elements) if (e.getKind() == MnaSystem.Element.Kind.LED) result.add(e);
+        for (MnaSystem.Element e : elements) if (e.getKind() == MnaSystem.Element.Kind.LED || e.getKind() == MnaSystem.Element.Kind.DIODE) result.add(e);
         return result;
     }
 
@@ -158,10 +157,13 @@ public strictfp final class DcNodalSolver {
     private static boolean hasReference(List<MnaSystem.Element> elements) { for (MnaSystem.Element e : elements) if (e.getA().isReference() || e.getB().isReference()) return true; return false; }
     private static Set<NodeId> connectedToReference(List<MnaSystem.Element> elements, List<MnaSystem.Element> leds, boolean[] active) {
         Set<NodeId> seen = new HashSet<NodeId>(); Deque<NodeId> queue = new ArrayDeque<NodeId>(); queue.add(NodeId.REFERENCE);
-        while (!queue.isEmpty()) { NodeId node = queue.remove(); for (MnaSystem.Element e : elements) if (conductive(e, leds, active)) {
+        while (!queue.isEmpty()) { NodeId node = queue.remove(); for (MnaSystem.Element e : elements) if (conductive(e, leds, active) || diodeTopology(e)) {
             NodeId next = e.getA().equals(node) ? e.getB() : e.getB().equals(node) ? e.getA() : null;
             if (next != null && !next.isReference() && seen.add(next)) queue.add(next);
         }} return seen;
+    }
+    private static boolean diodeTopology(MnaSystem.Element e) {
+        return (e.getKind() == MnaSystem.Element.Kind.LED || e.getKind() == MnaSystem.Element.Kind.DIODE) && !e.isBurned();
     }
     private static void stampSource(double[][] a, double[] z, Map<NodeId, Integer> ix, int k, MnaSystem.Element e) {
         Integer p = ix.get(e.getA()), q = ix.get(e.getB()); if (p != null) a[p][k] += 1; if (q != null) a[q][k] -= 1;

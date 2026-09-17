@@ -1,4 +1,4 @@
-# Craftônica: Robotics Lab 0.3.1
+# Craftônica: Robotics Lab 0.3.2
 
 MVP educacional para Minecraft 1.7.10 e Forge 10.13.4.1614. O mundo funciona
 como uma bancada: fonte, fios, botão, resistores, LED e GND são blocos reais. A
@@ -22,7 +22,7 @@ O projeto não suporta Java posterior ao 8 porque usa ForgeGradle 1.2.
 
 O script baixa uma distribuição Temurin 8 fixada, verifica o SHA-256 e a guarda
 em `~/.cache/craftonica`, sem alterar o Java padrão. O artefato instalável é
-`build/libs/craftonica-0.3.1.jar`.
+`build/libs/craftonica-0.3.2.jar`.
 
 Para reconstruir e instalar com segurança na instância dedicada do Prism:
 
@@ -57,6 +57,8 @@ reiniciar. Se o serviço legado de assets estiver indisponível, use:
 - Botão elétrico normalmente aberto, alternado com clique direito.
 - Resistores de 220 ohms, 1 kohm e 10 kohms.
 - LED orientado, com queda de 2 V, brilho por corrente e falha persistente.
+- Diodo DC linear por partes, com polaridade e parâmetros próprios.
+- Chave de alavanca elétrica persistente, distinta do botão momentâneo.
 - Multímetro nodal: mede a diferença de potencial entre duas faces e a corrente do
   ramo selecionado; medições ambíguas são rejeitadas.
 - Chave inglesa, usada para girar componentes direcionais sem quebrá-los.
@@ -197,6 +199,12 @@ Para observar os 20 ticks com clareza, um segundo de jogo sem lag corresponde a
   cache servidor-autoritativo.
 - `block`, `item` e `tile`: integração Forge, interação e persistência NBT.
 - `registry` e `proxy`: registro comum de blocos, item, TileEntity e eventos.
+
+O diodo usa um modelo linear por partes no pacote nodal puro: em condução,
+`I = (Vd - Vf) / Rd`; em polarização reversa, a corrente é zero e o resultado
+recebe diagnóstico de polaridade. A alavanca é uma chave estável, com metadata
+sincronizado pelo servidor e estado `Closed` persistido em NBT. O botão existente
+continua sendo uma chave independente normalmente aberta.
 
 Colocar, remover ou acionar blocos apenas invalida o cache. A descoberta e a
 solução ocorrem no fim do próximo tick. Redes sem alterações não são resolvidas

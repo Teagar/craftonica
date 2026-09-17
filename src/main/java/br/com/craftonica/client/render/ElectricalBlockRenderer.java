@@ -9,6 +9,8 @@ import br.com.craftonica.block.BlockResistor;
 import br.com.craftonica.block.BlockSingleTerminal;
 import br.com.craftonica.block.BlockTwoTerminal;
 import br.com.craftonica.block.BlockCircuitBreaker;
+import br.com.craftonica.block.BlockDiode;
+import br.com.craftonica.block.BlockElectricalLever;
 import br.com.craftonica.block.WireColor;
 import br.com.craftonica.render.CraftonicaRenderIds;
 import cpw.mods.fml.client.registry.ISimpleBlockRenderingHandler;
@@ -82,6 +84,10 @@ public final class ElectricalBlockRenderer implements ISimpleBlockRenderingHandl
             renderButton((BlockElectricalButton) block, metadata, parts);
         } else if (block instanceof BlockCircuitBreaker) {
             renderBreaker((BlockCircuitBreaker) block, metadata, parts);
+        } else if (block instanceof BlockDiode) {
+            renderDiode((BlockDiode) block, metadata, parts);
+        } else if (block instanceof BlockElectricalLever) {
+            renderLever((BlockElectricalLever) block, metadata, parts);
         } else if (block instanceof BlockResistor) {
             renderResistor((BlockResistor) block, metadata, parts);
         } else if (block instanceof BlockSingleTerminal) {
@@ -155,6 +161,19 @@ public final class ElectricalBlockRenderer implements ISimpleBlockRenderingHandl
             parts.render(0, 6 * P, 7 * P, 3 * P, 9 * P, 9 * P, base);
             parts.render(13 * P, 6 * P, 7 * P, 1, 9 * P, 9 * P, base);
         }
+    }
+
+    private void renderDiode(BlockDiode block, int metadata, PartRenderer parts) {
+        parts.render(5 * P, 5 * P, 5 * P, 11 * P, 11 * P, 11 * P, block.getBodyIcon(metadata));
+        int anode = normalizeHorizontal(metadata & 7);
+        renderLead(parts, anode, block.getAnodeIcon(), 6 * P, 10 * P);
+        renderLead(parts, opposite(anode), block.getCathodeIcon(), 6 * P, 10 * P);
+    }
+
+    private void renderLever(BlockElectricalLever block, int metadata, PartRenderer parts) {
+        parts.render(3 * P, 3 * P, 3 * P, 13 * P, 7 * P, 13 * P, block.getBodyIcon(metadata));
+        double top = (metadata & 2) != 0 ? 10 * P : 15 * P;
+        parts.render(7 * P, 7 * P, 7 * P, 9 * P, top, 9 * P, block.getBodyIcon(metadata));
     }
 
     private void renderBreaker(BlockCircuitBreaker block, int metadata, PartRenderer parts) {

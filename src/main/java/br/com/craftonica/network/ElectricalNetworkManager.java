@@ -188,7 +188,7 @@ public final class ElectricalNetworkManager {
         CircuitStatus status = Math.abs(branch.getCurrent()) > 1e-12
                 ? CircuitStatus.CLOSED : CircuitStatus.OPEN_CIRCUIT;
         String detail = "nodal_branch";
-        if ("led".equals(branch.getBranch().getComponentKind())) {
+        if ("led".equals(branch.getBranch().getComponentKind()) || "diode".equals(branch.getBranch().getComponentKind())) {
             boolean burned = false;
             for (ComponentSnapshot snapshot : cache.circuit.getSnapshots()) {
                 if (position.equals(snapshot.getPosition()) && Boolean.parseBoolean(snapshot.getState().get("burned"))) {
@@ -229,6 +229,8 @@ public final class ElectricalNetworkManager {
                 else if ("switch".equals(snapshot.getKind())) system.switchBranch(id, a, b, Boolean.parseBoolean(snapshot.getState().get("closed")));
                 else if ("breaker".equals(snapshot.getKind())) system.breaker(id, a, b, Boolean.parseBoolean(snapshot.getState().get("closed")));
                 else if ("led".equals(snapshot.getKind())) system.led(id, a, b, Boolean.parseBoolean(snapshot.getState().get("burned")));
+                else if ("diode".equals(snapshot.getKind())) system.diode(id, a, b,
+                        snapshot.getParameters().get("forwardVoltage"), snapshot.getParameters().get("dynamicResistance"));
             }
         } catch (IllegalArgumentException invalidComponent) {
             NodalCircuitResult invalid = solver.solve(MnaSystem.builder().build());

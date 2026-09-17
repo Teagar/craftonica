@@ -1,19 +1,21 @@
 package br.com.craftonica.electrical.nodal;
 
-import br.com.craftonica.block.BlockPowerSource;
 import java.util.*;
 
 /** Pure, deterministic list of linear DC stamps. NodeId.REFERENCE is ground. */
 public final class MnaSystem {
     public static final class Element {
-        public enum Kind { RESISTOR, VOLTAGE_SOURCE, SWITCH, BREAKER, LED }
+        public enum Kind { RESISTOR, VOLTAGE_SOURCE, SWITCH, BREAKER, LED, DIODE }
         private final Kind kind; private final BranchId id; private final NodeId a,b; private final double value;
         private final boolean closed, burned;
-        private Element(Kind k,BranchId id,NodeId a,NodeId b,double value,boolean closed){this(k,id,a,b,value,closed,false);}
-        private Element(Kind k,BranchId id,NodeId a,NodeId b,double value,boolean closed,boolean burned){this.kind=k;this.id=id;this.a=a;this.b=b;this.value=value;this.closed=closed;this.burned=burned;}
+        private final double dynamicResistance;
+        private Element(Kind k,BranchId id,NodeId a,NodeId b,double value,boolean closed){this(k,id,a,b,value,closed,false,0.0);}
+        private Element(Kind k,BranchId id,NodeId a,NodeId b,double value,boolean closed,boolean burned){this(k,id,a,b,value,closed,burned,0.0);}
+        private Element(Kind k,BranchId id,NodeId a,NodeId b,double value,boolean closed,boolean burned,double rd){this.kind=k;this.id=id;this.a=a;this.b=b;this.value=value;this.closed=closed;this.burned=burned;this.dynamicResistance=rd;}
         public Kind getKind(){return kind;} public BranchId getId(){return id;} public NodeId getA(){return a;} public NodeId getB(){return b;} public double getValue(){return value;}
         public boolean isClosed(){return closed;}
         public boolean isBurned(){return burned;}
+        public double getDynamicResistance(){return dynamicResistance;}
     }
     private final List<NodeId> nodes; private final List<Element> elements;
     private MnaSystem(List<NodeId> nodes,List<Element> elements){this.nodes=Collections.unmodifiableList(new ArrayList<NodeId>(nodes));this.elements=Collections.unmodifiableList(new ArrayList<Element>(elements));}
@@ -27,8 +29,11 @@ public final class MnaSystem {
         public Builder switchBranch(BranchId id,NodeId a,NodeId b,boolean closed){if(id==null||a==null||b==null)throw new IllegalArgumentException("Chave invalida");node(a);node(b);elements.add(new Element(Element.Kind.SWITCH,id,a,b,0.01,closed));return this;}
         public Builder breaker(BranchId id,NodeId a,NodeId b,boolean closed){if(id==null||a==null||b==null)throw new IllegalArgumentException("Disjuntor invalido");node(a);node(b);elements.add(new Element(Element.Kind.BREAKER,id,a,b,0.01,closed));return this;}
         public Builder led(BranchId id,NodeId anode,NodeId cathode){return led(id,anode,cathode,false);}
-        public Builder led(BranchId id,NodeId anode,NodeId cathode,boolean burned){if(id==null||anode==null||cathode==null)throw new IllegalArgumentException("LED invalido");node(anode);node(cathode);elements.add(new Element(Element.Kind.LED,id,anode,cathode,1.0,false,burned));return this;}
-        public Builder powerSource(BranchId id,NodeId positive,NodeId internal){return powerSource(id,positive,internal,BlockPowerSource.VOLTAGE,BlockPowerSource.INTERNAL_RESISTANCE_OHMS);}
+        public Builder led(BranchId id,NodeId anode,NodeId cathode,boolean burned){return diodeElement(Element.Kind.LED,id,anode,cathode,DcComponentParameters.DIODE_FORWARD_VOLTAGE,DcComponentParameters.DIODE_DYNAMIC_RESISTANCE_OHMS,burned);}
+        public Builder diode(BranchId id,NodeId anode,NodeId cathode){return diode(id,anode,cathode,DcComponentParameters.DIODE_FORWARD_VOLTAGE,DcComponentParameters.DIODE_DYNAMIC_RESISTANCE_OHMS);}
+        public Builder diode(BranchId id,NodeId anode,NodeId cathode,double vf,double rd){return diodeElement(Element.Kind.DIODE,id,anode,cathode,vf,rd,false);}
+        private Builder diodeElement(Element.Kind kind,BranchId id,NodeId anode,NodeId cathode,double vf,double rd,boolean burned){if(id==null||anode==null||cathode==null||!(vf>=0)||!(rd>0)||Double.isNaN(vf)||Double.isInfinite(vf)||Double.isNaN(rd)||Double.isInfinite(rd))throw new IllegalArgumentException("Diodo invalido");node(anode);node(cathode);elements.add(new Element(kind,id,anode,cathode,vf,false,burned,rd));return this;}
+        public Builder powerSource(BranchId id,NodeId positive,NodeId internal){return powerSource(id,positive,internal,DcComponentParameters.SOURCE_VOLTAGE,DcComponentParameters.SOURCE_INTERNAL_RESISTANCE_OHMS);}
         public Builder powerSource(BranchId id,NodeId positive,NodeId internal,double volts,double resistance){return thevenin(id,positive,internal,volts,resistance);}
         public Builder thevenin(BranchId id,NodeId positive,NodeId internal,double volts,double resistance){voltageSource(id,internal,NodeId.REFERENCE,volts);return resistor(new BranchId(id.getPosition(),id.getComponentKind()+"_internal",id.getOrdinal()),internal,positive,resistance);}
         public MnaSystem build(){Collections.sort(elements,new Comparator<Element>(){public int compare(Element x,Element y){return x.id.compareTo(y.id);}});return new MnaSystem(new ArrayList<NodeId>(nodes),elements);}
