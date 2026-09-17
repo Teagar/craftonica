@@ -4,6 +4,9 @@ MVP educacional para Minecraft 1.7.10 e Forge 10.13.4.1614. O mundo funciona
 como uma bancada: fonte, fios, botão, resistores, LED e GND são blocos reais. A
 simulação elétrica é independente da Redstone e executada pelo servidor.
 
+O plano pós-MVP, incluindo o contrato da futura placa Arduino-compatible, está
+em [`ROADMAP.md`](ROADMAP.md).
+
 ## Requisitos
 
 - Linux x86_64 com `curl`, `sha256sum` e `tar`; ou JDK 8 instalado.
