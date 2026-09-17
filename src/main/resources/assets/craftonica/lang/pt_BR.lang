@@ -115,3 +115,16 @@ message.craftonica.lesson.goal=%s fora da tolerância: alvo %s ± %s, medido %s.
 message.craftonica.lesson.too_far=O circuito está longe demais para ser verificado.
 message.craftonica.lesson.invalid_anchor=Mire uma coordenada de bloco elétrico carregado.
 message.craftonica.lesson.data_readonly=O progresso usa uma versão de dados mais nova e não será alterado por esta instalação.
+message.craftonica.lesson.required_diagnostic=O diagnóstico esperado ainda não apareceu: %s.
+manual.craftonica.page.19=CURRÍCULO 0.4||Use /craftonica lesson list.||Inicie com:|/craftonica lesson start ID||Verifique qualquer bloco da rede com:|/craftonica lesson check x y z
+manual.craftonica.page.20=CIRCUITO FECHADO||ID: closed-circuit||Monte Fonte - Chave - 220 ohms - GND.||Feche a chave. Meça 21,739 mA na chave e no resistor.
+manual.craftonica.page.21=DESAFIO 1||I = 5 / (220 + 10).||Faça o verificador aceitar. Abra a chave e compare: corrente exige caminho completo até GND.
+manual.craftonica.page.22=LEI DE OHM||ID: ohm-led-220||Monte Fonte - Chave - 220 ohms - LED - GND.||Ânodo voltado à fonte; feche a chave.
+manual.craftonica.page.23=DESAFIO 2||Meça 12,987 mA.||(5 - 2) / (10 + 220 + 1).||Reorganize com fios: o verificador avalia grandezas, não coordenadas.
+manual.craftonica.page.24=POLARIDADE||ID: led-polarity||Monte Fonte - 220 ohms - LED invertido - GND.||A corrente deve ficar próxima de zero.
+manual.craftonica.page.25=DESAFIO 3||Obtenha POLARITY_INCORRECT.||Depois gire o LED com a chave inglesa e confirme que o aviso some e a corrente retorna.
+manual.craftonica.page.26=SÉRIE||ID: series-resistors||Monte Fonte - 220 ohms - 220 ohms - GND.||Em série, a mesma corrente atravessa os dois resistores.
+manual.craftonica.page.27=DESAFIO 4||Meça 11,111 mA em cada resistor.||I = 5 / (10 + 220 + 220).||Todos os ramos resistivos devem passar.
+manual.craftonica.page.28=PARALELO||ID: parallel-resistors||Faça dois caminhos de 220 ohms entre a saída da fonte e GND.||Eles compartilham os mesmos dois nós.
+manual.craftonica.page.29=DESAFIO 5||Meça 20,833 mA em cada resistor.||A fonte entrega cerca de 41,667 mA.||Os dois ramos devem passar juntos.
+manual.craftonica.page.30=DIAGNÓSTICO||ID: diagnose-short||Monte Fonte - Fio - GND numa bancada descartável.||Obtenha SHORT_CIRCUIT, verifique e desmonte. Adicione 220 ohms para corrigir.

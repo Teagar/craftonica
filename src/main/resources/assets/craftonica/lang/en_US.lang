@@ -110,6 +110,19 @@ message.craftonica.lesson.goal=%s is outside tolerance: target %s ± %s, measure
 message.craftonica.lesson.too_far=The circuit is too far away to check.
 message.craftonica.lesson.invalid_anchor=Target the coordinates of a loaded electrical block.
 message.craftonica.lesson.data_readonly=Progress uses a newer data version and will not be changed by this installation.
+message.craftonica.lesson.required_diagnostic=The expected diagnostic has not appeared yet: %s.
+manual.craftonica.page.19=CURRICULUM 0.4||Use /craftonica lesson list.||Start with:|/craftonica lesson start ID||Check any network block with:|/craftonica lesson check x y z
+manual.craftonica.page.20=CLOSED CIRCUIT||ID: closed-circuit||Build Source - Switch - 220 ohms - GND.||Close the switch. Measure 21.739 mA in switch and resistor.
+manual.craftonica.page.21=CHALLENGE 1||I = 5 / (220 + 10).||Pass the check. Open the switch and compare: current requires a complete path to GND.
+manual.craftonica.page.22=OHM'S LAW||ID: ohm-led-220||Build Source - Switch - 220 ohms - LED - GND.||Anode toward source; close the switch.
+manual.craftonica.page.23=CHALLENGE 2||Measure 12.987 mA.||(5 - 2) / (10 + 220 + 1).||Rearrange with wires: the verifier checks quantities, not coordinates.
+manual.craftonica.page.24=POLARITY||ID: led-polarity||Build Source - 220 ohms - reversed LED - GND.||Current should stay near zero.
+manual.craftonica.page.25=CHALLENGE 3||Obtain POLARITY_INCORRECT.||Then rotate the LED with the wrench and confirm the warning clears and current returns.
+manual.craftonica.page.26=SERIES||ID: series-resistors||Build Source - 220 ohms - 220 ohms - GND.||In series, the same current crosses both resistors.
+manual.craftonica.page.27=CHALLENGE 4||Measure 11.111 mA in each resistor.||I = 5 / (10 + 220 + 220).||Every resistor branch must pass.
+manual.craftonica.page.28=PARALLEL||ID: parallel-resistors||Make two 220 ohm paths between source output and GND.||They share the same two nodes.
+manual.craftonica.page.29=CHALLENGE 5||Measure 20.833 mA in each resistor.||The source supplies about 41.667 mA.||Both branches must pass together.
+manual.craftonica.page.30=DIAGNOSIS||ID: diagnose-short||Build Source - Wire - GND on a disposable bench.||Obtain SHORT_CIRCUIT, check, then dismantle. Add 220 ohms to fix it.
 manual.craftonica.page.15=PROTECTION||The source uses a 5 V Thevenin model with 10 ohms internal resistance.||The breaker opens on the next tick above 100 mA or 0.5 W.||The open state is saved in the world.
 manual.craftonica.page.17=POTENTIOMETER||Terminal A, the top wiper and terminal B form two resistive branches.||Click to increase 10%; sneak to decrease.||The course is limited from 0 to 100% and never creates zero resistance.
 manual.craftonica.page.18=DIVIDER||Connect A and B to source and ground to make a divider.||Wiper voltage follows the position and branch sum remains 10 kohm.||The multimeter reports ambiguous readings when more than one local branch exists.

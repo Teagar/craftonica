@@ -76,6 +76,10 @@ public final class LessonEngine {
                         failure.getSubject(), (int) failure.getExpected(), (int) failure.getTolerance(),
                         (int) failure.getActual()));
                 break;
+            case REQUIRED_DIAGNOSTIC:
+                player.addChatMessage(new ChatComponentTranslation("message.craftonica.lesson.required_diagnostic",
+                        failure.getSubject()));
+                break;
             case GOAL_UNAVAILABLE:
                 player.addChatMessage(new ChatComponentTranslation("message.craftonica.lesson.goal_unavailable",
                         failure.getSubject()));

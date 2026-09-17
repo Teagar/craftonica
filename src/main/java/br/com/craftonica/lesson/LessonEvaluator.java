@@ -1,7 +1,9 @@
 package br.com.craftonica.lesson;
 
 import br.com.craftonica.electrical.nodal.BranchResult;
+import br.com.craftonica.electrical.nodal.CircuitDiagnostic;
 import br.com.craftonica.electrical.nodal.ComponentSnapshot;
+import br.com.craftonica.electrical.nodal.DiagnosticCode;
 import br.com.craftonica.electrical.nodal.ValueValidity;
 import br.com.craftonica.network.ElectricalNetworkSnapshot;
 
@@ -41,6 +43,15 @@ public final class LessonEvaluator {
         }
         if (!failures.isEmpty()) return new LessonEvaluation(failures);
 
+        for (DiagnosticCode required : lesson.getRequiredDiagnostics()) {
+            boolean found = false;
+            for (CircuitDiagnostic diagnostic : snapshot.getDiagnostics()) {
+                if (diagnostic.getCode() == required) { found = true; break; }
+            }
+            if (!found) failures.add(failure(LessonEvaluation.FailureCode.REQUIRED_DIAGNOSTIC, required.name()));
+        }
+        if (!failures.isEmpty()) return new LessonEvaluation(failures);
+
         for (LessonDefinition.ElectricalGoal goal : lesson.getGoals()) evaluateGoal(goal, snapshot, failures);
         return new LessonEvaluation(failures);
     }
@@ -49,17 +60,25 @@ public final class LessonEvaluator {
                               List<LessonEvaluation.Failure> failures) {
         double closest = Double.NaN;
         double closestDistance = Double.POSITIVE_INFINITY;
+        boolean matched = false;
+        boolean anyPass = false;
+        boolean allPass = true;
         for (BranchResult branch : snapshot.getBranches().values()) {
-            if (!goal.getComponentKind().equals(branch.getBranch().getComponentKind())
-                    || branch.getValidity() != ValueValidity.VALID) continue;
+            if (!goal.getComponentKind().equals(branch.getBranch().getComponentKind())) continue;
+            matched = true;
+            if (branch.getValidity() != ValueValidity.VALID) { allPass = false; continue; }
             double actual = value(goal.getQuantity(), branch);
             if (goal.isMagnitude()) actual = Math.abs(actual);
-            if (!finite(actual)) continue;
+            if (!finite(actual)) { allPass = false; continue; }
             double distance = Math.abs(actual - goal.getExpected());
             double roundingMargin = Math.ulp(Math.max(Math.abs(actual), Math.abs(goal.getExpected()))) * 4.0;
-            if (distance <= goal.getTolerance() + roundingMargin) return;
+            boolean passes = distance <= goal.getTolerance() + roundingMargin;
+            anyPass |= passes;
+            allPass &= passes;
             if (distance < closestDistance) { closest = actual; closestDistance = distance; }
         }
+        if (goal.getQuantifier() == LessonDefinition.Quantifier.ANY && anyPass
+                || goal.getQuantifier() == LessonDefinition.Quantifier.ALL && matched && allPass) return;
         LessonEvaluation.FailureCode code = finite(closest)
                 ? LessonEvaluation.FailureCode.GOAL_OUTSIDE_TOLERANCE
                 : LessonEvaluation.FailureCode.GOAL_UNAVAILABLE;

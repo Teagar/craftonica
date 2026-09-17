@@ -1,4 +1,4 @@
-# Craftônica: Robotics Lab 0.4.0
+# Craftônica: Robotics Lab 0.4.1
 
 MVP educacional para Minecraft 1.7.10 e Forge 10.13.4.1614. O mundo funciona
 como uma bancada: fonte, fios, botão, resistores, LED e GND são blocos reais. A
@@ -22,7 +22,7 @@ O projeto não suporta Java posterior ao 8 porque usa ForgeGradle 1.2.
 
 O script baixa uma distribuição Temurin 8 fixada, verifica o SHA-256 e a guarda
 em `~/.cache/craftonica`, sem alterar o Java padrão. O artefato instalável é
-`build/libs/craftonica-0.4.0.jar`.
+`build/libs/craftonica-0.4.1.jar`.
 
 Para reconstruir e instalar com segurança na instância dedicada do Prism:
 
@@ -86,12 +86,16 @@ diferentes que produzam o mesmo comportamento elétrico podem concluir o desafio
 ```
 
 As coordenadas devem apontar para qualquer bloco elétrico carregado da montagem,
-a no máximo 64 blocos do jogador. O primeiro desafio aceita circuitos com fonte,
-GND, chave, resistores, fios e LEDs quando ao menos um ramo de LED conduz
-`12,987 mA` dentro da tolerância declarada. Falhas informam componente proibido,
-contagem incorreta, rede pendente, erro do solver ou grandeza fora da tolerância.
+a no máximo 64 blocos do jogador. O catálogo inclui circuito fechado, Lei de
+Ohm com LED, polaridade, resistores em série e paralelo e diagnóstico de curto.
+Falhas informam componente proibido, contagem incorreta, diagnóstico ausente,
+rede pendente, erro do solver ou grandeza fora da tolerância.
 O progresso é salvo por UUID no mundo, com formato NBT versionado, e sobrevive a
 logout, morte e reinício do servidor.
+
+O percurso completo de circuito fechado, Lei de Ohm, polaridade, série, paralelo
+e diagnóstico está em
+[`docs/curriculum/0.4-laboratorios.md`](docs/curriculum/0.4-laboratorios.md).
 
 ## Automação local via MCP
 

@@ -2,7 +2,9 @@ package br.com.craftonica.lesson;
 
 import br.com.craftonica.electrical.nodal.BranchId;
 import br.com.craftonica.electrical.nodal.BranchResult;
+import br.com.craftonica.electrical.nodal.CircuitDiagnostic;
 import br.com.craftonica.electrical.nodal.ComponentSnapshot;
+import br.com.craftonica.electrical.nodal.DiagnosticCode;
 import br.com.craftonica.electrical.nodal.SolveStatus;
 import br.com.craftonica.electrical.nodal.TerminalSnapshot;
 import br.com.craftonica.electrical.nodal.ValueValidity;
@@ -81,6 +83,45 @@ public final class LessonEvaluatorTest {
         snapshot = new ElectricalNetworkSnapshot(2, components, SolveStatus.SOLVED,
                 branches, Collections.emptyList());
         assertTrue(evaluator.evaluate(LessonCatalog.get("ohm-led-220"), snapshot).isSuccess());
+    }
+
+    @Test
+    public void allQuantifierRequiresEveryMatchingBranch() {
+        LessonDefinition definition = new LessonDefinition("all", new LinkedHashSet<String>(Arrays.asList("resistor")),
+                Collections.singletonList(new LessonDefinition.ComponentRule("resistor", 2, 2)),
+                Collections.singletonList(new LessonDefinition.ElectricalGoal("resistor",
+                        LessonDefinition.Quantity.CURRENT, 0.02, 0.001, 0.0, true,
+                        LessonDefinition.Quantifier.ALL)));
+        List<ComponentSnapshot> components = Arrays.asList(component(1, "resistor"), component(2, "resistor"));
+        Map<BranchId, BranchResult> branches = new LinkedHashMap<BranchId, BranchResult>();
+        branch(branches, 1, "resistor", 0.02);
+        branch(branches, 2, "resistor", 0.01);
+        ElectricalNetworkSnapshot snapshot = new ElectricalNetworkSnapshot(1, components, SolveStatus.SOLVED,
+                branches, Collections.emptyList());
+        assertFalse(evaluator.evaluate(definition, snapshot).isSuccess());
+        branch(branches, 2, "resistor", 0.02);
+        snapshot = new ElectricalNetworkSnapshot(2, components, SolveStatus.SOLVED,
+                branches, Collections.emptyList());
+        assertTrue(evaluator.evaluate(definition, snapshot).isSuccess());
+    }
+
+    @Test
+    public void diagnosticLessonRequiresTheExpectedServerDiagnostic() {
+        LessonDefinition definition = new LessonDefinition("diagnostic",
+                new LinkedHashSet<String>(Arrays.asList("source")),
+                Collections.singletonList(new LessonDefinition.ComponentRule("source", 1, 1)),
+                Collections.<LessonDefinition.ElectricalGoal>emptyList(),
+                new LinkedHashSet<DiagnosticCode>(Arrays.asList(DiagnosticCode.SHORT_CIRCUIT)));
+        List<ComponentSnapshot> components = Collections.singletonList(component(0, "source"));
+        ElectricalNetworkSnapshot snapshot = new ElectricalNetworkSnapshot(1, components, SolveStatus.SOLVED,
+                Collections.<BranchId, BranchResult>emptyMap(), Collections.emptyList());
+        assertEquals(LessonEvaluation.FailureCode.REQUIRED_DIAGNOSTIC,
+                evaluator.evaluate(definition, snapshot).getFailures().get(0).getCode());
+        CircuitDiagnostic diagnostic = new CircuitDiagnostic(DiagnosticCode.SHORT_CIRCUIT,
+                CircuitDiagnostic.Severity.WARNING, Collections.singletonList(new BlockPosition(0, 64, 0)));
+        snapshot = new ElectricalNetworkSnapshot(2, components, SolveStatus.SOLVED,
+                Collections.<BranchId, BranchResult>emptyMap(), Collections.singletonList(diagnostic));
+        assertTrue(evaluator.evaluate(definition, snapshot).isSuccess());
     }
 
     private LessonDefinition lesson(double expected, double tolerance) {

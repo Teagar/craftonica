@@ -7,7 +7,7 @@ import java.util.Collections;
 import java.util.List;
 
 public final class LessonEvaluation {
-    public enum FailureCode { PENDING, UNSOLVED, FORBIDDEN_COMPONENT, COMPONENT_COUNT, GOAL_UNAVAILABLE, GOAL_OUTSIDE_TOLERANCE }
+    public enum FailureCode { PENDING, UNSOLVED, FORBIDDEN_COMPONENT, COMPONENT_COUNT, REQUIRED_DIAGNOSTIC, GOAL_UNAVAILABLE, GOAL_OUTSIDE_TOLERANCE }
 
     public static final class Failure {
         private final FailureCode code;
