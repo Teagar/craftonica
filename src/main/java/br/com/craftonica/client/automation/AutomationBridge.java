@@ -26,9 +26,11 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.util.ScreenShotHelper;
 import net.minecraft.world.storage.SaveFormatComparator;
+import net.minecraftforge.client.event.GuiOpenEvent;
+import net.minecraftforge.client.event.MouseEvent;
+import net.minecraftforge.common.MinecraftForge;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.lwjgl.opengl.Display;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -59,6 +61,7 @@ public final class AutomationBridge {
     private HttpServer server;
     private Boolean previousPauseOnLostFocus;
     private boolean virtualGameFocus;
+    private boolean eventHandlersRegistered;
 
     public AutomationBridge(AutomationBridgeConfig config) {
         this.config = config;
@@ -94,10 +97,9 @@ public final class AutomationBridge {
                 }
             }));
             server.start();
-            Minecraft minecraft = Minecraft.getMinecraft();
-            previousPauseOnLostFocus = minecraft.gameSettings.pauseOnLostFocus;
-            minecraft.gameSettings.pauseOnLostFocus = false;
             FMLCommonHandler.instance().bus().register(this);
+            MinecraftForge.EVENT_BUS.register(this);
+            eventHandlersRegistered = true;
             Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
                 @Override
                 public void run() {
@@ -115,22 +117,44 @@ public final class AutomationBridge {
             server.stop(0);
             server = null;
         }
-        if (previousPauseOnLostFocus != null) {
+        if (eventHandlersRegistered) {
             FMLCommonHandler.instance().bus().unregister(this);
+            MinecraftForge.EVENT_BUS.unregister(this);
+            eventHandlersRegistered = false;
+        }
+        if (previousPauseOnLostFocus != null) {
             Minecraft.getMinecraft().gameSettings.pauseOnLostFocus = previousPauseOnLostFocus;
+            Minecraft.getMinecraft().gameSettings.saveOptions();
             previousPauseOnLostFocus = null;
         }
     }
 
     @SubscribeEvent
     public void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || !virtualGameFocus || !Display.isActive()) {
+        if (event.phase != TickEvent.Phase.END) {
             return;
         }
         Minecraft minecraft = Minecraft.getMinecraft();
-        virtualGameFocus = false;
+        if (previousPauseOnLostFocus == null) {
+            previousPauseOnLostFocus = minecraft.gameSettings.pauseOnLostFocus;
+        }
+        minecraft.gameSettings.pauseOnLostFocus = false;
+    }
+
+    @SubscribeEvent
+    public void onMouseInput(MouseEvent event) {
+        if (!virtualGameFocus || !event.buttonstate) {
+            return;
+        }
+        event.setCanceled(true);
+        Minecraft minecraft = Minecraft.getMinecraft();
         minecraft.inGameHasFocus = false;
         minecraft.setIngameFocus();
+        if (minecraft.inGameHasFocus) {
+            virtualGameFocus = false;
+        } else {
+            minecraft.inGameHasFocus = true;
+        }
     }
 
     private abstract class AuthenticatedHandler implements HttpHandler {
@@ -205,6 +229,8 @@ public final class AutomationBridge {
         state.addProperty("screen", minecraft.currentScreen == null ? "game" : minecraft.currentScreen.getClass().getSimpleName());
         state.addProperty("paused", minecraft.isGamePaused());
         state.addProperty("game_focus", minecraft.inGameHasFocus);
+        state.addProperty("virtual_focus", virtualGameFocus);
+        state.addProperty("pause_on_lost_focus", minecraft.gameSettings.pauseOnLostFocus);
         if (minecraft.currentScreen != null) {
             state.add("gui", captureGui(minecraft.currentScreen));
         }
@@ -312,14 +338,10 @@ public final class AutomationBridge {
         Minecraft minecraft = Minecraft.getMinecraft();
         String action = requiredString(request, "action");
         if ("close_screen".equals(action)) {
-            minecraft.displayGuiScreen(null);
-            if (minecraft.theWorld != null) {
-                if (Display.isActive()) {
-                    minecraft.setIngameFocus();
-                } else {
-                    minecraft.inGameHasFocus = true;
-                    virtualGameFocus = true;
-                }
+            boolean closed = closeScreenWithoutMouseCapture(minecraft);
+            if (closed && minecraft.theWorld != null) {
+                minecraft.inGameHasFocus = true;
+                virtualGameFocus = true;
             }
         } else if ("pause_menu".equals(action)) {
             if (minecraft.theWorld == null) {
@@ -369,6 +391,27 @@ public final class AutomationBridge {
         result.addProperty("ok", true);
         result.addProperty("action", action);
         return result;
+    }
+
+    private boolean closeScreenWithoutMouseCapture(Minecraft minecraft) {
+        if (minecraft.theWorld == null || minecraft.thePlayer == null || minecraft.thePlayer.getHealth() <= 0.0F) {
+            minecraft.displayGuiScreen(null);
+            return false;
+        }
+        GuiOpenEvent event = new GuiOpenEvent(null);
+        if (MinecraftForge.EVENT_BUS.post(event)) {
+            throw new IllegalArgumentException("screen_close_cancelled");
+        }
+        if (event.gui != null) {
+            minecraft.displayGuiScreen(event.gui);
+            return false;
+        }
+        if (minecraft.currentScreen != null) {
+            minecraft.currentScreen.onGuiClosed();
+        }
+        minecraft.currentScreen = null;
+        minecraft.getSoundHandler().resumeSounds();
+        return true;
     }
 
     private void pressGuiButton(GuiScreen screen, int buttonId) throws Exception {
