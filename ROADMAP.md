@@ -51,6 +51,9 @@ Critérios de saída:
 Objetivo: substituir o solver de caminho único por um modelo DC resistivo com
 tensões por nó.
 
+A arquitetura normativa desta etapa está em
+[`docs/rfc/0001-arquitetura-nodal-dc-0.3.md`](docs/rfc/0001-arquitetura-nodal-dc-0.3.md).
+
 Entregas:
 
 - grafo explícito de nós e ramos;
