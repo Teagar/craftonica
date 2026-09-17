@@ -19,7 +19,7 @@ O projeto não suporta Java posterior ao 8 porque usa ForgeGradle 1.2.
 
 O script baixa uma distribuição Temurin 8 fixada, verifica o SHA-256 e a guarda
 em `~/.cache/craftonica`, sem alterar o Java padrão. O artefato instalável é
-`build/libs/craftonica-0.1.1.jar`.
+`build/libs/craftonica-0.1.2.jar`.
 
 Para reconstruir e instalar com segurança na instância dedicada do Prism:
 
@@ -57,6 +57,16 @@ reiniciar. Se o serviço legado de assets estiver indisponível, use:
 - Multímetro, usado com clique direito sobre um fio ou componente.
 
 Todos aparecem na aba criativa `Craftônica` e possuem texturas autorais 16×16.
+
+Os componentes usam modelos próprios em vez de cubos pintados: resistores têm
+corpo axial e terminais, o botão possui base e atuador móvel, e o LED possui
+base, bulbo e duas pernas. O terminal vermelho indica positivo/ânodo; o terminal
+azul-ciano indica GND/cátodo. O fio só desenha um braço quando a face vizinha é
+um terminal elétrico válido, evitando conexões visuais falsas.
+
+Use qualquer um dos 16 corantes vanilla com clique direito para mudar a cor de
+um fio. A cor é preservada ao quebrar e recolocar o bloco e serve apenas para
+organização visual: fios de cores diferentes continuam eletricamente conectados.
 
 ## Texturas
 

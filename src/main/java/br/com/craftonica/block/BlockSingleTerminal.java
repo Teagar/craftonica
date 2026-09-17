@@ -1,6 +1,7 @@
 package br.com.craftonica.block;
 
 import br.com.craftonica.CraftonicaCreativeTab;
+import br.com.craftonica.render.CraftonicaRenderIds;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.EntityLivingBase;
@@ -9,6 +10,7 @@ import net.minecraft.client.renderer.texture.IIconRegister;
 import net.minecraft.util.IIcon;
 import net.minecraft.util.MathHelper;
 import net.minecraft.world.World;
+import net.minecraft.world.IBlockAccess;
 
 public class BlockSingleTerminal extends Block implements IElectricalBlock {
     private IIcon bodyIcon;
@@ -46,7 +48,42 @@ public class BlockSingleTerminal extends Block implements IElectricalBlock {
     }
 
     @Override
-    public boolean canConnectOnSide(World world, int x, int y, int z, int side) {
+    public boolean canConnectOnSide(IBlockAccess world, int x, int y, int z, int side) {
         return (world.getBlockMetadata(x, y, z) & 7) == side;
+    }
+
+    @Override
+    public void setBlockBoundsBasedOnState(IBlockAccess world, int x, int y, int z) {
+        int side = world.getBlockMetadata(x, y, z) & 7;
+        setBlockBounds(
+                side == 4 ? 0.0F : 0.125F,
+                0.125F,
+                side == 2 ? 0.0F : 0.125F,
+                side == 5 ? 1.0F : 0.875F,
+                0.875F,
+                side == 3 ? 1.0F : 0.875F);
+    }
+
+    public IIcon getBodyIcon() {
+        return bodyIcon;
+    }
+
+    public IIcon getTerminalIcon() {
+        return terminalIcon;
+    }
+
+    @Override
+    public boolean isOpaqueCube() {
+        return false;
+    }
+
+    @Override
+    public boolean renderAsNormalBlock() {
+        return false;
+    }
+
+    @Override
+    public int getRenderType() {
+        return CraftonicaRenderIds.ELECTRICAL_COMPONENT;
     }
 }

@@ -1,8 +1,12 @@
 package br.com.craftonica.block;
 
 import br.com.craftonica.CraftonicaCreativeTab;
+import br.com.craftonica.render.CraftonicaRenderIds;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.init.Items;
+import net.minecraft.item.ItemStack;
 import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
@@ -18,7 +22,7 @@ public final class BlockElectricalWire extends Block implements IElectricalBlock
     }
 
     @Override
-    public boolean canConnectOnSide(World world, int x, int y, int z, int side) {
+    public boolean canConnectOnSide(IBlockAccess world, int x, int y, int z, int side) {
         return side >= 0 && side < 6;
     }
 
@@ -26,7 +30,12 @@ public final class BlockElectricalWire extends Block implements IElectricalBlock
         int mask = 0;
         for (ForgeDirection direction : ForgeDirection.VALID_DIRECTIONS) {
             Block neighbor = world.getBlock(x + direction.offsetX, y + direction.offsetY, z + direction.offsetZ);
-            if (neighbor instanceof IElectricalBlock) {
+            if (neighbor instanceof IElectricalBlock && ((IElectricalBlock) neighbor).canConnectOnSide(
+                    world,
+                    x + direction.offsetX,
+                    y + direction.offsetY,
+                    z + direction.offsetZ,
+                    direction.getOpposite().ordinal())) {
                 mask |= 1 << direction.ordinal();
             }
         }
@@ -53,5 +62,50 @@ public final class BlockElectricalWire extends Block implements IElectricalBlock
     @Override
     public boolean renderAsNormalBlock() {
         return false;
+    }
+
+    @Override
+    public int getRenderType() {
+        return CraftonicaRenderIds.ELECTRICAL_COMPONENT;
+    }
+
+    @Override
+    public int colorMultiplier(IBlockAccess world, int x, int y, int z) {
+        return WireColor.rgb(world.getBlockMetadata(x, y, z));
+    }
+
+    @Override
+    public int getRenderColor(int metadata) {
+        return WireColor.rgb(metadata);
+    }
+
+    @Override
+    public int damageDropped(int metadata) {
+        return metadata & 15;
+    }
+
+    @Override
+    public int getDamageValue(World world, int x, int y, int z) {
+        return world.getBlockMetadata(x, y, z) & 15;
+    }
+
+    @Override
+    public boolean onBlockActivated(World world, int x, int y, int z, EntityPlayer player,
+                                    int side, float hitX, float hitY, float hitZ) {
+        ItemStack held = player.getCurrentEquippedItem();
+        if (held == null || held.getItem() != Items.dye) {
+            return false;
+        }
+        int color = held.getItemDamage() & 15;
+        if (!world.isRemote && world.getBlockMetadata(x, y, z) != color) {
+            world.setBlockMetadataWithNotify(x, y, z, color, 3);
+            if (!player.capabilities.isCreativeMode) {
+                held.stackSize--;
+                if (held.stackSize == 0) {
+                    player.inventory.setInventorySlotContents(player.inventory.currentItem, null);
+                }
+            }
+        }
+        return true;
     }
 }

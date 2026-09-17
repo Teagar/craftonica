@@ -6,6 +6,7 @@ import br.com.craftonica.block.BlockGround;
 import br.com.craftonica.block.BlockLed;
 import br.com.craftonica.block.BlockPowerSource;
 import br.com.craftonica.block.BlockResistor;
+import br.com.craftonica.item.ItemBlockElectricalWire;
 import br.com.craftonica.tile.TileEntityLed;
 import cpw.mods.fml.common.registry.GameRegistry;
 
@@ -23,7 +24,7 @@ public final class ModBlocks {
     }
 
     public static void register() {
-        GameRegistry.registerBlock(WIRE, "electrical_wire");
+        GameRegistry.registerBlock(WIRE, ItemBlockElectricalWire.class, "electrical_wire");
         GameRegistry.registerBlock(POWER_SOURCE, "power_source");
         GameRegistry.registerBlock(GROUND, "ground");
         GameRegistry.registerBlock(BUTTON, "electrical_button");

@@ -7,10 +7,10 @@ ITEMS="$ROOT/src/main/resources/assets/craftonica/textures/items"
 mkdir -p "$BLOCKS" "$ITEMS"
 
 pixel() {
-    magick -size 16x16 "$@" -filter point -define png:color-type=6 PNG32:"$OUTPUT"
+    magick -size 16x16 "$@" -filter point -strip -define png:color-type=6 PNG32:"$OUTPUT"
 }
 
-OUTPUT="$BLOCKS/electrical_wire.png" pixel xc:'#17343a' +antialias -fill '#24535a' -draw 'rectangle 1,1 14,14' -fill '#2d6b70' -draw 'rectangle 2,2 13,5 rectangle 2,10 13,13' -fill '#b86b32' -draw 'rectangle 6,0 9,15 rectangle 0,6 15,9' -fill '#f0a04b' -draw 'rectangle 7,0 8,15 rectangle 0,7 15,8'
+OUTPUT="$BLOCKS/electrical_wire.png" pixel xc:'#737b7b' +antialias -fill '#aeb7b5' -draw 'rectangle 1,1 14,14' -fill '#dce3df' -draw 'rectangle 2,2 13,5 rectangle 2,10 13,13' -fill '#f4f7f3' -draw 'rectangle 6,0 9,15 rectangle 0,6 15,9' -fill '#ffffff' -draw 'rectangle 7,0 8,15 rectangle 0,7 15,8'
 OUTPUT="$BLOCKS/power_source.png" pixel xc:'#262d31' +antialias -fill '#414b50' -draw 'rectangle 1,1 14,14' -fill '#58666a' -draw 'rectangle 2,2 13,4' -fill '#d49a2a' -draw 'rectangle 3,6 12,12' -fill '#ffe06a' -draw 'rectangle 7,7 8,11 rectangle 5,9 10,10'
 OUTPUT="$BLOCKS/ground.png" pixel xc:'#20262a' +antialias -fill '#354047' -draw 'rectangle 1,1 14,14' -fill '#53616a' -draw 'rectangle 2,2 13,4' -fill '#7ed6c2' -draw 'rectangle 7,6 8,9 rectangle 4,10 11,10 rectangle 5,12 10,12 rectangle 6,14 9,14'
 OUTPUT="$BLOCKS/terminal_positive.png" pixel xc:'#2a3033' +antialias -fill '#434d51' -draw 'rectangle 1,1 14,14' -fill '#a65535' -draw 'rectangle 3,3 12,12' -fill '#e58049' -draw 'rectangle 5,5 10,10' -fill '#ffe2a0' -draw 'rectangle 7,6 8,9 rectangle 6,7 9,8'

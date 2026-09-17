@@ -1,6 +1,7 @@
 package br.com.craftonica.block;
 
 import br.com.craftonica.CraftonicaCreativeTab;
+import br.com.craftonica.render.CraftonicaRenderIds;
 import br.com.craftonica.tile.TileEntityLed;
 import net.minecraft.block.BlockContainer;
 import net.minecraft.block.material.Material;
@@ -76,13 +77,44 @@ public final class BlockLed extends BlockContainer implements IElectricalBlock {
     }
 
     @Override
-    public boolean canConnectOnSide(World world, int x, int y, int z, int side) {
+    public boolean canConnectOnSide(IBlockAccess world, int x, int y, int z, int side) {
         int anodeSide = getAnodeSide(world, x, y, z);
         return side == anodeSide || side == opposite(anodeSide);
     }
 
-    public int getAnodeSide(World world, int x, int y, int z) {
+    public int getAnodeSide(IBlockAccess world, int x, int y, int z) {
         return world.getBlockMetadata(x, y, z) & 7;
+    }
+
+    @Override
+    public void setBlockBoundsBasedOnState(IBlockAccess world, int x, int y, int z) {
+        int anode = getAnodeSide(world, x, y, z);
+        if (anode == 2 || anode == 3) {
+            setBlockBounds(0.3125F, 0.3125F, 0.0F, 0.6875F, 0.9375F, 1.0F);
+        } else {
+            setBlockBounds(0.0F, 0.3125F, 0.3125F, 1.0F, 0.9375F, 0.6875F);
+        }
+    }
+
+    public IIcon getBodyIcon(IBlockAccess world, int x, int y, int z) {
+        TileEntity tile = world.getTileEntity(x, y, z);
+        if (tile instanceof TileEntityLed) {
+            TileEntityLed led = (TileEntityLed) tile;
+            return led.isBurned() ? burnedIcon : led.getBrightness() > 0 ? onIcon : sideIcon;
+        }
+        return sideIcon;
+    }
+
+    public IIcon getBodyIcon() {
+        return sideIcon;
+    }
+
+    public IIcon getAnodeIcon() {
+        return anodeIcon;
+    }
+
+    public IIcon getCathodeIcon() {
+        return cathodeIcon;
     }
 
     public boolean isBurned(IBlockAccess world, int x, int y, int z) {
@@ -107,5 +139,20 @@ public final class BlockLed extends BlockContainer implements IElectricalBlock {
 
     private int opposite(int side) {
         return side == 2 ? 3 : side == 3 ? 2 : side == 4 ? 5 : 4;
+    }
+
+    @Override
+    public boolean isOpaqueCube() {
+        return false;
+    }
+
+    @Override
+    public boolean renderAsNormalBlock() {
+        return false;
+    }
+
+    @Override
+    public int getRenderType() {
+        return CraftonicaRenderIds.ELECTRICAL_COMPONENT;
     }
 }

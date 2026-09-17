@@ -2,6 +2,7 @@ package br.com.craftonica.block;
 
 import br.com.craftonica.network.BlockPosition;
 import br.com.craftonica.network.ElectricalNetworkManager;
+import br.com.craftonica.registry.ModItems;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.world.World;
 import net.minecraft.client.renderer.texture.IIconRegister;
@@ -28,8 +29,17 @@ public final class BlockElectricalButton extends BlockTwoTerminal {
     }
 
     @Override
+    public IIcon getBodyIcon(int metadata) {
+        return (metadata & CLOSED_BIT) != 0 ? closedIcon : bodyIcon;
+    }
+
+    @Override
     public boolean onBlockActivated(World world, int x, int y, int z, EntityPlayer player,
                                     int side, float hitX, float hitY, float hitZ) {
+        if (player.getCurrentEquippedItem() != null
+                && player.getCurrentEquippedItem().getItem() == ModItems.MULTIMETER) {
+            return false;
+        }
         if (!world.isRemote) {
             world.setBlockMetadataWithNotify(x, y, z, world.getBlockMetadata(x, y, z) ^ CLOSED_BIT, 3);
             ElectricalNetworkManager.forWorld(world).invalidateAround(new BlockPosition(x, y, z));
