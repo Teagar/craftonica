@@ -8,7 +8,7 @@ import urllib.request
 
 
 SERVER_NAME = "craftonica-minecraft-1.7.10"
-SERVER_VERSION = "0.1.0"
+SERVER_VERSION = "0.2.0"
 PROTOCOL_VERSION = "2024-11-05"
 
 
@@ -62,15 +62,18 @@ def tools():
             "name": "minecraft_action",
             "description": (
                 "Perform one client action. Actions: chat(text), look(yaw,pitch), "
-                "select_hotbar(slot 1-9), key(key,pressed), use, attack, close_screen. "
-                "Supported held keys: forward, back, left, right, jump, sneak."
+                "select_hotbar(slot 1-9), key(key,pressed), use, attack, pause_menu, close_screen, "
+                "gui_button(screen,button_id), gui_click(screen,x,y), load_world(screen,index). GUI coordinates, "
+                "button IDs and world indexes come from minecraft_state. Supported held keys: forward, back, left, "
+                "right, jump, sneak."
             ),
             "inputSchema": {
                 "type": "object",
                 "properties": {
                     "action": {
                         "type": "string",
-                        "enum": ["chat", "look", "select_hotbar", "key", "use", "attack", "close_screen"],
+                        "enum": ["chat", "look", "select_hotbar", "key", "use", "attack", "pause_menu", "close_screen",
+                                 "gui_button", "gui_click", "load_world"],
                     },
                     "text": {"type": "string"},
                     "yaw": {"type": "number"},
@@ -78,6 +81,11 @@ def tools():
                     "slot": {"type": "integer", "minimum": 1, "maximum": 9},
                     "key": {"type": "string", "enum": ["forward", "back", "left", "right", "jump", "sneak"]},
                     "pressed": {"type": "boolean"},
+                    "screen": {"type": "string", "minLength": 1},
+                    "button_id": {"type": "integer"},
+                    "x": {"type": "integer", "minimum": 0},
+                    "y": {"type": "integer", "minimum": 0},
+                    "index": {"type": "integer", "minimum": 0},
                 },
                 "required": ["action"],
                 "additionalProperties": False,
@@ -86,6 +94,12 @@ def tools():
                     {"if": {"properties": {"action": {"const": "look"}}}, "then": {"required": ["yaw", "pitch"]}},
                     {"if": {"properties": {"action": {"const": "select_hotbar"}}}, "then": {"required": ["slot"]}},
                     {"if": {"properties": {"action": {"const": "key"}}}, "then": {"required": ["key", "pressed"]}},
+                    {"if": {"properties": {"action": {"const": "gui_button"}}},
+                     "then": {"required": ["screen", "button_id"]}},
+                    {"if": {"properties": {"action": {"const": "gui_click"}}},
+                     "then": {"required": ["screen", "x", "y"]}},
+                    {"if": {"properties": {"action": {"const": "load_world"}}},
+                     "then": {"required": ["screen", "index"]}},
                 ],
             },
         },

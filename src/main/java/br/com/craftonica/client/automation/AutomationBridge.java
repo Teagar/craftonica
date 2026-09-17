@@ -2,6 +2,7 @@ package br.com.craftonica.client.automation;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
@@ -10,15 +11,24 @@ import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
+import cpw.mods.fml.common.FMLCommonHandler;
+import cpw.mods.fml.common.eventhandler.SubscribeEvent;
+import cpw.mods.fml.common.gameevent.TickEvent;
+import cpw.mods.fml.relauncher.ReflectionHelper;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiButton;
+import net.minecraft.client.gui.GuiScreen;
+import net.minecraft.client.gui.GuiSelectWorld;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.util.ScreenShotHelper;
+import net.minecraft.world.storage.SaveFormatComparator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.lwjgl.opengl.Display;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -30,7 +40,10 @@ import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.security.MessageDigest;
+import java.lang.reflect.Method;
+import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -44,6 +57,8 @@ public final class AutomationBridge {
     private final AutomationBridgeConfig config;
     private final Gson gson = new Gson();
     private HttpServer server;
+    private Boolean previousPauseOnLostFocus;
+    private boolean virtualGameFocus;
 
     public AutomationBridge(AutomationBridgeConfig config) {
         this.config = config;
@@ -79,6 +94,10 @@ public final class AutomationBridge {
                 }
             }));
             server.start();
+            Minecraft minecraft = Minecraft.getMinecraft();
+            previousPauseOnLostFocus = minecraft.gameSettings.pauseOnLostFocus;
+            minecraft.gameSettings.pauseOnLostFocus = false;
+            FMLCommonHandler.instance().bus().register(this);
             Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
                 @Override
                 public void run() {
@@ -96,6 +115,22 @@ public final class AutomationBridge {
             server.stop(0);
             server = null;
         }
+        if (previousPauseOnLostFocus != null) {
+            FMLCommonHandler.instance().bus().unregister(this);
+            Minecraft.getMinecraft().gameSettings.pauseOnLostFocus = previousPauseOnLostFocus;
+            previousPauseOnLostFocus = null;
+        }
+    }
+
+    @SubscribeEvent
+    public void onClientTick(TickEvent.ClientTickEvent event) {
+        if (event.phase != TickEvent.Phase.END || !virtualGameFocus || !Display.isActive()) {
+            return;
+        }
+        Minecraft minecraft = Minecraft.getMinecraft();
+        virtualGameFocus = false;
+        minecraft.inGameHasFocus = false;
+        minecraft.setIngameFocus();
     }
 
     private abstract class AuthenticatedHandler implements HttpHandler {
@@ -155,7 +190,7 @@ public final class AutomationBridge {
             final JsonObject request = parseObject(readBody(exchange));
             JsonObject result = onClientThread(new Callable<JsonObject>() {
                 @Override
-                public JsonObject call() {
+                public JsonObject call() throws Exception {
                     return performAction(request);
                 }
             });
@@ -169,6 +204,10 @@ public final class AutomationBridge {
         state.addProperty("connected", minecraft.theWorld != null && minecraft.thePlayer != null);
         state.addProperty("screen", minecraft.currentScreen == null ? "game" : minecraft.currentScreen.getClass().getSimpleName());
         state.addProperty("paused", minecraft.isGamePaused());
+        state.addProperty("game_focus", minecraft.inGameHasFocus);
+        if (minecraft.currentScreen != null) {
+            state.add("gui", captureGui(minecraft.currentScreen));
+        }
         if (minecraft.theWorld == null || minecraft.thePlayer == null) {
             return state;
         }
@@ -208,6 +247,42 @@ public final class AutomationBridge {
         return state;
     }
 
+    private JsonObject captureGui(GuiScreen screen) {
+        JsonObject gui = new JsonObject();
+        gui.addProperty("width", screen.width);
+        gui.addProperty("height", screen.height);
+        JsonArray buttons = new JsonArray();
+        for (GuiButton button : buttons(screen)) {
+            JsonObject entry = new JsonObject();
+            entry.addProperty("id", button.id);
+            entry.addProperty("text", button.displayString);
+            entry.addProperty("x", button.xPosition);
+            entry.addProperty("y", button.yPosition);
+            entry.addProperty("width", button.width);
+            entry.addProperty("height", button.height);
+            entry.addProperty("enabled", button.enabled);
+            entry.addProperty("visible", button.visible);
+            buttons.add(entry);
+        }
+        gui.add("buttons", buttons);
+        if (screen instanceof GuiSelectWorld) {
+            JsonArray worlds = new JsonArray();
+            List<SaveFormatComparator> saves = ReflectionHelper.getPrivateValue(GuiSelectWorld.class,
+                    (GuiSelectWorld) screen, "field_146639_s");
+            for (int index = 0; index < saves.size(); index++) {
+                SaveFormatComparator save = saves.get(index);
+                JsonObject entry = new JsonObject();
+                entry.addProperty("index", index);
+                entry.addProperty("name", save.getDisplayName());
+                entry.addProperty("folder", save.getFileName());
+                entry.addProperty("last_played", save.getLastTimePlayed());
+                worlds.add(entry);
+            }
+            gui.add("worlds", worlds);
+        }
+        return gui;
+    }
+
     private byte[] captureScreenshot() throws Exception {
         Minecraft minecraft = Minecraft.getMinecraft();
         File directory = Files.createTempDirectory("craftonica-automation-").toFile();
@@ -233,14 +308,34 @@ public final class AutomationBridge {
         }
     }
 
-    private JsonObject performAction(JsonObject request) {
+    private JsonObject performAction(JsonObject request) throws Exception {
         Minecraft minecraft = Minecraft.getMinecraft();
         String action = requiredString(request, "action");
         if ("close_screen".equals(action)) {
             minecraft.displayGuiScreen(null);
             if (minecraft.theWorld != null) {
-                minecraft.setIngameFocus();
+                if (Display.isActive()) {
+                    minecraft.setIngameFocus();
+                } else {
+                    minecraft.inGameHasFocus = true;
+                    virtualGameFocus = true;
+                }
             }
+        } else if ("pause_menu".equals(action)) {
+            if (minecraft.theWorld == null) {
+                throw new IllegalArgumentException("not_connected");
+            }
+            virtualGameFocus = false;
+            minecraft.displayInGameMenu();
+        } else if ("gui_button".equals(action)) {
+            GuiScreen screen = requireScreen(minecraft.currentScreen, requiredString(request, "screen"));
+            pressGuiButton(screen, requiredInt(request, "button_id"));
+        } else if ("gui_click".equals(action)) {
+            GuiScreen screen = requireScreen(minecraft.currentScreen, requiredString(request, "screen"));
+            clickGui(screen, requiredInt(request, "x"), requiredInt(request, "y"));
+        } else if ("load_world".equals(action)) {
+            GuiScreen screen = requireScreen(minecraft.currentScreen, requiredString(request, "screen"));
+            loadWorld(screen, requiredInt(request, "index"));
         } else if (minecraft.thePlayer == null) {
             throw new IllegalArgumentException("not_connected");
         } else if ("chat".equals(action)) {
@@ -276,6 +371,58 @@ public final class AutomationBridge {
         return result;
     }
 
+    private void pressGuiButton(GuiScreen screen, int buttonId) throws Exception {
+        for (GuiButton button : buttons(screen)) {
+            if (button.id == buttonId) {
+                if (!button.visible || !button.enabled) {
+                    throw new IllegalArgumentException("button_not_available");
+                }
+                clickGui(screen, button.xPosition + button.width / 2, button.yPosition + button.height / 2);
+                return;
+            }
+        }
+        throw new IllegalArgumentException("button_not_found");
+    }
+
+    private void clickGui(GuiScreen screen, int x, int y) throws Exception {
+        if (x < 0 || x >= screen.width || y < 0 || y >= screen.height) {
+            throw new IllegalArgumentException("gui_coordinates_out_of_bounds");
+        }
+        Method click = ReflectionHelper.findMethod(GuiScreen.class, screen,
+                new String[]{"mouseClicked", "func_73864_a"}, Integer.TYPE, Integer.TYPE, Integer.TYPE);
+        click.invoke(screen, x, y, 0);
+        Method release = ReflectionHelper.findMethod(GuiScreen.class, screen,
+                new String[]{"mouseMovedOrUp", "func_146286_b"}, Integer.TYPE, Integer.TYPE, Integer.TYPE);
+        release.invoke(screen, x, y, 0);
+    }
+
+    private void loadWorld(GuiScreen screen, int index) {
+        if (!(screen instanceof GuiSelectWorld)) {
+            throw new IllegalArgumentException("not_world_selection_screen");
+        }
+        List<SaveFormatComparator> saves = ReflectionHelper.getPrivateValue(GuiSelectWorld.class,
+                (GuiSelectWorld) screen, "field_146639_s");
+        if (index < 0 || index >= saves.size()) {
+            throw new IllegalArgumentException("world_index_out_of_bounds");
+        }
+        ((GuiSelectWorld) screen).func_146615_e(index);
+    }
+
+    private GuiScreen requireScreen(GuiScreen screen, String expectedScreen) {
+        if (screen == null) {
+            throw new IllegalArgumentException("no_gui_screen");
+        }
+        if (!screen.getClass().getSimpleName().equals(expectedScreen)) {
+            throw new IllegalArgumentException("gui_screen_changed");
+        }
+        return screen;
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<GuiButton> buttons(GuiScreen screen) {
+        return ReflectionHelper.getPrivateValue(GuiScreen.class, screen, "buttonList", "field_146292_n");
+    }
+
     private KeyBinding findKeyBinding(Minecraft minecraft, String name) {
         if ("forward".equals(name)) {
             return minecraft.gameSettings.keyBindForward;
@@ -302,6 +449,11 @@ public final class AutomationBridge {
         ListenableFuture<T> future = Minecraft.getMinecraft().func_152343_a(callable);
         try {
             return future.get(CLIENT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        } catch (ExecutionException error) {
+            if (error.getCause() instanceof IllegalArgumentException) {
+                throw (IllegalArgumentException) error.getCause();
+            }
+            throw error;
         } catch (Exception error) {
             future.cancel(false);
             throw error;
@@ -352,10 +504,16 @@ public final class AutomationBridge {
     }
 
     private int requiredInt(JsonObject object, String name) {
-        if (!object.has(name) || !object.get(name).isJsonPrimitive()) {
+        if (!object.has(name) || !object.get(name).isJsonPrimitive()
+                || !object.getAsJsonPrimitive(name).isNumber()) {
             throw new IllegalArgumentException("missing number: " + name);
         }
-        return object.get(name).getAsInt();
+        double value = object.get(name).getAsDouble();
+        if (Double.isInfinite(value) || Double.isNaN(value) || value != Math.rint(value)
+                || value < Integer.MIN_VALUE || value > Integer.MAX_VALUE) {
+            throw new IllegalArgumentException(name + " must be an integer");
+        }
+        return (int) value;
     }
 
     private float requiredFloat(JsonObject object, String name) {

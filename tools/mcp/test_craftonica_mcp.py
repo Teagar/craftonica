@@ -30,6 +30,19 @@ class McpServerTest(unittest.TestCase):
         names = [tool["name"] for tool in response["result"]["tools"]]
         self.assertEqual(["minecraft_state", "minecraft_screenshot", "minecraft_action"], names)
 
+    def test_exposes_native_gui_actions(self):
+        action = craftonica_mcp.tools()[2]
+        actions = action["inputSchema"]["properties"]["action"]["enum"]
+        self.assertIn("gui_button", actions)
+        self.assertIn("gui_click", actions)
+        self.assertIn("load_world", actions)
+        self.assertIn("pause_menu", actions)
+        self.assertIn("button_id", action["inputSchema"]["properties"])
+        self.assertIn("screen", action["inputSchema"]["properties"])
+        self.assertIn("x", action["inputSchema"]["properties"])
+        self.assertIn("y", action["inputSchema"]["properties"])
+        self.assertIn("index", action["inputSchema"]["properties"])
+
     def test_returns_image_content(self):
         request = {"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {"name": "minecraft_screenshot"}}
         response = craftonica_mcp.handle(request, self.bridge)

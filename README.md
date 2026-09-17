@@ -22,7 +22,7 @@ O projeto não suporta Java posterior ao 8 porque usa ForgeGradle 1.2.
 
 O script baixa uma distribuição Temurin 8 fixada, verifica o SHA-256 e a guarda
 em `~/.cache/craftonica`, sem alterar o Java padrão. O artefato instalável é
-`build/libs/craftonica-0.2.4.jar`.
+`build/libs/craftonica-0.2.5.jar`.
 
 Para reconstruir e instalar com segurança na instância dedicada do Prism:
 
@@ -96,7 +96,15 @@ MCP para iniciar o adaptador sem dependências externas:
 
 O servidor MCP oferece `minecraft_state`, `minecraft_screenshot` e
 `minecraft_action`. Ações disponíveis: chat/comando, olhar, selecionar a hotbar,
-pressionar ou soltar teclas de movimento, usar, atacar e fechar a tela atual.
+pressionar ou soltar teclas de movimento, usar, atacar, abrir o menu de pausa,
+fechar a tela atual e
+interagir com GUIs por ID de botão ou coordenada escalada. Quando a automação
+opt-in está ativa, o cliente não pausa ao perder foco; isso permite controlar
+menus no Niri/Wayland sem `xdotool`, XWayland ou captura do desktop. O estado
+informa a classe e as dimensões da GUI e os IDs, textos e limites de seus
+botões. A ação repete a classe observada para não operar uma tela que mudou.
+Na seleção de mundos, também informa os saves disponíveis e aceita carregar um
+save pelo índice retornado, sem simular mouse no compositor.
 O arquivo `tools/mcp/opencode.example.json` contém a entrada pronta para mesclar
 na configuração do OpenCode. No Prism, configure o mesmo segredo em
 `Settings > Environment variables` da instância e mantenha somente `enabled` e
