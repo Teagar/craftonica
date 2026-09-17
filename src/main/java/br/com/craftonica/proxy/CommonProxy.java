@@ -4,6 +4,7 @@ import br.com.craftonica.registry.ModBlocks;
 import br.com.craftonica.registry.ModItems;
 import br.com.craftonica.network.ElectricalNetworkEvents;
 import cpw.mods.fml.common.FMLCommonHandler;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraftforge.common.MinecraftForge;
 
 public class CommonProxy {
@@ -16,5 +17,8 @@ public class CommonProxy {
         ElectricalNetworkEvents events = new ElectricalNetworkEvents();
         MinecraftForge.EVENT_BUS.register(events);
         FMLCommonHandler.instance().bus().register(events);
+    }
+
+    public void openManual(EntityPlayer player) {
     }
 }

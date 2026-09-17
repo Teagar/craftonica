@@ -71,7 +71,8 @@ public final class ClientEventHandler {
         Block block = Block.getBlockFromItem(stack.getItem());
         return block instanceof IElectricalBlock
                 || stack.getItem() == ModItems.MULTIMETER
-                || stack.getItem() == ModItems.WRENCH;
+                || stack.getItem() == ModItems.WRENCH
+                || stack.getItem() == ModItems.MANUAL;
     }
 
     private PlacementTarget getPlacementTarget(World world, EntityPlayer player, ItemStack stack, Block block,
