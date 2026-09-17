@@ -15,7 +15,7 @@ buildscript {
 
 apply plugin: "forge"
 
-version = "0.2.6"
+version = "0.2.7"
 group = "br.com.craftonica"
 archivesBaseName = "craftonica"
 

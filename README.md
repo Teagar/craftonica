@@ -22,7 +22,7 @@ O projeto não suporta Java posterior ao 8 porque usa ForgeGradle 1.2.
 
 O script baixa uma distribuição Temurin 8 fixada, verifica o SHA-256 e a guarda
 em `~/.cache/craftonica`, sem alterar o Java padrão. O artefato instalável é
-`build/libs/craftonica-0.2.6.jar`.
+`build/libs/craftonica-0.2.7.jar`.
 
 Para reconstruir e instalar com segurança na instância dedicada do Prism:
 
@@ -105,6 +105,17 @@ informa a classe e as dimensões da GUI e os IDs, textos e limites de seus
 botões. A ação repete a classe observada para não operar uma tela que mudou.
 Na seleção de mundos, também informa os saves disponíveis e aceita carregar um
 save pelo índice retornado, sem simular mouse no compositor.
+
+## Receitas e NEI
+
+Todos os blocos e itens do Craftônica possuem receitas de bancada com materiais
+vanilla. Fios usam redstone e linha; componentes estruturais usam ferro, pedra e
+redstone; as faixas de cor dos resistores usam os corantes correspondentes; LED,
+multímetro, chave inglesa e manual possuem receitas próprias.
+
+As receitas são registradas como `IRecipe` padrão do Forge. O NEI 1.7.10 as
+descobre automaticamente quando instalado, mas não é dependência do Craftônica:
+o mod continua carregando e as receitas continuam funcionando sem CodeChicken.
 O arquivo `tools/mcp/opencode.example.json` contém a entrada pronta para mesclar
 na configuração do OpenCode. No Prism, configure o mesmo segredo em
 `Settings > Environment variables` da instância e mantenha somente `enabled` e

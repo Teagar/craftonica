@@ -2,6 +2,7 @@ package br.com.craftonica.proxy;
 
 import br.com.craftonica.registry.ModBlocks;
 import br.com.craftonica.registry.ModItems;
+import br.com.craftonica.registry.ModRecipes;
 import br.com.craftonica.network.ElectricalNetworkEvents;
 import cpw.mods.fml.common.FMLCommonHandler;
 import net.minecraft.entity.player.EntityPlayer;
@@ -11,6 +12,7 @@ public class CommonProxy {
     public void preInit() {
         ModBlocks.register();
         ModItems.register();
+        ModRecipes.register();
     }
 
     public void init() {
