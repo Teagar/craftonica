@@ -9,6 +9,7 @@ import net.minecraft.network.NetworkManager;
 import net.minecraft.network.Packet;
 import net.minecraft.network.play.server.S35PacketUpdateTileEntity;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.world.EnumSkyBlock;
 
 public final class TileEntityLed extends TileEntity {
     private final LedState state = new LedState();
@@ -23,7 +24,7 @@ public final class TileEntityLed extends TileEntity {
         boolean wasBurned = state.isBurned();
         if (state.update(result)) {
             markDirty();
-            worldObj.markBlockForUpdate(xCoord, yCoord, zCoord);
+            refreshLightAndRender();
         }
         if (!wasBurned && state.isBurned()) {
             ElectricalNetworkManager.forWorld(worldObj).invalidateAround(position);
@@ -62,6 +63,11 @@ public final class TileEntityLed extends TileEntity {
     public void onDataPacket(NetworkManager network, S35PacketUpdateTileEntity packet) {
         NBTTagCompound tag = packet.func_148857_g();
         state.setClientState(tag.getBoolean("Burned"), tag.getByte("Brightness"));
+        refreshLightAndRender();
+    }
+
+    private void refreshLightAndRender() {
+        worldObj.updateLightByType(EnumSkyBlock.Block, xCoord, yCoord, zCoord);
         worldObj.markBlockForUpdate(xCoord, yCoord, zCoord);
     }
 }
