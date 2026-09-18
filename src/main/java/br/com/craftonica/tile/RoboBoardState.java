@@ -42,6 +42,8 @@ public final class RoboBoardState {
     private int[] pwmMode = new int[OUTPUT_PIN_COUNT];
     private int[] pwmPrescaler = new int[OUTPUT_PIN_COUNT];
     private int[] pwmCompare = new int[OUTPUT_PIN_COUNT];
+    private int stableInputMask;
+    private int indeterminateInputMask;
     private byte[] lastTx = new byte[0];
 
     public RoboBoardState() {
@@ -183,6 +185,14 @@ public final class RoboBoardState {
         return generation;
     }
 
+    public void recordInputDiagnostics(int stableMask, int indeterminateMask) {
+        int validPins = (1 << OUTPUT_PIN_COUNT) - 1;
+        if (((stableMask | indeterminateMask) & ~validPins) != 0)
+            throw new IllegalArgumentException("Input diagnostic mask is invalid");
+        stableInputMask = stableMask;
+        indeterminateInputMask = indeterminateMask;
+    }
+
     private void incrementGeneration() {
         if (generation == Long.MAX_VALUE) {
             failClosed("GENERATION_EXHAUSTED");
@@ -241,6 +251,7 @@ public final class RoboBoardState {
             int[] restoredPwmPrescaler = requiredInts(persisted.pwmPrescaler);
             int[] restoredPwmCompare = requiredInts(persisted.pwmCompare);
             if (((persisted.outputMask | persisted.highMask | persisted.pwmMask) & ~validPins) != 0
+                    || ((persisted.stableInputMask | persisted.indeterminateInputMask) & ~validPins) != 0
                     || restoredPwmMode.length != OUTPUT_PIN_COUNT
                     || restoredPwmPrescaler.length != OUTPUT_PIN_COUNT
                     || restoredPwmCompare.length != OUTPUT_PIN_COUNT || restoredTx.length > MAX_TX_BYTES)
@@ -265,6 +276,8 @@ public final class RoboBoardState {
             state.pwmMode = restoredPwmMode.clone();
             state.pwmPrescaler = restoredPwmPrescaler.clone();
             state.pwmCompare = restoredPwmCompare.clone();
+            state.stableInputMask = persisted.stableInputMask;
+            state.indeterminateInputMask = persisted.indeterminateInputMask;
             state.lastTx = restoredTx.clone();
         } catch (IllegalArgumentException exception) {
             state.failClosed("INVALID_PERSISTED_STATE");
@@ -275,7 +288,8 @@ public final class RoboBoardState {
     Persisted snapshot() {
         return new Persisted(SCHEMA_VERSION, boardId, generation, revision, firmware, firmwareHash,
                 checkpoint, checkpointHash, status.ordinal(), fault, running, d13High,
-                outputMask, highMask, pwmMask, pwmMode, pwmPrescaler, pwmCompare, lastTx);
+                outputMask, highMask, pwmMask, pwmMode, pwmPrescaler, pwmCompare,
+                stableInputMask, indeterminateInputMask, lastTx);
     }
 
     private void failClosed(String reason) {
@@ -408,6 +422,8 @@ public final class RoboBoardState {
     public int[] getPwmMode() { return pwmMode.clone(); }
     public int[] getPwmPrescaler() { return pwmPrescaler.clone(); }
     public int[] getPwmCompare() { return pwmCompare.clone(); }
+    public int getStableInputMask() { return stableInputMask; }
+    public int getIndeterminateInputMask() { return indeterminateInputMask; }
     public byte[] getLastTx() { return lastTx.clone(); }
 
     static final class Persisted {
@@ -429,6 +445,8 @@ public final class RoboBoardState {
         final int[] pwmMode;
         final int[] pwmPrescaler;
         final int[] pwmCompare;
+        final int stableInputMask;
+        final int indeterminateInputMask;
         final byte[] lastTx;
 
         Persisted(int schema, UUID boardId, long generation, long revision, byte[] firmware, byte[] firmwareHash,
@@ -436,13 +454,23 @@ public final class RoboBoardState {
                    boolean running, boolean d13High) {
             this(schema, boardId, generation, revision, firmware, firmwareHash, checkpoint, checkpointHash,
                     statusOrdinal, fault, running, d13High, 0, 0, 0, new int[OUTPUT_PIN_COUNT],
-                    new int[OUTPUT_PIN_COUNT], new int[OUTPUT_PIN_COUNT], new byte[0]);
+                    new int[OUTPUT_PIN_COUNT], new int[OUTPUT_PIN_COUNT], 0, 0, new byte[0]);
+        }
+
+        Persisted(int schema, UUID boardId, long generation, long revision, byte[] firmware, byte[] firmwareHash,
+                  byte[] checkpoint, byte[] checkpointHash, int statusOrdinal, String fault,
+                   boolean running, boolean d13High, int outputMask, int highMask, int pwmMask,
+                   int[] pwmMode, int[] pwmPrescaler, int[] pwmCompare, byte[] lastTx) {
+            this(schema, boardId, generation, revision, firmware, firmwareHash, checkpoint, checkpointHash,
+                    statusOrdinal, fault, running, d13High, outputMask, highMask, pwmMask, pwmMode,
+                    pwmPrescaler, pwmCompare, 0, 0, lastTx);
         }
 
         Persisted(int schema, UUID boardId, long generation, long revision, byte[] firmware, byte[] firmwareHash,
                   byte[] checkpoint, byte[] checkpointHash, int statusOrdinal, String fault,
                   boolean running, boolean d13High, int outputMask, int highMask, int pwmMask,
-                  int[] pwmMode, int[] pwmPrescaler, int[] pwmCompare, byte[] lastTx) {
+                  int[] pwmMode, int[] pwmPrescaler, int[] pwmCompare,
+                  int stableInputMask, int indeterminateInputMask, byte[] lastTx) {
             this.schema = schema;
             this.boardId = boardId;
             this.generation = generation;
@@ -461,6 +489,8 @@ public final class RoboBoardState {
             this.pwmMode = pwmMode == null ? null : pwmMode.clone();
             this.pwmPrescaler = pwmPrescaler == null ? null : pwmPrescaler.clone();
             this.pwmCompare = pwmCompare == null ? null : pwmCompare.clone();
+            this.stableInputMask = stableInputMask;
+            this.indeterminateInputMask = indeterminateInputMask;
             this.lastTx = lastTx == null ? null : lastTx.clone();
         }
     }

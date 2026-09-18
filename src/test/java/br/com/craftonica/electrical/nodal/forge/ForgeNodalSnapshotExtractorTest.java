@@ -4,6 +4,7 @@ import br.com.craftonica.block.*;
 import br.com.craftonica.electrical.nodal.*;
 import br.com.craftonica.network.BlockPosition;
 import br.com.craftonica.tile.TileEntityLed;
+import br.com.craftonica.tile.TileEntityAnalogSensor;
 import net.minecraft.block.Block;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
@@ -55,6 +56,29 @@ public class ForgeNodalSnapshotExtractorTest {
 
         ComponentSnapshot snapshot = new ForgeNodalSnapshotExtractor(world).extract(position).getSnapshots().get(0);
         assertEquals("true", snapshot.getState().get("burned"));
+    }
+
+    @Test public void mapsEducationalSensorAndActuatorParameters() {
+        FakeWorld world = new FakeWorld();
+        BlockPosition sensorPosition = new BlockPosition(0, 0, 0);
+        world.put(0, 0, 0, new BlockAnalogSensor(BlockAnalogSensor.Type.LIGHT,
+                "light_sensor", "lightSensor", "craftonica:light_sensor"), 1);
+        world.put(1, 0, 0, new BlockEducationalActuator(BlockEducationalActuator.Type.BUZZER,
+                "buzzer", "buzzer", "craftonica:buzzer"), 1);
+        TileEntityAnalogSensor sensor = new TileEntityAnalogSensor();
+        NBTTagCompound sensorTag = new NBTTagCompound();
+        sensorTag.setInteger("DataVersion", TileEntityAnalogSensor.DATA_VERSION);
+        sensorTag.setInteger("LastMicrovolts", 2500000);
+        sensor.readFromNBT(sensorTag);
+        world.tiles.put(sensorPosition, sensor);
+
+        NodalExtractionResult result = new ForgeNodalSnapshotExtractor(world).extract(sensorPosition);
+        ComponentSnapshot sensorSnapshot = find(result, "analog_sensor");
+        ComponentSnapshot actuatorSnapshot = find(result, "actuator");
+        assertEquals(2.5, sensorSnapshot.getParameters().get("voltage"), 0.0);
+        assertEquals(1000.0, sensorSnapshot.getParameters().get("internalResistance"), 0.0);
+        assertEquals(220.0, actuatorSnapshot.getParameters().get("resistance"), 0.0);
+        assertEquals("BUZZER", actuatorSnapshot.getState().get("type"));
     }
 
     @Test public void reportsUnloadedChunkWithoutReadingIt() {

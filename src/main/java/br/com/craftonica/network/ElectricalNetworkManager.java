@@ -175,7 +175,7 @@ public final class ElectricalNetworkManager {
         BranchResult found = null;
         for (BranchResult branch : cache.nodal.getBranchResults().values()) {
             if (!position.equals(branch.getBranch().getPosition())) continue;
-            if ("source_internal".equals(branch.getBranch().getComponentKind())) continue;
+            if (branch.getBranch().getComponentKind().endsWith("_internal")) continue;
             if (found != null) return null;
             found = branch;
         }
@@ -275,6 +275,13 @@ public final class ElectricalNetworkManager {
                 if ("source".equals(snapshot.getKind())) system.powerSource(id, a, NodeId.named("source:" + snapshot.getPosition()),
                         snapshot.getParameters().get("voltage"), snapshot.getParameters().get("internalResistance"));
                 else if ("resistor".equals(snapshot.getKind())) system.resistor(id, a, b, snapshot.getParameters().get("resistance"));
+                else if ("actuator".equals(snapshot.getKind())) system.resistor(id, a, b, snapshot.getParameters().get("resistance"));
+                else if ("analog_sensor".equals(snapshot.getKind()))
+                    system.thevenin(id, a, b, NodeId.named("sensor:" + snapshot.getPosition()),
+                            snapshot.getParameters().get("voltage"), snapshot.getParameters().get("internalResistance"));
+                else if ("roboport".equals(snapshot.getKind()) && snapshot.getParameters().containsKey("voltage"))
+                    system.thevenin(id, a, NodeId.named("roboport:" + snapshot.getPosition()),
+                            snapshot.getParameters().get("voltage"), snapshot.getParameters().get("internalResistance"));
                 else if ("potentiometer".equals(snapshot.getKind())) {
                     NodeId cursor = circuit.getNode(terminals.get(1).getId());
                     NodeId terminalB = circuit.getNode(terminals.get(2).getId());
@@ -334,11 +341,15 @@ public final class ElectricalNetworkManager {
         CircuitStatus status = CircuitStatus.UNSUPPORTED_TOPOLOGY;
         String detail = "nodal_" + result.getStatus().name().toLowerCase(Locale.ENGLISH);
         for (ComponentSnapshot snapshot : circuit.getSnapshots()) {
-            if ("resistor".equals(snapshot.getKind())) resistance += snapshot.getParameters().get("resistance");
+            if ("resistor".equals(snapshot.getKind()) || "actuator".equals(snapshot.getKind()))
+                resistance += snapshot.getParameters().get("resistance");
             if ("potentiometer".equals(snapshot.getKind())) resistance += snapshot.getParameters().get("nominalResistance");
-            if ("source".equals(snapshot.getKind())) {
-                BranchResult branch = result.getBranchResult(new BranchId(snapshot.getPosition(), "source", 0));
+            if ("source".equals(snapshot.getKind()) || "roboport".equals(snapshot.getKind())
+                    || "analog_sensor".equals(snapshot.getKind())) {
+                BranchResult branch = result.getBranchResult(new BranchId(snapshot.getPosition(), snapshot.getKind(), 0));
                 if (branch != null) current = Math.abs(branch.getCurrent());
+                Double sourceVoltage = snapshot.getParameters().get("voltage");
+                if (sourceVoltage != null) voltage = sourceVoltage;
             }
         }
         for (CircuitDiagnostic diagnostic : extraction.getDiagnostics()) {

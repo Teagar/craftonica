@@ -170,6 +170,20 @@ public final class RoboBoardStateTest {
         assertEquals(0, restored.getHighMask());
     }
 
+    @Test
+    public void inputDiagnosticMasksAreBoundedAndPersisted() {
+        RoboBoardState state = new RoboBoardState(new UUID(9, 10));
+        state.recordInputDiagnostics((1 << 2) | (1 << 19), 1 << 2);
+
+        RoboBoardState restored = RoboBoardState.restore(state.snapshot());
+        assertEquals((1 << 2) | (1 << 19), restored.getStableInputMask());
+        assertEquals(1 << 2, restored.getIndeterminateInputMask());
+
+        reject(new Runnable() {
+            @Override public void run() { state.recordInputDiagnostics(1 << 20, 0); }
+        });
+    }
+
     private static CRLFirmware firmware() {
         return CRLFirmware.create(new byte[32], new byte[] { 1, 2, 3, 4 });
     }

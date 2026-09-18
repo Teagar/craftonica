@@ -3,11 +3,11 @@ package br.com.craftonica.tile;
 import br.com.craftonica.firmware.CRLFirmware;
 import br.com.craftonica.runtime.core.AvrCheckpointCodec;
 import br.com.craftonica.runtime.core.AvrFault;
-import br.com.craftonica.runtime.core.AvrInputs;
 import br.com.craftonica.runtime.core.AvrMachineState;
 import br.com.craftonica.runtime.protocol.RuntimeProtocol;
 import br.com.craftonica.runtime.server.RuntimeServer;
 import br.com.craftonica.runtime.server.RuntimeSupervisor;
+import br.com.craftonica.runtime.server.RoboBoardIoBridge;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.NetworkManager;
 import net.minecraft.network.Packet;
@@ -34,14 +34,21 @@ public final class TileEntityRoboBoard extends TileEntity {
     private boolean clientD13High;
     private RuntimeSupervisor.Submission inFlight;
     private RequestMetadata requestMetadata;
+    private long resumeAfterWorldTick = Long.MIN_VALUE;
+    private boolean portsInitialized;
 
     @Override
     public void updateEntity() {
         if (worldObj == null || worldObj.isRemote || unloaded) return;
+        if (!portsInitialized) {
+            portsInitialized = true;
+            RoboBoardIoBridge.invalidateAdjacentPorts(this);
+        }
         if (!state.isRunning()) {
             cancelInFlight();
             return;
         }
+        if (worldObj.getTotalWorldTime() <= resumeAfterWorldTick) return;
         if (inFlight != null) {
             RuntimeSupervisor.Completion completion = inFlight.poll();
             if (completion == null) return;
@@ -55,6 +62,7 @@ public final class TileEntityRoboBoard extends TileEntity {
                 commitRuntimeResult(metadata, completion.result);
             }
             if (!state.isRunning()) return;
+            if (worldObj.getTotalWorldTime() <= resumeAfterWorldTick) return;
         }
 
         RuntimeSupervisor supervisor = RuntimeServer.get();
@@ -92,8 +100,11 @@ public final class TileEntityRoboBoard extends TileEntity {
         RequestMetadata metadata = new RequestMetadata(dimension(), xCoord, yCoord, zCoord, generation, revision,
                 checkpoint, batchTarget);
         try {
+            RoboBoardIoBridge.Snapshot io = RoboBoardIoBridge.sample(this, state.getStableInputMask());
+            state.recordInputDiagnostics(io.stableMask, io.indeterminateMask);
+            markDirty();
             inFlight = supervisor.submit(new RuntimeProtocol.Request(identity, target, state.getFirmware(), checkpoint,
-                    AvrInputs.allLow()), batchTarget);
+                    io.inputs), batchTarget);
             requestMetadata = metadata;
         } catch (RejectedExecutionException rejected) {
             commitRuntimeFault(metadata, "RUNTIME_BUSY");
@@ -105,6 +116,7 @@ public final class TileEntityRoboBoard extends TileEntity {
         cancelInFlight();
         int oldVisual = visualFlags();
         long revision = state.installVerifiedFirmware(firmware, expectedRevision);
+        invalidatePortsAndDefer();
         publishMutation(oldVisual);
         return revision;
     }
@@ -113,6 +125,7 @@ public final class TileEntityRoboBoard extends TileEntity {
         requireServer();
         int oldVisual = visualFlags();
         long revision = state.start(expectedRevision);
+        invalidatePortsAndDefer();
         publishMutation(oldVisual);
         return revision;
     }
@@ -122,6 +135,7 @@ public final class TileEntityRoboBoard extends TileEntity {
         cancelInFlight();
         int oldVisual = visualFlags();
         long revision = state.stop(expectedRevision);
+        invalidatePortsAndDefer();
         publishMutation(oldVisual);
         return revision;
     }
@@ -131,6 +145,7 @@ public final class TileEntityRoboBoard extends TileEntity {
         requireServer();
         int oldVisual = visualFlags();
         state.commitRuntimeCheckpoint(expectedGeneration, expectedRevision, checkpoint, status, fault, running, d13High);
+        invalidatePortsAndDefer();
         publishMutation(oldVisual);
     }
 
@@ -140,6 +155,7 @@ public final class TileEntityRoboBoard extends TileEntity {
         cancelInFlight();
         unloaded = true;
         long generation = state.unloadAndIncrementGeneration();
+        RoboBoardIoBridge.invalidateAdjacentPorts(this);
         markDirty();
         return generation;
     }
@@ -179,6 +195,8 @@ public final class TileEntityRoboBoard extends TileEntity {
         tag.setIntArray("PwmMode", persisted.pwmMode);
         tag.setIntArray("PwmPrescaler", persisted.pwmPrescaler);
         tag.setIntArray("PwmCompare", persisted.pwmCompare);
+        tag.setInteger("StableInputMask", persisted.stableInputMask);
+        tag.setInteger("IndeterminateInputMask", persisted.indeterminateInputMask);
         tag.setByteArray("LastTx", persisted.lastTx);
     }
 
@@ -206,6 +224,8 @@ public final class TileEntityRoboBoard extends TileEntity {
                 intArray(tag, "PwmMode"),
                 intArray(tag, "PwmPrescaler"),
                 intArray(tag, "PwmCompare"),
+                tag.getInteger("StableInputMask"),
+                tag.getInteger("IndeterminateInputMask"),
                 tag.getByteArray("LastTx")));
         unloaded = false;
         inFlight = null;
@@ -269,9 +289,16 @@ public final class TileEntityRoboBoard extends TileEntity {
             RoboBoardState.Status status = result.fault == null
                     ? RoboBoardState.Status.RUNNING : RoboBoardState.Status.FAULT;
             int oldVisual = visualFlags();
+            int oldOutputMask = state.getOutputMask();
+            int oldHighMask = state.getHighMask();
+            int oldPwmMask = state.getPwmMask();
+            int[] oldPwmMode = state.getPwmMode();
+            int[] oldPwmCompare = state.getPwmCompare();
             state.commitRuntimeCheckpoint(metadata.generation, metadata.revision, result.checkpoint, status, fault,
                     status == RoboBoardState.Status.RUNNING, result.d13High,
                     result.gpio, result.pwm, result.tx);
+            if (outputsChanged(oldOutputMask, oldHighMask, oldPwmMask, oldPwmMode, oldPwmCompare))
+                invalidatePortsAndDefer();
             publishMutation(oldVisual);
         } catch (RuntimeException invalid) {
             commitRuntimeFault(metadata, "RUNTIME_PROTOCOL");
@@ -293,6 +320,7 @@ public final class TileEntityRoboBoard extends TileEntity {
             int oldVisual = visualFlags();
             state.commitRuntimeCheckpoint(metadata.generation, metadata.revision, checkpoint,
                     RoboBoardState.Status.FAULT, boundedFault(code), false, false);
+            invalidatePortsAndDefer();
             publishMutation(oldVisual);
         } catch (RuntimeException staleOrInvalid) {
             // A concurrent board mutation owns the newer state.
@@ -367,6 +395,18 @@ public final class TileEntityRoboBoard extends TileEntity {
         if (submission != null) submission.cancel();
     }
 
+    private boolean outputsChanged(int outputMask, int highMask, int pwmMask,
+                                   int[] pwmMode, int[] pwmCompare) {
+        return outputMask != state.getOutputMask() || highMask != state.getHighMask()
+                || pwmMask != state.getPwmMask() || !java.util.Arrays.equals(pwmMode, state.getPwmMode())
+                || !java.util.Arrays.equals(pwmCompare, state.getPwmCompare());
+    }
+
+    private void invalidatePortsAndDefer() {
+        RoboBoardIoBridge.invalidateAdjacentPorts(this);
+        if (worldObj != null) resumeAfterWorldTick = worldObj.getTotalWorldTime();
+    }
+
     private static String boundedFault(String value) {
         String safe = value == null || value.length() == 0 ? "RUNTIME_FAILED" : value;
         StringBuilder bounded = new StringBuilder();
@@ -415,6 +455,23 @@ public final class TileEntityRoboBoard extends TileEntity {
     public boolean hasFault() { return useClientVisual() ? clientFault : state.hasFault(); }
     public boolean hasFirmware() { return useClientVisual() ? clientHasFirmware : state.hasFirmware(); }
     public boolean isD13High() { return useClientVisual() ? clientD13High : state.isD13High(); }
+    public boolean isPinOutput(int pin) { requirePin(pin); return (state.getOutputMask() & (1 << pin)) != 0; }
+    public boolean isPinHigh(int pin) { requirePin(pin); return (state.getHighMask() & (1 << pin)) != 0; }
+    public boolean isPinPwm(int pin) { requirePin(pin); return (state.getPwmMask() & (1 << pin)) != 0; }
+    public boolean isPinPwmRecognized(int pin) {
+        requirePin(pin);
+        if (!isPinPwm(pin)) return false;
+        int mode = state.getPwmMode()[pin];
+        int compare = state.getPwmCompare()[pin];
+        return (mode == 1 || mode == 3 || mode == 5) && compare >= 0 && compare <= 255;
+    }
+    public int getPinPwmCompare(int pin) { requirePin(pin); return state.getPwmCompare()[pin]; }
+    public int getStableInputMask() { return state.getStableInputMask(); }
+    public int getIndeterminateInputMask() { return state.getIndeterminateInputMask(); }
+
+    private static void requirePin(int pin) {
+        if (pin < 0 || pin >= RoboBoardState.OUTPUT_PIN_COUNT) throw new IndexOutOfBoundsException("pin");
+    }
 
     private boolean useClientVisual() {
         return clientVisualReceived && worldObj != null && worldObj.isRemote;

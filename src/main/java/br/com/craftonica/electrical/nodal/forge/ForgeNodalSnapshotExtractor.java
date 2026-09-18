@@ -7,6 +7,8 @@ import br.com.craftonica.tile.TileEntityLed;
 import br.com.craftonica.tile.TileEntityCircuitBreaker;
 import br.com.craftonica.tile.TileEntityElectricalLever;
 import br.com.craftonica.tile.TileEntityPotentiometer;
+import br.com.craftonica.tile.TileEntityAnalogSensor;
+import br.com.craftonica.tile.TileEntityRoboPort;
 import net.minecraft.block.Block;
 import net.minecraft.tileentity.TileEntity;
 import java.util.*;
@@ -101,7 +103,33 @@ public final class ForgeNodalSnapshotExtractor {
         Map<String, String> state = new HashMap<String, String>();
         List<int[]> groups = Collections.emptyList();
         String kind;
-        if (block instanceof BlockElectricalWire) {
+        if (block instanceof BlockRoboPort) {
+            TileEntity tile = world.getTileEntity(p);
+            if (!(tile instanceof TileEntityRoboPort)) throw new IllegalArgumentException("RoboPort sem estado");
+            TileEntityRoboPort port = (TileEntityRoboPort) tile;
+            if (port.isReferenceGround()) {
+                kind = "ground";
+            } else {
+                kind = "roboport";
+                Double voltage = port.getDriveVoltage();
+                Double resistance = port.getDriveResistanceOhms();
+                if (voltage != null && resistance != null) {
+                    parameters.put("voltage", voltage);
+                    parameters.put("internalResistance", resistance);
+                }
+                state.put("role", port.getRole().name());
+            }
+        } else if (block instanceof BlockAnalogSensor) {
+            TileEntity tile = world.getTileEntity(p);
+            if (!(tile instanceof TileEntityAnalogSensor)) throw new IllegalArgumentException("Sensor sem estado");
+            kind = "analog_sensor";
+            parameters.put("voltage", ((TileEntityAnalogSensor) tile).getOutputMicrovolts() / 1000000.0);
+            parameters.put("internalResistance", (double) ((BlockAnalogSensor) block).getOutputResistanceOhms());
+        } else if (block instanceof BlockEducationalActuator) {
+            kind = "actuator";
+            parameters.put("resistance", (double) ((BlockEducationalActuator) block).getResistanceOhms());
+            state.put("type", ((BlockEducationalActuator) block).getType().name());
+        } else if (block instanceof BlockElectricalWire) {
             kind = "wire";
             groups = Collections.singletonList(new int[]{0, 1, 2, 3, 4, 5});
         } else if (block instanceof BlockPowerSource) {
@@ -154,7 +182,13 @@ public final class ForgeNodalSnapshotExtractor {
 
     private List<TerminalSnapshot> terminals(BlockPosition p, Block block, int metadata) {
         List<TerminalSnapshot> terminals = new ArrayList<TerminalSnapshot>();
-        if (block instanceof BlockElectricalWire) {
+        if (block instanceof BlockRoboPort) {
+            TileEntity tile = world.getTileEntity(p);
+            if (!(tile instanceof TileEntityRoboPort)) throw new IllegalArgumentException("RoboPort sem estado");
+            int outward = ((TileEntityRoboPort) tile).getOutwardSide();
+            if (outward < 0) throw new IllegalArgumentException("RoboPort sem placa valida");
+            terminals.add(new TerminalSnapshot(p, face(outward), 0));
+        } else if (block instanceof BlockElectricalWire) {
             for (int side = 0; side < 6; side++) terminals.add(new TerminalSnapshot(p, face(side), side));
         } else if (block instanceof BlockSingleTerminal) {
             terminals.add(new TerminalSnapshot(p, face(metadata & 7), 0));

@@ -53,6 +53,7 @@ public final class MnaSystem {
         public Builder powerSource(BranchId id,NodeId positive,NodeId internal){return powerSource(id,positive,internal,DcComponentParameters.SOURCE_VOLTAGE,DcComponentParameters.SOURCE_INTERNAL_RESISTANCE_OHMS);}
         public Builder powerSource(BranchId id,NodeId positive,NodeId internal,double volts,double resistance){return thevenin(id,positive,internal,volts,resistance);}
         public Builder thevenin(BranchId id,NodeId positive,NodeId internal,double volts,double resistance){voltageSource(id,internal,NodeId.REFERENCE,volts);return resistor(new BranchId(id.getPosition(),id.getComponentKind()+"_internal",id.getOrdinal()),internal,positive,resistance);}
+        public Builder thevenin(BranchId id,NodeId positive,NodeId negative,NodeId internal,double volts,double resistance){voltageSource(id,internal,negative,volts);return resistor(new BranchId(id.getPosition(),id.getComponentKind()+"_internal",id.getOrdinal()),internal,positive,resistance);}
         public MnaSystem build(){Collections.sort(elements,new Comparator<Element>(){public int compare(Element x,Element y){return x.id.compareTo(y.id);}});return new MnaSystem(new ArrayList<NodeId>(nodes),elements);}
     }
 }

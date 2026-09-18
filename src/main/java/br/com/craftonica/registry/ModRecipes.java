@@ -61,6 +61,21 @@ public final class ModRecipes {
                 "RGR", "ICI", "RQR",
                 'R', Items.redstone, 'G', Items.gold_ingot, 'I', Items.iron_ingot,
                 'C', Items.comparator, 'Q', Items.quartz);
+        GameRegistry.addRecipe(new ItemStack(ModBlocks.ROBO_PORT, 4),
+                " I ", "RGR", " I ",
+                'I', Items.iron_ingot, 'R', Items.redstone, 'G', Items.gold_nugget);
+        GameRegistry.addRecipe(new ItemStack(ModBlocks.LIGHT_SENSOR),
+                " G ", "QRQ", " I ",
+                'G', Blocks.glass_pane, 'Q', Items.quartz, 'R', Items.redstone, 'I', Items.iron_ingot);
+        GameRegistry.addRecipe(new ItemStack(ModBlocks.TEMPERATURE_SENSOR),
+                " I ", "QRQ", " G ",
+                'G', Blocks.glass_pane, 'Q', Items.quartz, 'R', Items.redstone, 'I', Items.iron_ingot);
+        GameRegistry.addRecipe(new ItemStack(ModBlocks.BUZZER),
+                " I ", "RNR", " I ",
+                'I', Items.iron_ingot, 'R', Items.redstone, 'N', Blocks.noteblock);
+        GameRegistry.addRecipe(new ItemStack(ModBlocks.DC_MOTOR),
+                "III", "RGR", "III",
+                'I', Items.iron_ingot, 'R', Items.redstone, 'G', Items.gold_ingot);
 
         GameRegistry.addRecipe(new ItemStack(ModItems.MULTIMETER),
                 "GIG",

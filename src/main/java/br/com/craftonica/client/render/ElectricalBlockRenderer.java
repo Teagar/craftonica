@@ -12,6 +12,8 @@ import br.com.craftonica.block.BlockCircuitBreaker;
 import br.com.craftonica.block.BlockDiode;
 import br.com.craftonica.block.BlockElectricalLever;
 import br.com.craftonica.block.BlockPotentiometer;
+import br.com.craftonica.block.BlockEducationalActuator;
+import br.com.craftonica.block.BlockAnalogSensor;
 import br.com.craftonica.block.WireColor;
 import br.com.craftonica.render.CraftonicaRenderIds;
 import cpw.mods.fml.client.registry.ISimpleBlockRenderingHandler;
@@ -54,7 +56,9 @@ public final class ElectricalBlockRenderer implements ISimpleBlockRenderingHandl
     public boolean renderWorldBlock(final IBlockAccess world, final int x, final int y, final int z,
                                     final Block block, int modelId, final RenderBlocks renderer) {
         int metadata = world.getBlockMetadata(x, y, z);
-        final int color = block instanceof BlockElectricalWire ? WireColor.rgb(metadata) : 0xFFFFFF;
+        final int color = block instanceof BlockElectricalWire ? WireColor.rgb(metadata)
+                : block instanceof BlockAnalogSensor
+                ? ((BlockAnalogSensor) block).getVisualColor(world, x, y, z) : 0xFFFFFF;
         renderModel(block, metadata, world, x, y, z, new PartRenderer() {
             @Override
             public void render(double minX, double minY, double minZ, double maxX, double maxY, double maxZ,
@@ -93,6 +97,12 @@ public final class ElectricalBlockRenderer implements ISimpleBlockRenderingHandl
             renderResistor((BlockResistor) block, metadata, parts);
         } else if (block instanceof BlockPotentiometer) {
             renderPotentiometer((BlockPotentiometer) block, metadata, parts);
+        } else if (block instanceof BlockEducationalActuator) {
+            renderEducationalActuator((BlockEducationalActuator) block, metadata, world, x, y, z, parts);
+        } else if (block instanceof BlockAnalogSensor) {
+            renderAnalogSensor((BlockAnalogSensor) block, metadata, parts);
+        } else if (block instanceof BlockTwoTerminal) {
+            renderResistor((BlockTwoTerminal) block, metadata, parts);
         } else if (block instanceof BlockSingleTerminal) {
             renderSingleTerminal((BlockSingleTerminal) block, metadata, parts);
         }
@@ -136,7 +146,7 @@ public final class ElectricalBlockRenderer implements ISimpleBlockRenderingHandl
         }
     }
 
-    private void renderResistor(BlockResistor block, int metadata, PartRenderer parts) {
+    private void renderResistor(BlockTwoTerminal block, int metadata, PartRenderer parts) {
         int axis = metadata & 1;
         IIcon body = block.getBodyIcon(metadata);
         IIcon lead = block.getTerminalIcon();
@@ -148,6 +158,36 @@ public final class ElectricalBlockRenderer implements ISimpleBlockRenderingHandl
             parts.render(4 * P, 5 * P, 5 * P, 12 * P, 11 * P, 11 * P, body);
             parts.render(0, 7 * P, 7 * P, 4 * P, 9 * P, 9 * P, lead);
             parts.render(12 * P, 7 * P, 7 * P, 1, 9 * P, 9 * P, lead);
+        }
+    }
+
+    private void renderEducationalActuator(BlockEducationalActuator block, int metadata, IBlockAccess world,
+                                            int x, int y, int z, PartRenderer parts) {
+        int axis = metadata & 1;
+        IIcon body = world == null ? block.getBodyIcon(metadata) : block.getBodyIcon(world, x, y, z);
+        IIcon lead = block.getTerminalIcon();
+        if (axis == 0) {
+            parts.render(4 * P, 4 * P, 3 * P, 12 * P, 12 * P, 13 * P, body);
+            parts.render(7 * P, 7 * P, 0, 9 * P, 9 * P, 3 * P, lead);
+            parts.render(7 * P, 7 * P, 13 * P, 9 * P, 9 * P, 1, lead);
+        } else {
+            parts.render(3 * P, 4 * P, 4 * P, 13 * P, 12 * P, 12 * P, body);
+            parts.render(0, 7 * P, 7 * P, 3 * P, 9 * P, 9 * P, lead);
+            parts.render(13 * P, 7 * P, 7 * P, 1, 9 * P, 9 * P, lead);
+        }
+    }
+
+    private void renderAnalogSensor(BlockAnalogSensor block, int metadata, PartRenderer parts) {
+        int axis = metadata & 1;
+        IIcon body = block.getBodyIcon(metadata);
+        if (axis == 0) {
+            parts.render(4 * P, 4 * P, 4 * P, 12 * P, 12 * P, 12 * P, body);
+            parts.render(7 * P, 7 * P, 0, 9 * P, 9 * P, 4 * P, block.getPositiveIcon());
+            parts.render(7 * P, 7 * P, 12 * P, 9 * P, 9 * P, 1, block.getNegativeIcon());
+        } else {
+            parts.render(4 * P, 4 * P, 4 * P, 12 * P, 12 * P, 12 * P, body);
+            parts.render(0, 7 * P, 7 * P, 4 * P, 9 * P, 9 * P, block.getPositiveIcon());
+            parts.render(12 * P, 7 * P, 7 * P, 1, 9 * P, 9 * P, block.getNegativeIcon());
         }
     }
 

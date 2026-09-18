@@ -71,12 +71,31 @@ reiniciar. Se o serviço legado de assets estiver indisponível, use:
 - Manual do Craftônica, com o primeiro circuito guiado dentro do jogo.
 - RoboBoard servidor-autoritativa, com firmware CRLFirmware verificado, checkpoint
   limitado e sincronização apenas do estado visual de execução, falha e D13.
+- RoboPort físico, limitado a uma porta por face da RoboBoard, configurável como
+  D0-D19, alimentação de 5 V ou GND.
+- Sensores analógicos de luz e temperatura com saída determinística de 0-5 V.
+- Buzzer de 220 ohms e motor CC de 100 ohms como cargas educacionais com
+  indicação visual de atividade.
 
 Todos aparecem na aba criativa `Craftônica` e possuem texturas autorais 16×16.
 Ao passar o cursor sobre um componente, o inventário explica sua função, valor e
 limites. Ao segurar um componente direcional, uma prévia translúcida mostra no
 mundo a orientação resultante antes da colocação; os símbolos `+`, `-` e GND
 mantêm os terminais distinguíveis sem depender somente de cor.
+
+### RoboBoard e componentes educacionais
+
+Coloque o RoboPort diretamente contra uma face da RoboBoard e clique nele para
+escolher seu papel. A face oposta à placa é o único terminal que entra na rede.
+Até seis portas físicas podem coexistir; D14-D19 também alimentam A0-A5. Leituras
+digitais usam LOW até 1,5 V, HIGH a partir de 3 V e conservam o último estado na
+faixa indeterminada. Uma entrada ainda sem solução conserva o último estado
+estável, inicialmente LOW, e fica marcada como indeterminada no diagnóstico da
+placa; assim `setup()` ainda pode configurar saídas e pull-ups.
+
+Os exemplos Arduino estão em [`examples/arduino`](examples/arduino). O PWM
+reconhecido usa a média CC de `0..255`; buzzer e motor não simulam áudio ou
+mecânica. Servo, ponte H, `tone()` e `pulseIn()` permanecem fora desta versão.
 
 ## Lições verificáveis
 
