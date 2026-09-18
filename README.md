@@ -7,6 +7,9 @@ simulação elétrica é independente da Redstone e executada pelo servidor.
 O plano pós-MVP, incluindo o contrato da futura placa Arduino-compatible, está
 em [`ROADMAP.md`](ROADMAP.md).
 
+A arquitetura normativa da RoboBoard e do pipeline de sketches está em
+[`docs/rfc/0002-runtime-arduino-compatible-seguro.md`](docs/rfc/0002-runtime-arduino-compatible-seguro.md).
+
 ## Requisitos
 
 - Linux x86_64 com `curl`, `sha256sum` e `tar`; ou JDK 8 instalado.
