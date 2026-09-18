@@ -1,0 +1,22 @@
+format=craftonica-compiler-manifest-1
+profile=craftonica-avr-uno:1/core-1.8.6/gcc-7.3.0-atmel3.6.1-arduino7
+flags=-mmcu=atmega328p;-DF_CPU=16000000L;-DARDUINO=10819;-DARDUINO_AVR_UNO;-DARDUINO_ARCH_AVR;-Os;-ffunction-sections;-fdata-sections;-fno-common;-fdebug-prefix-map=/work=.;-frandom-seed=craftonica-avr-uno-1;-std=gnu++11;-fpermissive;-fno-exceptions;-fno-rtti;-fno-threadsafe-statics;-Wno-error=narrowing
+4a9a797235399a0d3b38759a048a928b58429f1dae0ff990a5dcec9733a81da1 scripts/firmware/bootstrap-avr-toolchain.sh
+b4da7e2d7cc2c94de6c4676a195d4a6c8d9666d28804542bbe418e7c2bb2e5a4 scripts/firmware/compile-sketch.sh
+0af13b68e4916b461e292c2afb9a0d62d909b3714e382315fd4b10b785cdfa00 scripts/firmware/generate-seccomp.py
+957f7cbff74c1a9d5fbd50d775a18c68544f95f8a6fcf87ca30c2a537333f4e1 scripts/firmware/prepare_bundle.py
+b9085aa57ae3546e0ae030bdc19599913507e18feaef0d8734907142c91028c0 scripts/firmware/sandbox-build.sh
+0f0d0d8dd7c98ad0a417592637e53f6e46cedfd323b6abaafea0e2a66b9ab244 scripts/firmware/sandbox-launch.sh
+6f585dbe272d053323c58187fcffca1d57f4f6b60b291df14bb04ad51c3e217f firmware/abi/craftonica_abi.S
+9ea193a8afc671189c0fb9490b3ba969a49fe39ab6aced040ed5647d0dbb824a firmware/patches/arduino-avr-core-1.8.6-invalid-pin-trap.patch
+575e03ac834b739349a4484de481abcd06a6f7193cefc795260a32a1943f20a5 host:/usr/bin/bash
+eb647a179dc64d035752ae4f228aeaeb09261ab5fac307d6d0d38504b7f326e2 host:/usr/bin/cp
+71b43dbb72e6ec1a509205a1ea948504cbbb76619967edc9b496798a2c600342 host:/usr/bin/mkdir
+d011113b7054c641c8ca064f58bcc23804fd2654a3dff2444dad06ddeda61bfb host:/usr/lib/ld-linux-x86-64.so.2
+e221b10fee9ee4776d8f0f1701253bc06817f7a4dbe6c5292487277d0bf8ffff host:/usr/lib/libc.so.6
+965106704753eefe8c31ae7da6daba3ead3d18c52b19b5fcc41178bcc4aa999d host:/usr/lib/libm.so.6
+9b3812e7f6b766e2d0a1d9eeca1a58c1272392859e8b04f708b2f86b2256d03c host:/usr/lib/libdl.so.2
+e860c46c8ec8a37d9ade7cc5eb75e6973a3bb12c8cdc50f849887f88095da200 host:/usr/lib/libreadline.so.8.3
+7498a0b0f75deb5417e109d1853679f1a6b201e52e03b247c914fec0a36e3a5b host:/usr/lib/libncursesw.so.6.6
+ddab84c6479bd486973ba9f608adfe1cb4d1cebef0e5789f4b580a5b518919e9 host:/usr/lib/libacl.so.1.2.2400
+6eb652fa1725b44f57fb03cff98da6f23ebe156fa0641eb3a7cbf7ba1817be2c host:/usr/lib/libattr.so.1.1.2600

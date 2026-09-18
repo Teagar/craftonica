@@ -1,0 +1,9 @@
+.section .note.craftonica.abi,"",@note
+.balign 4
+.long 11
+.long 4
+.long 1
+.asciz "CRAFTONICA"
+.balign 4
+.short 1
+.short 1

@@ -86,6 +86,15 @@ task verifyElectricalGates(type: Test, dependsOn: testClasses) {
     include "**/ItemMultimeterMeasurementTest.class"
 }
 
+task verifyFirmwareGates(type: Test, dependsOn: testClasses) {
+    include "**/firmware/*Test.class"
+}
+
+task firmwareIntegration(type: Test, dependsOn: testClasses) {
+    include "**/firmware/FirmwareCompilerIntegrationTest.class"
+    systemProperty "craftonica.firmware.integration", "true"
+}
+
 task electricalProfile(dependsOn: verifyElectricalGates) << {
     def report = file("${buildDir}/reports/electrical/crl-26-profile.txt")
     report.parentFile.mkdirs()
@@ -108,3 +117,4 @@ wallClockGate=false
 
 build.dependsOn verifyReleaseJar
 build.dependsOn verifyElectricalGates
+build.dependsOn verifyFirmwareGates

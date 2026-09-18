@@ -1,0 +1,32 @@
+--- a/cores/arduino/wiring_digital.c
++++ b/cores/arduino/wiring_digital.c
+@@ -27,0 +28,11 @@
++static void craftonicaInvalidPin(void)
++{
++	/* ABI trap 1: the VM turns this impossible ATmega328P address into INVALID_PIN. */
++	__asm__ __volatile__(
++		"ldi r24, 1" "\n\t"
++		"sts 0xc1f0, r24"
++		:
++		:
++		: "r24", "memory");
++}
++
+@@ -35 +46,4 @@
+-	if (port == NOT_A_PIN) return;
++	if (port == NOT_A_PIN) {
++		craftonicaInvalidPin();
++		return;
++	}
+@@ -135 +149,4 @@
+-	if (port == NOT_A_PIN) return;
++	if (port == NOT_A_PIN) {
++		craftonicaInvalidPin();
++		return;
++	}
+@@ -164 +181,4 @@
+-	if (port == NOT_A_PIN) return LOW;
++	if (port == NOT_A_PIN) {
++		craftonicaInvalidPin();
++		return LOW;
++	}

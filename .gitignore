@@ -7,3 +7,5 @@ run/
 *.log
 __pycache__/
 *.pyc
+.firmware-cache/
+firmware/out/

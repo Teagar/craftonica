@@ -1,0 +1,5 @@
+CRLFirmware v1 minimal fixture
+source=main.ino:void setup(){} void loop(){}
+flash=0c940000
+firmwareFieldSha256=62c43f97e5b195ca4fbedba40d8e8967c1b05b5bafa55ae163d39da5c6926794
+fileSha256=29365699621541408f87afe28f945f30b8350f830f63d81193cd701ce4efb7bc
