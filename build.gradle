@@ -95,6 +95,30 @@ task firmwareIntegration(type: Test, dependsOn: testClasses) {
     systemProperty "craftonica.firmware.integration", "true"
 }
 
+task runtimeWorkerJar(type: Jar, dependsOn: classes) {
+    classifier = "runtime-worker"
+    destinationDir = file("${buildDir}/runtime")
+    from sourceSets.main.output
+    include "br/com/craftonica/firmware/**"
+    include "br/com/craftonica/runtime/core/**"
+    include "br/com/craftonica/runtime/protocol/**"
+    include "br/com/craftonica/runtime/worker/**"
+    manifest { attributes "Main-Class": "br.com.craftonica.runtime.worker.RuntimeWorkerMain" }
+}
+
+task verifyRuntimeGates(type: Test, dependsOn: [testClasses, runtimeWorkerJar]) {
+    include "**/runtime/core/*Test.class"
+    include "**/runtime/protocol/*Test.class"
+    include "**/runtime/worker/*Test.class"
+    include "**/runtime/server/*Test.class"
+    include "**/tile/RoboBoardStateTest.class"
+    include "**/tile/TileEntityRoboBoardBudgetTest.class"
+    systemProperty "craftonica.runtime.firmware.integration", "true"
+    systemProperty "craftonica.runtime.workerJar", runtimeWorkerJar.archivePath
+    systemProperty "craftonica.runtime.launcher", file("scripts/runtime/launch-worker.sh")
+    systemProperty "craftonica.runtime.javaHome", System.getProperty("java.home")
+}
+
 task electricalProfile(dependsOn: verifyElectricalGates) << {
     def report = file("${buildDir}/reports/electrical/crl-26-profile.txt")
     report.parentFile.mkdirs()
@@ -118,3 +142,4 @@ wallClockGate=false
 build.dependsOn verifyReleaseJar
 build.dependsOn verifyElectricalGates
 build.dependsOn verifyFirmwareGates
+build.dependsOn verifyRuntimeGates

@@ -13,6 +13,7 @@ A arquitetura normativa da RoboBoard e do pipeline de sketches está em
 ## Requisitos
 
 - Linux x86_64 com `curl`, `sha256sum` e `tar`; ou JDK 8 instalado.
+- `bubblewrap` e um gerenciador `systemd --user` para isolar compilação e runtime AVR.
 - Minecraft 1.7.10 com Forge 10.13.4.1614 para instalar o JAR.
 
 O projeto não suporta Java posterior ao 8 porque usa ForgeGradle 1.2.
@@ -36,7 +37,8 @@ Para reconstruir e instalar com segurança na instância dedicada do Prism:
 Esse comando força um build limpo, verifica se o JAR foi reobfuscado para o
 runtime Forge e só então substitui a versão anterior na pasta de mods. Isso é
 importante porque uma tarefa `runClient` de desenvolvimento pode recriar o JAR
-com nomes MCP, que não é instalável em launchers comuns.
+com nomes MCP, que não é instalável em launchers comuns. O instalador também
+publica o worker AVR e seu launcher isolado em `minecraft/craftonica-runtime`.
 
 Para desenvolvimento:
 
@@ -67,6 +69,8 @@ reiniciar. Se o serviço legado de assets estiver indisponível, use:
   ramo selecionado; medições ambíguas são rejeitadas.
 - Chave inglesa, usada para girar componentes direcionais sem quebrá-los.
 - Manual do Craftônica, com o primeiro circuito guiado dentro do jogo.
+- RoboBoard servidor-autoritativa, com firmware CRLFirmware verificado, checkpoint
+  limitado e sincronização apenas do estado visual de execução, falha e D13.
 
 Todos aparecem na aba criativa `Craftônica` e possuem texturas autorais 16×16.
 Ao passar o cursor sobre um componente, o inventário explica sua função, valor e
@@ -284,7 +288,8 @@ gate de precisão e desempenho está em
 ## Limitações conhecidas
 
 - Não há CA, capacitores, indutores ou transistores.
-- Não há RoboBoard, sensores, motores, programação ou mecânica.
+- A RoboBoard ainda não possui editor, ponte elétrica, sensores, motores ou
+  mecânica; essas integrações pertencem às próximas etapas.
 - A fonte e o GND têm terminais apenas horizontais no fluxo normal de colocação.
 - Curtos são limitados pela resistência interna simplificada da fonte; não há
   ainda um modelo não linear de limitação de corrente.

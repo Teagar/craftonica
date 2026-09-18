@@ -10,11 +10,13 @@ import br.com.craftonica.block.BlockCircuitBreaker;
 import br.com.craftonica.block.BlockDiode;
 import br.com.craftonica.block.BlockElectricalLever;
 import br.com.craftonica.block.BlockPotentiometer;
+import br.com.craftonica.block.BlockRoboBoard;
 import br.com.craftonica.item.ItemBlockElectricalWire;
 import br.com.craftonica.tile.TileEntityLed;
 import br.com.craftonica.tile.TileEntityCircuitBreaker;
 import br.com.craftonica.tile.TileEntityElectricalLever;
 import br.com.craftonica.tile.TileEntityPotentiometer;
+import br.com.craftonica.tile.TileEntityRoboBoard;
 import cpw.mods.fml.common.registry.GameRegistry;
 
 public final class ModBlocks {
@@ -30,6 +32,7 @@ public final class ModBlocks {
     public static final BlockDiode DIODE = new BlockDiode();
     public static final BlockElectricalLever LEVER = new BlockElectricalLever();
     public static final BlockPotentiometer POTENTIOMETER = new BlockPotentiometer();
+    public static final BlockRoboBoard ROBO_BOARD = new BlockRoboBoard();
 
     private ModBlocks() {
     }
@@ -47,9 +50,11 @@ public final class ModBlocks {
         GameRegistry.registerBlock(DIODE, "diode");
         GameRegistry.registerBlock(LEVER, "electrical_lever");
         GameRegistry.registerBlock(POTENTIOMETER, "potentiometer");
+        GameRegistry.registerBlock(ROBO_BOARD, "robo_board");
         GameRegistry.registerTileEntity(TileEntityLed.class, "craftonica_led");
         GameRegistry.registerTileEntity(TileEntityCircuitBreaker.class, "craftonica_circuit_breaker");
         GameRegistry.registerTileEntity(TileEntityElectricalLever.class, "craftonica_electrical_lever");
         GameRegistry.registerTileEntity(TileEntityPotentiometer.class, "craftonica_potentiometer");
+        GameRegistry.registerTileEntity(TileEntityRoboBoard.class, "craftonica_robo_board");
     }
 }

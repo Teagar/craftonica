@@ -57,6 +57,10 @@ public final class ModRecipes {
                 " I ", "IRI", " I ", 'I', Items.iron_ingot, 'R', Items.redstone);
         GameRegistry.addRecipe(new ItemStack(ModBlocks.POTENTIOMETER),
                 "IRI", "RGR", "IRI", 'I', Items.iron_ingot, 'R', Items.redstone, 'G', Items.gold_ingot);
+        GameRegistry.addRecipe(new ItemStack(ModBlocks.ROBO_BOARD),
+                "RGR", "ICI", "RQR",
+                'R', Items.redstone, 'G', Items.gold_ingot, 'I', Items.iron_ingot,
+                'C', Items.comparator, 'Q', Items.quartz);
 
         GameRegistry.addRecipe(new ItemStack(ModItems.MULTIMETER),
                 "GIG",
