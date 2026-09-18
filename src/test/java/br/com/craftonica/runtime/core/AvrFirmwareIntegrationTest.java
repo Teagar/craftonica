@@ -16,6 +16,7 @@ import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertArrayEquals;
 
 public final class AvrFirmwareIntegrationTest {
     @Rule public final TemporaryFolder temporary = new TemporaryFolder();
@@ -60,6 +61,18 @@ public final class AvrFirmwareIntegrationTest {
             }
         }
         assertTrue("analogRead(A0) was not published as PWM on D5", observed != null);
+
+        byte[] serial = compile("SerialTx", "void setup(){Serial.begin(9600);Serial.println(\"ok\");}\n"
+                + "void loop(){}\n");
+        AvrMachineState serialState = new AvrMachineState();
+        AvrInterpreter serialInterpreter = new AvrInterpreter(serial);
+        java.io.ByteArrayOutputStream transmitted = new java.io.ByteArrayOutputStream();
+        for (int slice = 0; slice < 40 && transmitted.size() < 4; slice++) {
+            AvrExecutionResult result = serialInterpreter.executeToAbsoluteTarget(
+                    serialState, serialState.getCycles() + AvrInterpreter.QUANTUM_CYCLES, AvrInputs.allLow());
+            transmitted.write(result.getTransmittedBytes());
+        }
+        assertArrayEquals(new byte[]{'o', 'k', '\r', '\n'}, transmitted.toByteArray());
     }
 
     private byte[] compile(String name, String source) throws Exception {

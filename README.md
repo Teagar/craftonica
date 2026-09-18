@@ -71,6 +71,8 @@ reiniciar. Se o serviço legado de assets estiver indisponível, use:
 - Manual do Craftônica, com o primeiro circuito guiado dentro do jogo.
 - RoboBoard servidor-autoritativa, com firmware CRLFirmware verificado, checkpoint
   limitado e sincronização apenas do estado visual de execução, falha e D13.
+- Editor industrial de `Sketch.ino` aberto com clique direito na RoboBoard, com
+  compilação isolada, controle de execução e monitor Serial didático apenas TX.
 - RoboPort físico, limitado a uma porta por face da RoboBoard, configurável como
   D0-D19, alimentação de 5 V ou GND.
 - Sensores analógicos de luz e temperatura com saída determinística de 0-5 V.
@@ -95,7 +97,21 @@ placa; assim `setup()` ainda pode configurar saídas e pull-ups.
 
 Os exemplos Arduino estão em [`examples/arduino`](examples/arduino). O PWM
 reconhecido usa a média CC de `0..255`; buzzer e motor não simulam áudio ou
-mecânica. Servo, ponte H, `tone()` e `pulseIn()` permanecem fora desta versão.
+  mecânica. Servo, ponte H, `tone()` e `pulseIn()` permanecem fora desta versão.
+
+### Editor de sketch e Serial
+
+Clique com o botão direito na RoboBoard para abrir o único arquivo editável,
+`Sketch.ino`. O editor não acessa o filesystem do cliente ou do servidor: o fonte
+UTF-8 é enviado como dados limitados a 32 KiB, compilado no sandbox do servidor e
+instalado somente após a verificação do firmware. O servidor continua autoritativo
+sobre revisão, execução e falhas.
+
+Atalhos: `Ctrl+S` compila, `F5` inicia ou para, `F6` alterna Editor/Serial,
+`Ctrl+L` limpa somente a visualização Serial local e `Esc` fecha. A aba Serial é
+explicitamente apenas TX, sem entrada RX. Ela exibe bytes transmitidos de forma
+segura, com offsets; o histórico do servidor é limitado aos 8 KiB mais recentes e
+avisa quando dados antigos foram truncados.
 
 ## Lições verificáveis
 
@@ -307,8 +323,8 @@ gate de precisão e desempenho está em
 ## Limitações conhecidas
 
 - Não há CA, capacitores, indutores ou transistores.
-- A RoboBoard ainda não possui editor, ponte elétrica, sensores, motores ou
-  mecânica; essas integrações pertencem às próximas etapas.
+- A RoboBoard não simula áudio, mecânica, servos ou ponte H; essas integrações
+  pertencem às próximas etapas.
 - A fonte e o GND têm terminais apenas horizontais no fluxo normal de colocação.
 - Curtos são limitados pela resistência interna simplificada da fonte; não há
   ainda um modelo não linear de limitação de corrente.

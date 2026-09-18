@@ -10,9 +10,13 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.world.WorldEvent;
 import br.com.craftonica.runtime.server.RuntimeServer;
+import br.com.craftonica.sketch.network.EditorStateMessage;
+import br.com.craftonica.sketch.network.SketchNetwork;
+import br.com.craftonica.sketch.server.SketchServer;
 
 public class CommonProxy {
     public void preInit() {
+        SketchNetwork.initialize();
         ModBlocks.register();
         ModItems.register();
         ModRecipes.register();
@@ -23,18 +27,34 @@ public class CommonProxy {
         MinecraftForge.EVENT_BUS.register(events);
         FMLCommonHandler.instance().bus().register(events);
         MinecraftForge.EVENT_BUS.register(this);
+        MinecraftForge.EVENT_BUS.register(SketchServer.EVENTS);
+        FMLCommonHandler.instance().bus().register(SketchServer.EVENTS);
     }
 
     @SubscribeEvent
     public void onWorldLoad(WorldEvent.Load event) {
-        if (!event.world.isRemote && event.world.provider.dimensionId == 0) RuntimeServer.start();
+        if (!event.world.isRemote && event.world.provider.dimensionId == 0) {
+            RuntimeServer.start();
+            SketchServer.start();
+        }
     }
 
     @SubscribeEvent
     public void onWorldUnload(WorldEvent.Unload event) {
-        if (!event.world.isRemote && event.world.provider.dimensionId == 0) RuntimeServer.stop();
+        if (!event.world.isRemote && event.world.provider.dimensionId == 0) {
+            RuntimeServer.stop();
+            SketchServer.stop();
+        }
     }
 
     public void openManual(EntityPlayer player) {
+    }
+
+    /** Client proxy overrides this hook; common packet handling never imports client classes. */
+    public void handleEditorState(EditorStateMessage state) {
+    }
+
+    /** Client proxy clears the local close guard before the server answers an explicit interaction. */
+    public void prepareEditorOpen(int dimension, int x, int y, int z) {
     }
 }

@@ -11,6 +11,13 @@ public final class AvrInterpreter {
     public static final int MAX_EFFECTIVE_CHANGES = 64;
     public static final int MAX_TX_BYTES = 256;
 
+    private static final int UCSR0A = 0xc0;
+    private static final int UDR0 = 0xc6;
+    private static final int UART_MPCM = 0x01;
+    private static final int UART_U2X = 0x02;
+    private static final int UART_UDRE = 0x20;
+    private static final int UART_TXC = 0x40;
+
     private static final int C = 0;
     private static final int Z = 1;
     private static final int N = 2;
@@ -139,6 +146,14 @@ public final class AvrInterpreter {
         } else if ((op & 0xf800) == 0xb000) { // IN
             int d = rdSingle(op), address = 0x20 + ((op & 15) | ((op >>> 5) & 0x30));
             state.registers[d] = (byte) readData(state, address, inputs);
+        } else if (op == 0x9409 || op == 0x9509) { // IJMP / ICALL
+            int target = wordReg(state, 30);
+            if (op == 0x9509) {
+                validatePush(state, 2);
+                pushReturn(state, next);
+                cycles = 3;
+            } else cycles = 2;
+            next = target;
         } else if ((op & 0xfe0f) == 0x900c || (op & 0xfe0f) == 0x900d || (op & 0xfe0f) == 0x900e) {
             int d = rdSingle(op), address = wordReg(state, 26), mode = op & 15;
             if (mode == 14) address = (address - 1) & 0xffff;
@@ -212,9 +227,10 @@ public final class AvrInterpreter {
                 if (words == 2) fetchWord(state, pc + 2);
                 next += words; cycles = 1 + words;
             }
-        } else if ((op & 0xfe08) == 0xfc00) { // SBRC
+        } else if ((op & 0xfc08) == 0xfc00) { // SBRC / SBRS
             int r = (op >>> 4) & 31, bit = op & 7;
-            if ((u(state, r) & (1 << bit)) == 0) {
+            boolean set = (u(state, r) & (1 << bit)) != 0;
+            if (set == ((op & 0x0200) != 0)) {
                 int skipped = fetchWord(state, pc + 1), words = isTwoWord(skipped) ? 2 : 1;
                 if (words == 2) fetchWord(state, pc + 2);
                 next += words; cycles = 1 + words;
@@ -326,9 +342,19 @@ public final class AvrInterpreter {
         if (address == 0x7a && (value & 0x40) != 0 && (state.mmio[0x7a - 0x20] & 0x40) == 0) {
             startAdc(state, value, inputs);
         }
-        if (address == 0xc6) {
+        if (address == UCSR0A) {
+            int old = state.mmio[UCSR0A - 0x20] & 0xff;
+            int hardware = old & (UART_UDRE | UART_TXC);
+            if ((value & UART_TXC) != 0) hardware &= ~UART_TXC;
+            state.mmio[UCSR0A - 0x20] = (byte) (hardware | (value & (UART_U2X | UART_MPCM)));
+            return;
+        }
+        if (address == UDR0) {
             if (output.tx.size() >= MAX_TX_BYTES) fault(state, AvrFault.Code.FIRMWARE_OUTPUT_LIMIT, "TX byte limit exceeded");
-            output.tx.write(value); state.mmio[0xc0 - 0x20] |= 0x20;
+            output.tx.write(value);
+            state.mmio[UCSR0A - 0x20] |= UART_UDRE | UART_TXC;
+            state.mmio[address - 0x20] = (byte) value;
+            return;
         }
         if (address == 0xc2 && (value & 0xc0) != 0) {
             fault(state, AvrFault.Code.UNSUPPORTED_PERIPHERAL, "synchronous UART mode");

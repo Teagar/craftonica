@@ -3,6 +3,8 @@ package br.com.craftonica.client;
 import br.com.craftonica.block.IElectricalBlock;
 import br.com.craftonica.block.IRotatableElectricalBlock;
 import br.com.craftonica.client.render.ElectricalBlockRenderer;
+import br.com.craftonica.client.sketch.SketchClientController;
+import br.com.craftonica.block.BlockRoboBoard;
 import br.com.craftonica.registry.ModItems;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import net.minecraft.block.Block;
@@ -19,6 +21,7 @@ import net.minecraft.util.StatCollector;
 import net.minecraft.world.World;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.event.entity.player.ItemTooltipEvent;
+import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import org.lwjgl.opengl.GL11;
 
 public final class ClientEventHandler {
@@ -37,6 +40,14 @@ public final class ClientEventHandler {
         String prefix = stack.getUnlocalizedName() + ".tooltip.";
         for (int line = 0; StatCollector.canTranslate(prefix + line); line++) {
             event.toolTip.add(EnumChatFormatting.GRAY + StatCollector.translateToLocal(prefix + line));
+        }
+    }
+
+    @SubscribeEvent
+    public void onPlayerInteract(PlayerInteractEvent event) {
+        if (event.action == PlayerInteractEvent.Action.RIGHT_CLICK_BLOCK && event.world != null
+                && event.world.isRemote && event.world.getBlock(event.x, event.y, event.z) instanceof BlockRoboBoard) {
+            SketchClientController.INSTANCE.allowOpen(event.world.provider.dimensionId, event.x, event.y, event.z);
         }
     }
 
@@ -70,6 +81,7 @@ public final class ClientEventHandler {
     private boolean hasEducationalTooltip(ItemStack stack) {
         Block block = Block.getBlockFromItem(stack.getItem());
         return block instanceof IElectricalBlock
+                || block instanceof BlockRoboBoard
                 || stack.getItem() == ModItems.MULTIMETER
                 || stack.getItem() == ModItems.WRENCH
                 || stack.getItem() == ModItems.MANUAL;

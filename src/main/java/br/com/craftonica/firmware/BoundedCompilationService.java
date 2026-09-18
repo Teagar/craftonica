@@ -72,7 +72,7 @@ public final class BoundedCompilationService implements AutoCloseable {
             for (Runnable pending : executor.shutdownNow()) ((Job) pending).cancelQueued();
         }
         try {
-            executor.awaitTermination(3, TimeUnit.SECONDS);
+            executor.awaitTermination(20, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }

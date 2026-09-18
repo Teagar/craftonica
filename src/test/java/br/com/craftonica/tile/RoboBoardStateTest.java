@@ -1,14 +1,21 @@
 package br.com.craftonica.tile;
 
 import br.com.craftonica.firmware.CRLFirmware;
+import br.com.craftonica.firmware.SourceBundle;
 import br.com.craftonica.runtime.core.AvrCheckpointCodec;
 import br.com.craftonica.runtime.core.AvrMachineState;
 import br.com.craftonica.runtime.protocol.RuntimeProtocol;
+import cpw.mods.fml.common.registry.GameRegistry;
+import net.minecraft.nbt.NBTTagCompound;
 import org.junit.Test;
 
 import java.util.UUID;
 import java.util.Arrays;
 import java.util.Collections;
+import java.nio.charset.StandardCharsets;
+import java.lang.reflect.Field;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -87,7 +94,7 @@ public final class RoboBoardStateTest {
         RoboBoardState malformedArrays = RoboBoardState.restore(new RoboBoardState.Persisted(
                 valid.schema, valid.boardId, valid.generation, valid.revision, valid.firmware, valid.firmwareHash,
                 valid.checkpoint, valid.checkpointHash, valid.statusOrdinal, valid.fault, valid.running, valid.d13High,
-                0, 0, 0, new int[1], valid.pwmPrescaler, valid.pwmCompare, valid.lastTx));
+                0, 0, 0, new int[1], valid.pwmPrescaler, valid.pwmCompare, valid.serialHistory));
         RoboBoardState disabledWithOutput = RoboBoardState.restore(new RoboBoardState.Persisted(
                 RoboBoardState.SCHEMA_VERSION, new UUID(3, 4), 0, 0, new byte[0], new byte[0],
                 new byte[0], new byte[0], RoboBoardState.Status.DISABLED.ordinal(), "", false, false,
@@ -184,8 +191,136 @@ public final class RoboBoardStateTest {
         });
     }
 
+    @Test
+    public void serialHistoryAppendsWrapsAndSurvivesInactivePolicies() {
+        RoboBoardState state = new RoboBoardState(new UUID(11, 12));
+        long revision = state.installVerifiedFirmware(firmware(), 0);
+        byte[] first = new byte[5000];
+        byte[] second = new byte[4000];
+        Arrays.fill(first, (byte) 1);
+        Arrays.fill(second, (byte) 2);
+        state.commitRuntimeCheckpoint(state.getGeneration(), revision, checkpoint(),
+                RoboBoardState.Status.RUNNING, "", true, false,
+                Collections.<RuntimeProtocol.Gpio>emptyList(), Collections.<RuntimeProtocol.Pwm>emptyList(), first);
+        state.commitRuntimeCheckpoint(state.getGeneration(), revision, checkpoint(),
+                RoboBoardState.Status.RUNNING, "", true, false,
+                Collections.<RuntimeProtocol.Gpio>emptyList(), Collections.<RuntimeProtocol.Pwm>emptyList(), second);
+
+        RoboBoardState.SerialHistorySnapshot history = state.getSerialHistorySnapshot();
+        assertEquals(RoboBoardState.MAX_TX_BYTES, history.getBytes().length);
+        assertEquals(808, history.getStartOffset());
+        assertEquals(9000, history.getEndOffset());
+        assertTrue(history.isTruncated());
+        assertEquals(1, history.getBytes()[0]);
+        assertEquals(2, history.getBytes()[history.getBytes().length - 1]);
+
+        state.commitRuntimeCheckpoint(state.getGeneration(), revision, checkpoint(),
+                RoboBoardState.Status.FAULT, "FAULT", false, false);
+        assertArrayEquals(history.getBytes(), state.getSerialHistorySnapshot().getBytes());
+        state.stop(revision);
+        assertArrayEquals(history.getBytes(), state.getSerialHistorySnapshot().getBytes());
+        RoboBoardState restored = RoboBoardState.restore(state.snapshot());
+        assertEquals(808, restored.getSerialHistorySnapshot().getStartOffset());
+        assertEquals(9000, restored.getSerialHistorySnapshot().getEndOffset());
+        restored.unloadAndIncrementGeneration();
+        assertArrayEquals(history.getBytes(), restored.getSerialHistorySnapshot().getBytes());
+    }
+
+    @Test
+    public void compiledSketchInstallIsAtomicAndFirmwareReplacementClearsSourceAndSerial() {
+        RoboBoardState state = new RoboBoardState(new UUID(13, 14));
+        SourceBundle source = sketch("void setup(){}\nvoid loop(){}\n");
+        CRLFirmware compiled = CRLFirmware.create(source, new byte[] { 1, 2, 3, 4 });
+        long revision = state.installCompiledSketch(source, compiled, 0);
+        byte[] installed = source.getFile(RoboBoardState.SKETCH_FILE);
+        assertArrayEquals(installed, state.getInstalledSketchSource());
+        installed[0] ^= 1;
+        assertFalse(Arrays.equals(installed, state.getInstalledSketchSource()));
+
+        final long stableRevision = revision;
+        final byte[] stableFirmware = state.getFirmware();
+        final SourceBundle mismatch = sketch("void setup(){ }\nvoid loop(){}\n");
+        reject(new Runnable() {
+            @Override public void run() { state.installCompiledSketch(mismatch, compiled, stableRevision); }
+        });
+        assertEquals(stableRevision, state.getRevision());
+        assertArrayEquals(stableFirmware, state.getFirmware());
+        assertArrayEquals(source.getFile(RoboBoardState.SKETCH_FILE), state.getInstalledSketchSource());
+        reject(new Runnable() {
+            @Override public void run() { state.installCompiledSketch(source, compiled, stableRevision - 1); }
+        });
+        final SourceBundle wrongName = new SourceBundle("Other", Collections.singletonMap(
+                "Other.ino", new byte[0]));
+        reject(new Runnable() {
+            @Override public void run() {
+                state.installCompiledSketch(wrongName,
+                        CRLFirmware.create(wrongName, new byte[] { 1, 2 }), stableRevision);
+            }
+        });
+        Map<String, byte[]> files = new HashMap<String, byte[]>();
+        files.put(RoboBoardState.SKETCH_FILE, new byte[0]);
+        files.put("Extra.h", new byte[0]);
+        final SourceBundle multiple = new SourceBundle(RoboBoardState.SKETCH_NAME, files);
+        reject(new Runnable() {
+            @Override public void run() {
+                state.installCompiledSketch(multiple,
+                        CRLFirmware.create(multiple, new byte[] { 1, 2 }), stableRevision);
+            }
+        });
+
+        state.commitRuntimeCheckpoint(state.getGeneration(), stableRevision, checkpoint(),
+                RoboBoardState.Status.RUNNING, "", true, false,
+                Collections.<RuntimeProtocol.Gpio>emptyList(), Collections.<RuntimeProtocol.Pwm>emptyList(),
+                new byte[] { 7 });
+
+        RoboBoardState restored = RoboBoardState.restore(state.snapshot());
+        assertArrayEquals(source.getFile(RoboBoardState.SKETCH_FILE), restored.getInstalledSketchSource());
+        assertEquals(1, restored.getSerialHistorySnapshot().getEndOffset());
+        restored.installVerifiedFirmware(firmware(), stableRevision);
+        assertFalse(restored.hasInstalledSketchSource());
+        assertEquals(0, restored.getSerialHistorySnapshot().getEndOffset());
+    }
+
+    @Test
+    public void emptySketchIsInstalledAndTileNbtPreservesSerialOffsetsAndSource() throws Exception {
+        RoboBoardState state = new RoboBoardState(new UUID(15, 16));
+        SourceBundle source = sketch("");
+        CRLFirmware compiled = CRLFirmware.create(source, new byte[] { 1, 2, 3, 4 });
+        long revision = state.installCompiledSketch(source, compiled, 0);
+        assertTrue(state.hasInstalledSketchSource());
+        byte[] first = new byte[5000];
+        byte[] second = new byte[4000];
+        state.commitRuntimeCheckpoint(state.getGeneration(), revision, checkpoint(),
+                RoboBoardState.Status.RUNNING, "", true, false,
+                Collections.<RuntimeProtocol.Gpio>emptyList(), Collections.<RuntimeProtocol.Pwm>emptyList(), first);
+        state.commitRuntimeCheckpoint(state.getGeneration(), revision, checkpoint(),
+                RoboBoardState.Status.RUNNING, "", true, false,
+                Collections.<RuntimeProtocol.Gpio>emptyList(), Collections.<RuntimeProtocol.Pwm>emptyList(), second);
+
+        TileEntityRoboBoard tile = new TileEntityRoboBoard();
+        GameRegistry.registerTileEntity(TileEntityRoboBoard.class, "craftonica:test_robo_board_state");
+        Field stateField = TileEntityRoboBoard.class.getDeclaredField("state");
+        stateField.setAccessible(true);
+        stateField.set(tile, state);
+        NBTTagCompound tag = new NBTTagCompound();
+        tile.writeToNBT(tag);
+        TileEntityRoboBoard restored = new TileEntityRoboBoard();
+        restored.readFromNBT(tag);
+
+        assertTrue(restored.hasInstalledSketchSource());
+        assertArrayEquals(new byte[0], restored.getInstalledSketchSource());
+        assertEquals(808, restored.getSerialHistorySnapshot().getStartOffset());
+        assertEquals(9000, restored.getSerialHistorySnapshot().getEndOffset());
+        assertTrue(restored.getSerialHistorySnapshot().isTruncated());
+    }
+
     private static CRLFirmware firmware() {
         return CRLFirmware.create(new byte[32], new byte[] { 1, 2, 3, 4 });
+    }
+
+    private static SourceBundle sketch(String source) {
+        return new SourceBundle(RoboBoardState.SKETCH_NAME, Collections.singletonMap(
+                RoboBoardState.SKETCH_FILE, source.getBytes(StandardCharsets.UTF_8)));
     }
 
     private static byte[] checkpoint() {

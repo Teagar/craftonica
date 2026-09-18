@@ -1,6 +1,7 @@
 package br.com.craftonica.tile;
 
 import br.com.craftonica.firmware.CRLFirmware;
+import br.com.craftonica.firmware.SourceBundle;
 import br.com.craftonica.runtime.core.AvrCheckpointCodec;
 import br.com.craftonica.runtime.core.AvrFault;
 import br.com.craftonica.runtime.core.AvrMachineState;
@@ -20,7 +21,10 @@ public final class RoboBoardState {
     public static final int MAX_CHECKPOINT_BYTES = 16384;
     public static final int MAX_FAULT_BYTES = 96;
     public static final int OUTPUT_PIN_COUNT = 20;
-    public static final int MAX_TX_BYTES = 4096;
+    public static final int MAX_SERIAL_HISTORY_BYTES = 8192;
+    public static final int MAX_TX_BYTES = MAX_SERIAL_HISTORY_BYTES;
+    public static final String SKETCH_NAME = "Sketch";
+    public static final String SKETCH_FILE = "Sketch.ino";
     private static final int HASH_BYTES = 32;
 
     public enum Status { DISABLED, STOPPED, RUNNING, SUSPENDED, FAULT }
@@ -44,7 +48,11 @@ public final class RoboBoardState {
     private int[] pwmCompare = new int[OUTPUT_PIN_COUNT];
     private int stableInputMask;
     private int indeterminateInputMask;
-    private byte[] lastTx = new byte[0];
+    private byte[] serialHistory = new byte[0];
+    private long serialStartOffset;
+    private long serialEndOffset;
+    private byte[] installedSketchSource = new byte[0];
+    private boolean installedSketchSourcePresent;
 
     public RoboBoardState() {
         this(UUID.randomUUID());
@@ -60,6 +68,27 @@ public final class RoboBoardState {
         requireRevision(expectedRevision);
         byte[] encoded = verifiedFirmware.getBytes();
         CRLFirmware decoded = CRLFirmware.decode(encoded);
+        return installFirmware(encoded, decoded, new byte[0], false);
+    }
+
+    public long installCompiledSketch(SourceBundle sources, CRLFirmware verifiedFirmware, long expectedRevision) {
+        if (sources == null || verifiedFirmware == null)
+            throw new IllegalArgumentException("Sources and verified firmware are required");
+        requireRevision(expectedRevision);
+        if (!SKETCH_NAME.equals(sources.getMainName()) || !SKETCH_FILE.equals(sources.getMainPath())
+                || sources.size() != 1 || !SKETCH_FILE.equals(sources.getFileNames().get(0)))
+            throw new IllegalArgumentException("Installed sketch must be the single fixed Sketch.ino file");
+        byte[] source = sources.getFile(SKETCH_FILE);
+        if (source == null || source.length > SourceBundle.MAX_FILE_BYTES)
+            throw new IllegalArgumentException("Installed sketch exceeds its bound");
+        byte[] encoded = verifiedFirmware.getBytes();
+        CRLFirmware decoded = CRLFirmware.decode(encoded);
+        if (!Arrays.equals(sources.getSourceHash(), decoded.getSourceHash()))
+            throw new IllegalArgumentException("Sketch source hash does not match firmware");
+        return installFirmware(encoded, decoded, source, true);
+    }
+
+    private long installFirmware(byte[] encoded, CRLFirmware decoded, byte[] source, boolean sourcePresent) {
         if (revision == Long.MAX_VALUE) throw new IllegalStateException("Revision exhausted");
         incrementGeneration();
         revision++;
@@ -72,6 +101,9 @@ public final class RoboBoardState {
         running = false;
         d13High = false;
         clearAppliedOutputs();
+        clearSerialHistory();
+        installedSketchSource = source.clone();
+        installedSketchSourcePresent = sourcePresent;
         return revision;
     }
 
@@ -120,6 +152,8 @@ public final class RoboBoardState {
         if (gpio == null || pwm == null || gpio.size() + pwm.size() > 1024
                 || tx == null || tx.length > MAX_TX_BYTES)
             throw new IllegalArgumentException("Applied runtime output exceeds its bound");
+        if (serialEndOffset > Long.MAX_VALUE - tx.length)
+            throw new IllegalStateException("Serial history offset exhausted");
 
         int nextOutputMask = outputMask;
         int nextHighMask = highMask;
@@ -159,9 +193,9 @@ public final class RoboBoardState {
             pwmMode = nextPwmMode;
             pwmPrescaler = nextPwmPrescaler;
             pwmCompare = nextPwmCompare;
-            lastTx = tx.clone();
             d13High = nextD13High;
         }
+        appendSerial(tx);
     }
 
     public byte[] prepareRuntimeCheckpoint(long expectedGeneration, long expectedRevision) {
@@ -226,7 +260,8 @@ public final class RoboBoardState {
             byte[] restoredFirmwareHash = requiredBytes(persisted.firmwareHash);
             byte[] restoredCheckpoint = requiredBytes(persisted.checkpoint);
             byte[] restoredCheckpointHash = requiredBytes(persisted.checkpointHash);
-            byte[] restoredTx = requiredBytes(persisted.lastTx);
+            byte[] restoredTx = requiredBytes(persisted.serialHistory);
+            byte[] restoredSource = requiredBytes(persisted.installedSketchSource);
             String restoredFault = persisted.fault == null ? "" : persisted.fault;
             validateVisualState(restoredStatus, restoredFault, persisted.running);
 
@@ -234,7 +269,10 @@ public final class RoboBoardState {
                 if (restoredFirmwareHash.length != 0 || restoredCheckpoint.length != 0
                         || restoredCheckpointHash.length != 0 || restoredStatus != Status.DISABLED
                         || persisted.running || persisted.d13High || persisted.outputMask != 0
-                        || persisted.highMask != 0 || persisted.pwmMask != 0 || restoredTx.length != 0)
+                         || persisted.highMask != 0 || persisted.pwmMask != 0 || restoredTx.length != 0
+                         || restoredSource.length != 0 || persisted.installedSketchSourcePresent
+                         || persisted.serialStartOffset != 0
+                         || persisted.serialEndOffset != 0)
                     throw new IllegalArgumentException("State exists without firmware");
             } else {
                 CRLFirmware decoded = CRLFirmware.decode(restoredFirmware);
@@ -245,6 +283,7 @@ public final class RoboBoardState {
                         || !Arrays.equals(restoredCheckpointHash, sha256(restoredCheckpoint)))
                     throw new IllegalArgumentException("Checkpoint hash mismatch");
                 if (restoredCheckpoint.length != 0) validateCheckpoint(restoredCheckpoint, decoded);
+                validateInstalledSource(restoredSource, persisted.installedSketchSourcePresent, decoded);
             }
             int validPins = (1 << OUTPUT_PIN_COUNT) - 1;
             int[] restoredPwmMode = requiredInts(persisted.pwmMode);
@@ -254,7 +293,10 @@ public final class RoboBoardState {
                     || ((persisted.stableInputMask | persisted.indeterminateInputMask) & ~validPins) != 0
                     || restoredPwmMode.length != OUTPUT_PIN_COUNT
                     || restoredPwmPrescaler.length != OUTPUT_PIN_COUNT
-                    || restoredPwmCompare.length != OUTPUT_PIN_COUNT || restoredTx.length > MAX_TX_BYTES)
+                     || restoredPwmCompare.length != OUTPUT_PIN_COUNT || restoredTx.length > MAX_TX_BYTES
+                     || persisted.serialStartOffset < 0 || persisted.serialEndOffset < persisted.serialStartOffset
+                     || persisted.serialEndOffset - persisted.serialStartOffset != restoredTx.length
+                     || persisted.serialTruncated != (persisted.serialStartOffset > 0))
                 throw new IllegalArgumentException("Applied output state is invalid");
             validatePersistedOutputs(restoredStatus, persisted.outputMask, persisted.highMask, persisted.pwmMask,
                     restoredPwmMode, restoredPwmPrescaler, restoredPwmCompare, restoredTx);
@@ -278,7 +320,11 @@ public final class RoboBoardState {
             state.pwmCompare = restoredPwmCompare.clone();
             state.stableInputMask = persisted.stableInputMask;
             state.indeterminateInputMask = persisted.indeterminateInputMask;
-            state.lastTx = restoredTx.clone();
+            state.serialHistory = restoredTx.clone();
+            state.serialStartOffset = persisted.serialStartOffset;
+            state.serialEndOffset = persisted.serialEndOffset;
+            state.installedSketchSource = restoredSource.clone();
+            state.installedSketchSourcePresent = persisted.installedSketchSourcePresent;
         } catch (IllegalArgumentException exception) {
             state.failClosed("INVALID_PERSISTED_STATE");
         }
@@ -289,7 +335,9 @@ public final class RoboBoardState {
         return new Persisted(SCHEMA_VERSION, boardId, generation, revision, firmware, firmwareHash,
                 checkpoint, checkpointHash, status.ordinal(), fault, running, d13High,
                 outputMask, highMask, pwmMask, pwmMode, pwmPrescaler, pwmCompare,
-                stableInputMask, indeterminateInputMask, lastTx);
+                stableInputMask, indeterminateInputMask, serialHistory, serialStartOffset,
+                serialEndOffset, serialStartOffset > 0, installedSketchSource,
+                installedSketchSourcePresent);
     }
 
     private void failClosed(String reason) {
@@ -297,6 +345,9 @@ public final class RoboBoardState {
         firmwareHash = new byte[0];
         checkpoint = new byte[0];
         checkpointHash = new byte[0];
+        installedSketchSource = new byte[0];
+        installedSketchSourcePresent = false;
+        clearSerialHistory();
         status = Status.DISABLED;
         fault = reason;
         running = false;
@@ -311,7 +362,24 @@ public final class RoboBoardState {
         Arrays.fill(pwmMode, 0);
         Arrays.fill(pwmPrescaler, 0);
         Arrays.fill(pwmCompare, 0);
-        lastTx = new byte[0];
+    }
+
+    private void appendSerial(byte[] tx) {
+        if (tx.length == 0) return;
+        int keepOld = Math.min(serialHistory.length, MAX_TX_BYTES - Math.min(tx.length, MAX_TX_BYTES));
+        int keepNew = Math.min(tx.length, MAX_TX_BYTES);
+        byte[] appended = new byte[keepOld + keepNew];
+        System.arraycopy(serialHistory, serialHistory.length - keepOld, appended, 0, keepOld);
+        System.arraycopy(tx, tx.length - keepNew, appended, keepOld, keepNew);
+        serialEndOffset += tx.length;
+        serialStartOffset = serialEndOffset - appended.length;
+        serialHistory = appended;
+    }
+
+    private void clearSerialHistory() {
+        serialHistory = new byte[0];
+        serialStartOffset = 0;
+        serialEndOffset = 0;
     }
 
     private void validateCheckpoint(byte[] value) {
@@ -335,9 +403,9 @@ public final class RoboBoardState {
     }
 
     private static void validatePersistedOutputs(Status status, int outputMask, int highMask, int pwmMask,
-                                                 int[] modes, int[] prescalers, int[] compares, byte[] tx) {
+                                                  int[] modes, int[] prescalers, int[] compares, byte[] tx) {
         if (status != Status.RUNNING && status != Status.SUSPENDED
-                && (outputMask != 0 || highMask != 0 || pwmMask != 0 || tx.length != 0))
+                && (outputMask != 0 || highMask != 0 || pwmMask != 0))
             throw new IllegalArgumentException("Inactive board has applied outputs");
         int supportedPwmPins = (1 << 3) | (1 << 5) | (1 << 6) | (1 << 9) | (1 << 10) | (1 << 11);
         if ((pwmMask & ~supportedPwmPins) != 0) throw new IllegalArgumentException("PWM pin is not mapped");
@@ -397,6 +465,19 @@ public final class RoboBoardState {
         return value;
     }
 
+    private static void validateInstalledSource(byte[] source, boolean present, CRLFirmware firmware) {
+        if (!present) {
+            if (source.length != 0) throw new IllegalArgumentException("Sketch source presence is inconsistent");
+            return;
+        }
+        if (source.length > SourceBundle.MAX_FILE_BYTES)
+            throw new IllegalArgumentException("Installed sketch exceeds its bound");
+        SourceBundle bundle = new SourceBundle(SKETCH_NAME,
+                Collections.singletonMap(SKETCH_FILE, source));
+        if (!Arrays.equals(bundle.getSourceHash(), firmware.getSourceHash()))
+            throw new IllegalArgumentException("Installed sketch hash mismatch");
+    }
+
     private static byte[] sha256(byte[] value) {
         try {
             return MessageDigest.getInstance("SHA-256").digest(value);
@@ -424,7 +505,29 @@ public final class RoboBoardState {
     public int[] getPwmCompare() { return pwmCompare.clone(); }
     public int getStableInputMask() { return stableInputMask; }
     public int getIndeterminateInputMask() { return indeterminateInputMask; }
-    public byte[] getLastTx() { return lastTx.clone(); }
+    public byte[] getLastTx() { return serialHistory.clone(); }
+    public byte[] getInstalledSketchSource() { return installedSketchSource.clone(); }
+    public boolean hasInstalledSketchSource() { return installedSketchSourcePresent; }
+    public SerialHistorySnapshot getSerialHistorySnapshot() {
+        return new SerialHistorySnapshot(serialHistory, serialStartOffset, serialEndOffset);
+    }
+
+    public static final class SerialHistorySnapshot {
+        private final byte[] bytes;
+        private final long startOffset;
+        private final long endOffset;
+
+        private SerialHistorySnapshot(byte[] bytes, long startOffset, long endOffset) {
+            this.bytes = bytes.clone();
+            this.startOffset = startOffset;
+            this.endOffset = endOffset;
+        }
+
+        public byte[] getBytes() { return bytes.clone(); }
+        public long getStartOffset() { return startOffset; }
+        public long getEndOffset() { return endOffset; }
+        public boolean isTruncated() { return startOffset > 0; }
+    }
 
     static final class Persisted {
         final int schema;
@@ -447,7 +550,12 @@ public final class RoboBoardState {
         final int[] pwmCompare;
         final int stableInputMask;
         final int indeterminateInputMask;
-        final byte[] lastTx;
+        final byte[] serialHistory;
+        final long serialStartOffset;
+        final long serialEndOffset;
+        final boolean serialTruncated;
+        final byte[] installedSketchSource;
+        final boolean installedSketchSourcePresent;
 
         Persisted(int schema, UUID boardId, long generation, long revision, byte[] firmware, byte[] firmwareHash,
                    byte[] checkpoint, byte[] checkpointHash, int statusOrdinal, String fault,
@@ -471,6 +579,19 @@ public final class RoboBoardState {
                   boolean running, boolean d13High, int outputMask, int highMask, int pwmMask,
                   int[] pwmMode, int[] pwmPrescaler, int[] pwmCompare,
                   int stableInputMask, int indeterminateInputMask, byte[] lastTx) {
+            this(schema, boardId, generation, revision, firmware, firmwareHash, checkpoint, checkpointHash,
+                    statusOrdinal, fault, running, d13High, outputMask, highMask, pwmMask, pwmMode,
+                    pwmPrescaler, pwmCompare, stableInputMask, indeterminateInputMask, lastTx,
+                    0, lastTx == null ? 0 : lastTx.length, false, new byte[0], false);
+        }
+
+        Persisted(int schema, UUID boardId, long generation, long revision, byte[] firmware, byte[] firmwareHash,
+                  byte[] checkpoint, byte[] checkpointHash, int statusOrdinal, String fault,
+                  boolean running, boolean d13High, int outputMask, int highMask, int pwmMask,
+                  int[] pwmMode, int[] pwmPrescaler, int[] pwmCompare,
+                  int stableInputMask, int indeterminateInputMask, byte[] serialHistory,
+                  long serialStartOffset, long serialEndOffset, boolean serialTruncated,
+                  byte[] installedSketchSource, boolean installedSketchSourcePresent) {
             this.schema = schema;
             this.boardId = boardId;
             this.generation = generation;
@@ -491,7 +612,12 @@ public final class RoboBoardState {
             this.pwmCompare = pwmCompare == null ? null : pwmCompare.clone();
             this.stableInputMask = stableInputMask;
             this.indeterminateInputMask = indeterminateInputMask;
-            this.lastTx = lastTx == null ? null : lastTx.clone();
+            this.serialHistory = serialHistory == null ? null : serialHistory.clone();
+            this.serialStartOffset = serialStartOffset;
+            this.serialEndOffset = serialEndOffset;
+            this.serialTruncated = serialTruncated;
+            this.installedSketchSource = installedSketchSource == null ? null : installedSketchSource.clone();
+            this.installedSketchSourcePresent = installedSketchSourcePresent;
         }
     }
 }

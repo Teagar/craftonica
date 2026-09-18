@@ -25,5 +25,18 @@ mkdir -p "$RUNTIME_DIR"
 rm -f "$RUNTIME_DIR"/craftonica-*-runtime-worker.jar
 install -m 0644 "$WORKER_JAR" "$RUNTIME_DIR/$(basename "$WORKER_JAR")"
 install -m 0755 "$ROOT/scripts/runtime/launch-worker.sh" "$RUNTIME_DIR/launch-worker.sh"
+COMPILER_DIR="$INSTANCE/minecraft/craftonica-compiler"
+[[ ! -L "$COMPILER_DIR" ]] || { echo "Diretório do compilador não pode ser link simbólico" >&2; exit 1; }
+install -d -m 0755 "$COMPILER_DIR/scripts/firmware" "$COMPILER_DIR/firmware/abi" "$COMPILER_DIR/firmware/patches"
+install -d -m 0700 "$COMPILER_DIR/state" "$COMPILER_DIR/state/work" "$COMPILER_DIR/state/cache"
+install -m 0644 "$ROOT/firmware/compiler-manifest-v1.txt" "$COMPILER_DIR/firmware/compiler-manifest-v1.txt"
+install -m 0644 "$ROOT/firmware/abi/craftonica_abi.S" "$COMPILER_DIR/firmware/abi/craftonica_abi.S"
+install -m 0644 "$ROOT/firmware/patches/arduino-avr-core-1.8.6-invalid-pin-trap.patch" \
+    "$COMPILER_DIR/firmware/patches/arduino-avr-core-1.8.6-invalid-pin-trap.patch"
+for compiler_file in bootstrap-avr-toolchain.sh compile-sketch.sh generate-seccomp.py prepare_bundle.py sandbox-build.sh sandbox-launch.sh; do
+    install -m 0755 "$ROOT/scripts/firmware/$compiler_file" "$COMPILER_DIR/scripts/firmware/$compiler_file"
+done
+"$COMPILER_DIR/scripts/firmware/bootstrap-avr-toolchain.sh"
 sha256sum "$INSTANCE/minecraft/mods/$(basename "${JARS[0]}")"
 sha256sum "$RUNTIME_DIR/$(basename "$WORKER_JAR")"
+sha256sum "$COMPILER_DIR/firmware/compiler-manifest-v1.txt"

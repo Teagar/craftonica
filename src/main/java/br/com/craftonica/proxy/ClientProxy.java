@@ -3,7 +3,10 @@ package br.com.craftonica.proxy;
 import br.com.craftonica.client.ClientEventHandler;
 import br.com.craftonica.client.automation.AutomationBridge;
 import br.com.craftonica.client.render.ElectricalBlockRenderer;
+import br.com.craftonica.client.sketch.SketchClientController;
 import br.com.craftonica.render.CraftonicaRenderIds;
+import br.com.craftonica.sketch.network.EditorStateMessage;
+import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.client.registry.RenderingRegistry;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiScreenBook;
@@ -23,6 +26,7 @@ public final class ClientProxy extends CommonProxy {
         ElectricalBlockRenderer renderer = new ElectricalBlockRenderer();
         RenderingRegistry.registerBlockHandler(renderer);
         MinecraftForge.EVENT_BUS.register(new ClientEventHandler(renderer));
+        FMLCommonHandler.instance().bus().register(SketchClientController.INSTANCE);
         AutomationBridge.startConfigured();
     }
 
@@ -39,5 +43,15 @@ public final class ClientProxy extends CommonProxy {
         tag.setTag("pages", pages);
         book.setTagCompound(tag);
         Minecraft.getMinecraft().displayGuiScreen(new GuiScreenBook(player, book, false));
+    }
+
+    @Override
+    public void handleEditorState(EditorStateMessage state) {
+        SketchClientController.INSTANCE.enqueue(state);
+    }
+
+    @Override
+    public void prepareEditorOpen(int dimension, int x, int y, int z) {
+        SketchClientController.INSTANCE.allowOpen(dimension, x, y, z);
     }
 }

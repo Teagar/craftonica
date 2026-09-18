@@ -108,6 +108,37 @@ public final class AvrInterpreterTest {
     }
 
     @Test
+    public void indirectJumpAndCallUseWordAddressInZ() throws Exception {
+        AvrMachineState jump = new AvrMachineState();
+        jump.setRegister(30, 2);
+        new AvrInterpreter(words(0x9409, 0xffff, 0xcfff))
+                .executeToAbsoluteTarget(jump, 2, AvrInputs.allLow());
+        assertEquals(2, jump.getWordPc());
+
+        AvrMachineState call = new AvrMachineState();
+        call.setRegister(30, 2);
+        AvrInterpreter interpreter = new AvrInterpreter(words(0x9509, 0xcfff, 0x9508));
+        interpreter.executeToAbsoluteTarget(call, 3, AvrInputs.allLow());
+        assertEquals(2, call.getWordPc());
+        interpreter.executeToAbsoluteTarget(call, 7, AvrInputs.allLow());
+        assertEquals(1, call.getWordPc());
+    }
+
+    @Test
+    public void skipBitInstructionsHandleClearAndSetRegisters() throws Exception {
+        AvrMachineState clear = new AvrMachineState();
+        new AvrInterpreter(words(0xfc00, 0xffff, 0xcfff))
+                .executeToAbsoluteTarget(clear, 2, AvrInputs.allLow());
+        assertEquals(2, clear.getWordPc());
+
+        AvrMachineState set = new AvrMachineState();
+        set.setRegister(0, 1);
+        new AvrInterpreter(words(0xfe00, 0xffff, 0xcfff))
+                .executeToAbsoluteTarget(set, 2, AvrInputs.allLow());
+        assertEquals(2, set.getWordPc());
+    }
+
+    @Test
     public void timer0OverflowUsesAtmega328pVectorAndSiliconStackOrder() throws Exception {
         byte[] flash = new byte[68];
         putWord(flash, 0, 0x0000);
@@ -169,6 +200,26 @@ public final class AvrInterpreterTest {
         assertEquals(64, last.getCompare());
         assertEquals(64, last.getPrescaler());
         assertFalse(last.isPhaseCorrect());
+    }
+
+    @Test
+    public void uartStatusPreservesHardwareBitsAndUsesTxcWriteOneToClear() throws Exception {
+        byte[] flash = words(
+                ldi(24, 0x41), sts(24), 0x00c6,
+                ldi(24, 0x02), sts(24), 0x00c0,
+                lds(25), 0x00c0,
+                ldi(24, 0x42), sts(24), 0x00c6,
+                ldi(24, 0x40), sts(24), 0x00c0,
+                lds(26), 0x00c0,
+                0xcfff);
+        AvrMachineState state = new AvrMachineState();
+        AvrExecutionResult result = new AvrInterpreter(flash)
+                .executeToAbsoluteTarget(state, 30, AvrInputs.allLow());
+
+        assertArrayEquals(new byte[] { 0x41, 0x42 }, result.getTransmittedBytes());
+        assertEquals(0x62, state.getRegister(25));
+        assertEquals(0x20, state.getRegister(26));
+        assertEquals(0x20, state.getMmio(0xc0));
     }
 
     @Test

@@ -18,7 +18,7 @@ public final class AvrFault extends Exception {
     private final int wordPc;
 
     public AvrFault(Code code, String message, long cycle, int wordPc) {
-        super(message);
+        super(message + " at word PC " + wordPc + ", cycle " + cycle);
         this.code = code;
         this.cycle = cycle;
         this.wordPc = wordPc;

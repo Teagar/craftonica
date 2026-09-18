@@ -1,6 +1,7 @@
 package br.com.craftonica.tile;
 
 import br.com.craftonica.firmware.CRLFirmware;
+import br.com.craftonica.firmware.SourceBundle;
 import br.com.craftonica.runtime.core.AvrCheckpointCodec;
 import br.com.craftonica.runtime.core.AvrFault;
 import br.com.craftonica.runtime.core.AvrMachineState;
@@ -121,6 +122,16 @@ public final class TileEntityRoboBoard extends TileEntity {
         return revision;
     }
 
+    public long installCompiledSketch(SourceBundle sources, CRLFirmware firmware, long expectedRevision) {
+        requireServer();
+        int oldVisual = visualFlags();
+        long revision = state.installCompiledSketch(sources, firmware, expectedRevision);
+        cancelInFlight();
+        invalidatePortsAndDefer();
+        publishMutation(oldVisual);
+        return revision;
+    }
+
     public long startFirmware(long expectedRevision) {
         requireServer();
         int oldVisual = visualFlags();
@@ -197,7 +208,13 @@ public final class TileEntityRoboBoard extends TileEntity {
         tag.setIntArray("PwmCompare", persisted.pwmCompare);
         tag.setInteger("StableInputMask", persisted.stableInputMask);
         tag.setInteger("IndeterminateInputMask", persisted.indeterminateInputMask);
-        tag.setByteArray("LastTx", persisted.lastTx);
+        tag.setByteArray("LastTx", persisted.serialHistory);
+        tag.setByteArray("SerialHistory", persisted.serialHistory);
+        tag.setLong("SerialStart", persisted.serialStartOffset);
+        tag.setLong("SerialEnd", persisted.serialEndOffset);
+        tag.setBoolean("SerialTruncated", persisted.serialTruncated);
+        tag.setByteArray("SketchSource", persisted.installedSketchSource);
+        tag.setBoolean("HasSketchSource", persisted.installedSketchSourcePresent);
     }
 
     @Override
@@ -205,6 +222,8 @@ public final class TileEntityRoboBoard extends TileEntity {
         super.readFromNBT(tag);
         UUID boardId = tag.hasKey("BoardMost") && tag.hasKey("BoardLeast")
                 ? new UUID(tag.getLong("BoardMost"), tag.getLong("BoardLeast")) : null;
+        boolean hasSerialHistory = tag.hasKey("SerialHistory");
+        byte[] serialHistory = hasSerialHistory ? tag.getByteArray("SerialHistory") : tag.getByteArray("LastTx");
         state = RoboBoardState.restore(new RoboBoardState.Persisted(
                 tag.hasKey("Schema") ? tag.getInteger("Schema") : -1,
                 boardId,
@@ -225,8 +244,12 @@ public final class TileEntityRoboBoard extends TileEntity {
                 intArray(tag, "PwmPrescaler"),
                 intArray(tag, "PwmCompare"),
                 tag.getInteger("StableInputMask"),
-                tag.getInteger("IndeterminateInputMask"),
-                tag.getByteArray("LastTx")));
+                tag.getInteger("IndeterminateInputMask"), serialHistory,
+                hasSerialHistory ? tag.getLong("SerialStart") : 0,
+                hasSerialHistory ? tag.getLong("SerialEnd") : serialHistory.length,
+                hasSerialHistory && tag.getBoolean("SerialTruncated"),
+                tag.hasKey("SketchSource") ? tag.getByteArray("SketchSource") : new byte[0],
+                tag.hasKey("HasSketchSource") && tag.getBoolean("HasSketchSource")));
         unloaded = false;
         inFlight = null;
         requestMetadata = null;
@@ -468,6 +491,11 @@ public final class TileEntityRoboBoard extends TileEntity {
     public int getPinPwmCompare(int pin) { requirePin(pin); return state.getPwmCompare()[pin]; }
     public int getStableInputMask() { return state.getStableInputMask(); }
     public int getIndeterminateInputMask() { return state.getIndeterminateInputMask(); }
+    public byte[] getInstalledSketchSource() { return state.getInstalledSketchSource(); }
+    public boolean hasInstalledSketchSource() { return state.hasInstalledSketchSource(); }
+    public RoboBoardState.SerialHistorySnapshot getSerialHistorySnapshot() {
+        return state.getSerialHistorySnapshot();
+    }
 
     private static void requirePin(int pin) {
         if (pin < 0 || pin >= RoboBoardState.OUTPUT_PIN_COUNT) throw new IndexOutOfBoundsException("pin");
