@@ -1,11 +1,15 @@
-# Craftônica: Robotics Lab 0.4.2
+# Craftônica: Robotics Lab 1.0.0
 
 MVP educacional para Minecraft 1.7.10 e Forge 10.13.4.1614. O mundo funciona
 como uma bancada: fonte, fios, botão, resistores, LED e GND são blocos reais. A
 simulação elétrica é independente da Redstone e executada pelo servidor.
 
-O plano pós-MVP, incluindo o contrato da futura placa Arduino-compatible, está
-em [`ROADMAP.md`](ROADMAP.md).
+O histórico do plano do MVP até a placa Arduino-compatible está em
+[`ROADMAP.md`](ROADMAP.md).
+
+Para instalar e operar a versão estável, comece em
+[`docs/installation-1.0.md`](docs/installation-1.0.md). Os roteiros de aluno,
+professor, solução de problemas e release estão no [`docs/README.md`](docs/README.md).
 
 A arquitetura normativa da RoboBoard e do pipeline de sketches está em
 [`docs/rfc/0002-runtime-arduino-compatible-seguro.md`](docs/rfc/0002-runtime-arduino-compatible-seguro.md).
@@ -26,7 +30,7 @@ O projeto não suporta Java posterior ao 8 porque usa ForgeGradle 1.2.
 
 O script baixa uma distribuição Temurin 8 fixada, verifica o SHA-256 e a guarda
 em `~/.cache/craftonica`, sem alterar o Java padrão. O artefato instalável é
-`build/libs/craftonica-0.4.2.jar`.
+`build/libs/craftonica-1.0.0.jar`.
 
 Para reconstruir e instalar com segurança na instância dedicada do Prism:
 
@@ -346,7 +350,7 @@ gate de precisão e desempenho está em
 
 - Não há CA, capacitores, indutores ou transistores.
 - A RoboBoard não simula áudio, mecânica, servos ou ponte H; essas integrações
-  pertencem às próximas etapas.
+  estão fora do escopo da versão 1.0.
 - A fonte e o GND têm terminais apenas horizontais no fluxo normal de colocação.
 - Curtos são limitados pela resistência interna simplificada da fonte; não há
   ainda um modelo não linear de limitação de corrente.

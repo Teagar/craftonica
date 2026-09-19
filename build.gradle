@@ -15,7 +15,7 @@ buildscript {
 
 apply plugin: "forge"
 
-version = "0.4.2"
+version = "1.0.0"
 group = "br.com.craftonica"
 archivesBaseName = "craftonica"
 
@@ -77,6 +77,20 @@ task verifyReleaseJar(dependsOn: reobf) << {
     } finally {
         archive.close()
     }
+}
+
+task verifyReleaseMetadata(dependsOn: processResources) << {
+    def release = version.toString()
+    def source = file("src/main/java/br/com/craftonica/Craftonica.java").getText("UTF-8")
+    def metadata = file("${buildDir}/resources/main/mcmod.info").getText("UTF-8")
+    def readme = file("README.md").getText("UTF-8")
+    if (!source.contains("VERSION = \"${release}\""))
+        throw new GradleException("Craftonica.VERSION differs from project version ${release}")
+    if (!metadata.contains("\"version\": \"${release}\""))
+        throw new GradleException("Processed mcmod.info differs from project version ${release}")
+    if (!readme.contains("Craftônica: Robotics Lab ${release}")
+            || !readme.contains("craftonica-${release}.jar"))
+        throw new GradleException("README release metadata differs from project version ${release}")
 }
 
 task verifyElectricalGates(type: Test, dependsOn: testClasses) {
@@ -147,6 +161,7 @@ wallClockGate=false
 }
 
 build.dependsOn verifyReleaseJar
+build.dependsOn verifyReleaseMetadata
 build.dependsOn verifyElectricalGates
 build.dependsOn verifyFirmwareGates
 build.dependsOn verifyRuntimeGates
