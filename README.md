@@ -16,6 +16,10 @@ Arduino clássicos usando `/craftonica showcase create`. Consulte
 [`docs/showcase-map.md`](docs/showcase-map.md) antes de executar: a área delimitada
 ao redor do jogador é substituída pela sala.
 
+O comando `/craftonica uno create` gera uma placa Uno R3 funcional com D0-D13,
+A0-A5, 5 V e GND vinculados à mesma RoboBoard. Consulte
+[`docs/uno-r3-generator.md`](docs/uno-r3-generator.md).
+
 A arquitetura normativa da RoboBoard e do pipeline de sketches está em
 [`docs/rfc/0002-runtime-arduino-compatible-seguro.md`](docs/rfc/0002-runtime-arduino-compatible-seguro.md).
 
