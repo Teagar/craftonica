@@ -1,16 +1,23 @@
 package br.com.craftonica.tile;
 
+import java.util.UUID;
+
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
 public final class TileEntityRoboPortTest {
+    @BeforeClass
+    public static void registerTestTile() {
+        TileEntity.addMapping(TileEntityRoboPort.class, "craftonica_robo_port_test");
+    }
+
     @Test
     public void validRoleAndRevisionRoundTripWithoutElectricalClientState() {
-        TileEntity.addMapping(TileEntityRoboPort.class, "craftonica_robo_port_test");
         NBTTagCompound encoded = new NBTTagCompound();
         encoded.setInteger("PortSchema", TileEntityRoboPort.SCHEMA_VERSION);
         encoded.setByte("Role", (byte) TileEntityRoboPort.Role.POWER_5V.ordinal());
@@ -53,6 +60,32 @@ public final class TileEntityRoboPortTest {
         TileEntityRoboPort port = new TileEntityRoboPort();
         port.readFromNBT(legacy);
         assertEquals(TileEntityRoboPort.Role.A0, port.getRole());
+    }
+
+    @Test
+    public void remoteBindingDataAndAllUnoRolesSurviveNbt() {
+        assertEquals(22, TileEntityRoboPort.Role.values().length);
+        UUID boardId = UUID.randomUUID();
+        NBTTagCompound encoded = new NBTTagCompound();
+        encoded.setInteger("PortSchema", TileEntityRoboPort.SCHEMA_VERSION);
+        encoded.setByte("Role", (byte) TileEntityRoboPort.Role.A5.ordinal());
+        encoded.setInteger("BoardX", 10);
+        encoded.setInteger("BoardY", 64);
+        encoded.setInteger("BoardZ", -20);
+        encoded.setLong("BoardMost", boardId.getMostSignificantBits());
+        encoded.setLong("BoardLeast", boardId.getLeastSignificantBits());
+        encoded.setByte("Outward", (byte) 5);
+
+        TileEntityRoboPort port = new TileEntityRoboPort();
+        port.readFromNBT(encoded);
+        NBTTagCompound roundTrip = new NBTTagCompound();
+        port.writeToNBT(roundTrip);
+
+        assertEquals(boardId, port.getOwnerBoardId());
+        assertEquals(10, port.getOwnerBoardX());
+        assertEquals(64, port.getOwnerBoardY());
+        assertEquals(-20, port.getOwnerBoardZ());
+        assertEquals(5, roundTrip.getByte("Outward"));
     }
 
     @Test

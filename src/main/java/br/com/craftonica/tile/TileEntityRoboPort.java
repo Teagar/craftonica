@@ -11,9 +11,10 @@ import net.minecraft.tileentity.TileEntity;
 
 import java.util.UUID;
 
-/** Persisted ownership and electrical role for one RoboBoard face. */
+/** Persisted ownership, terminal direction and electrical role for one RoboBoard port. */
 public final class TileEntityRoboPort extends TileEntity {
     public static final int SCHEMA_VERSION = 1;
+    public static final int MAX_LINK_DISTANCE = 64;
     public static final double DRIVE_RESISTANCE_OHMS = 25.0;
     public static final double INPUT_PULLUP_RESISTANCE_OHMS = 20000.0;
     public static final double LOGIC_VOLTS = 5.0;
@@ -34,6 +35,7 @@ public final class TileEntityRoboPort extends TileEntity {
     private int boardZ;
     private UUID boardId;
     private int outwardSide = -1;
+    private boolean registered;
 
     public boolean bindToAdjacentBoard() {
         if (worldObj == null || worldObj.isRemote) return false;
@@ -47,12 +49,26 @@ public final class TileEntityRoboPort extends TileEntity {
             clearBinding();
             return false;
         }
-        boardX = found.x;
-        boardY = found.y;
-        boardZ = found.z;
-        boardId = found.tile.getBoardId();
-        outwardSide = opposite(found.side);
+        return bindToBoard(found.tile, opposite(found.side));
+    }
+
+    public boolean bindToBoard(TileEntityRoboBoard board, int terminalSide) {
+        requireServer();
+        if (board == null || board.getWorldObj() != worldObj || terminalSide < 0 || terminalSide >= 6)
+            return false;
+        if (revision == Long.MAX_VALUE) return false;
+        double dx = xCoord - board.xCoord, dy = yCoord - board.yCoord, dz = zCoord - board.zCoord;
+        if (dx * dx + dy * dy + dz * dz > MAX_LINK_DISTANCE * MAX_LINK_DISTANCE) return false;
+        RoboPortRegistry.unregister(this);
+        boardX = board.xCoord;
+        boardY = board.yCoord;
+        boardZ = board.zCoord;
+        boardId = board.getBoardId();
+        outwardSide = terminalSide;
+        registered = true;
+        RoboPortRegistry.register(this);
         if (role.isDigital() && !isDigitalRoleAvailable(role)) role = firstAvailableDigitalRole();
+        revision++;
         markDirty();
         return true;
     }
@@ -60,10 +76,17 @@ public final class TileEntityRoboPort extends TileEntity {
     public boolean validateBinding() {
         if (worldObj == null || worldObj.isRemote || boardId == null) return false;
         if (!worldObj.getChunkProvider().chunkExists(boardX >> 4, boardZ >> 4)) return false;
-        AdjacentBoard found = findSingleAdjacentBoard();
-        boolean valid = found != null && boardX == found.x && boardY == found.y && boardZ == found.z
-                && boardId.equals(found.tile.getBoardId()) && outwardSide == opposite(found.side);
+        double dx = xCoord - boardX, dy = yCoord - boardY, dz = zCoord - boardZ;
+        TileEntity tile = worldObj.getTileEntity(boardX, boardY, boardZ);
+        boolean valid = tile instanceof TileEntityRoboBoard
+                && boardId.equals(((TileEntityRoboBoard) tile).getBoardId())
+                && outwardSide >= 0 && outwardSide < 6
+                && dx * dx + dy * dy + dz * dz <= MAX_LINK_DISTANCE * MAX_LINK_DISTANCE;
         if (!valid) clearBinding();
+        else if (!registered) {
+            registered = true;
+            RoboPortRegistry.register(this);
+        }
         return valid;
     }
 
@@ -139,6 +162,17 @@ public final class TileEntityRoboPort extends TileEntity {
         return tile instanceof TileEntityRoboBoard ? (TileEntityRoboBoard) tile : null;
     }
 
+    public boolean isBoundTo(TileEntityRoboBoard board) {
+        return board != null && validateBinding() && board.getWorldObj() == worldObj
+                && boardId.equals(board.getBoardId()) && boardX == board.xCoord
+                && boardY == board.yCoord && boardZ == board.zCoord;
+    }
+
+    @Override
+    public void updateEntity() {
+        if (worldObj != null && !worldObj.isRemote && boardId != null && !registered) validateBinding();
+    }
+
     @Override
     public void writeToNBT(NBTTagCompound tag) {
         super.writeToNBT(tag);
@@ -198,12 +232,16 @@ public final class TileEntityRoboPort extends TileEntity {
 
     @Override
     public void invalidate() {
+        RoboPortRegistry.unregister(this);
+        registered = false;
         invalidateNetwork();
         super.invalidate();
     }
 
     @Override
     public void onChunkUnload() {
+        RoboPortRegistry.unregister(this);
+        registered = false;
         invalidateNetwork();
         super.onChunkUnload();
     }
@@ -222,6 +260,8 @@ public final class TileEntityRoboPort extends TileEntity {
     }
 
     private void clearBinding() {
+        RoboPortRegistry.unregister(this);
+        registered = false;
         boardId = null;
         outwardSide = -1;
         if (worldObj != null) markDirty();
@@ -242,13 +282,10 @@ public final class TileEntityRoboPort extends TileEntity {
 
     private boolean isDigitalRoleAvailable(Role candidate) {
         if (!candidate.isDigital() || worldObj == null || boardId == null) return true;
-        for (int side = 0; side < 6; side++) {
-            int x = boardX + dx(side), y = boardY + dy(side), z = boardZ + dz(side);
-            if (x == xCoord && y == yCoord && z == zCoord) continue;
-            if (!worldObj.getChunkProvider().chunkExists(x >> 4, z >> 4)) continue;
-            TileEntity other = worldObj.getTileEntity(x, y, z);
-            if (other instanceof TileEntityRoboPort && ((TileEntityRoboPort) other).role == candidate) return false;
-        }
+        TileEntity board = worldObj.getTileEntity(boardX, boardY, boardZ);
+        if (!(board instanceof TileEntityRoboBoard)) return false;
+        for (TileEntityRoboPort other : RoboPortRegistry.loadedPorts((TileEntityRoboBoard) board))
+            if (other != this && other.role == candidate) return false;
         return true;
     }
 

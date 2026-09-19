@@ -13,7 +13,7 @@ import net.minecraft.util.ChatComponentTranslation;
 import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
 
-/** One physical, outward-facing electrical terminal for a directly adjacent RoboBoard. */
+/** One physical, outward-facing electrical terminal linked to a RoboBoard. */
 public final class BlockRoboPort extends BlockContainer implements IElectricalBlock {
     public BlockRoboPort() {
         super(Material.iron);
