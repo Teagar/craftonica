@@ -18,6 +18,7 @@ import net.minecraft.network.play.server.S35PacketUpdateTileEntity;
 import net.minecraft.tileentity.TileEntity;
 
 import java.util.UUID;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeoutException;
 
@@ -40,6 +41,7 @@ public final class TileEntityRoboBoard extends TileEntity {
     private long resumeAfterWorldTick = Long.MIN_VALUE;
     private boolean portsInitialized;
     private UUID ownerId;
+    private byte[] templateSketchSource = new byte[0];
     private boolean migrationPending;
     private NBTTagCompound preservedInvalidState;
 
@@ -207,6 +209,7 @@ public final class TileEntityRoboBoard extends TileEntity {
             tag.setLong("OwnerMost", ownerId.getMostSignificantBits());
             tag.setLong("OwnerLeast", ownerId.getLeastSignificantBits());
         }
+        if (templateSketchSource.length > 0) tag.setByteArray("TemplateSketch", templateSketchSource);
         tag.setInteger("Schema", persisted.schema);
         tag.setLong("BoardMost", persisted.boardId.getMostSignificantBits());
         tag.setLong("BoardLeast", persisted.boardId.getLeastSignificantBits());
@@ -244,6 +247,8 @@ public final class TileEntityRoboBoard extends TileEntity {
         NBTTagCompound persisted = migration.getValue();
         ownerId = persisted.hasKey("OwnerMost") && persisted.hasKey("OwnerLeast")
                 ? new UUID(persisted.getLong("OwnerMost"), persisted.getLong("OwnerLeast")) : null;
+        byte[] template = persisted.hasKey("TemplateSketch") ? persisted.getByteArray("TemplateSketch") : new byte[0];
+        templateSketchSource = template.length <= SourceBundle.MAX_FILE_BYTES ? template : new byte[0];
         UUID boardId = persisted.hasKey("BoardMost") && persisted.hasKey("BoardLeast")
                 ? new UUID(persisted.getLong("BoardMost"), persisted.getLong("BoardLeast")) : null;
         boolean hasSerialHistory = persisted.hasKey("SerialHistory");
@@ -512,6 +517,16 @@ public final class TileEntityRoboBoard extends TileEntity {
     public boolean canAccess(EntityPlayer player) {
         return player != null && (ownerId != null && ownerId.equals(player.getUniqueID())
                 || player.canCommandSenderUseCommand(2, "craftonica"));
+    }
+    public void setTemplateSketchSource(String source) {
+        requireServer();
+        byte[] encoded = source == null ? new byte[0] : source.getBytes(StandardCharsets.UTF_8);
+        if (encoded.length > SourceBundle.MAX_FILE_BYTES) throw new IllegalArgumentException("Template exceeds source limit");
+        templateSketchSource = encoded;
+        markDirty();
+    }
+    public byte[] getEditorSketchSource() {
+        return hasInstalledSketchSource() ? getInstalledSketchSource() : templateSketchSource.clone();
     }
     public boolean isRunning() { return useClientVisual() ? clientRunning : state.isRunning(); }
     public boolean hasFault() { return useClientVisual() ? clientFault : state.hasFault(); }

@@ -96,6 +96,20 @@ public final class PersistentTileMigrationTest {
     }
 
     @Test
+    public void roboBoardShowcaseTemplateSurvivesRoundTripWithoutFirmware() {
+        TileEntityRoboBoard original = new TileEntityRoboBoard();
+        NBTTagCompound saved = new NBTTagCompound();
+        original.writeToNBT(saved);
+        saved.setByteArray("TemplateSketch", "void setup(){}\nvoid loop(){}\n"
+                .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        TileEntityRoboBoard restored = new TileEntityRoboBoard();
+        restored.readFromNBT(saved);
+        assertEquals("void setup(){}\nvoid loop(){}\n",
+                new String(restored.getEditorSketchSource(), java.nio.charset.StandardCharsets.UTF_8));
+        assertFalse(restored.hasInstalledSketchSource());
+    }
+
+    @Test
     public void simpleFutureTileStateIsPreservedOpaque() {
         NBTTagCompound future = new NBTTagCompound();
         future.setInteger("CraftonicaDataVersion", 7);

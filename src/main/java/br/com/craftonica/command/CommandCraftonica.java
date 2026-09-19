@@ -8,6 +8,7 @@ import br.com.craftonica.lesson.TeacherActivityData;
 import br.com.craftonica.lesson.TeacherActivityParser;
 import br.com.craftonica.lesson.TeacherProgressExporter;
 import br.com.craftonica.network.BlockPosition;
+import br.com.craftonica.showcase.ShowcaseGenerator;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.command.WrongUsageException;
@@ -35,6 +36,8 @@ public final class CommandCraftonica extends CommandBase {
         EntityPlayerMP player = (EntityPlayerMP) sender;
         if (args.length >= 2 && "teacher".equals(args[0])) {
             teacher(player, args);
+        } else if (args.length == 2 && "showcase".equals(args[0]) && "create".equals(args[1])) {
+            showcase(player);
         } else if (args.length == 2 && "lesson".equals(args[0]) && "list".equals(args[1])) {
             for (String id : LessonCatalog.ids()) player.addChatMessage(new ChatComponentText(id));
             String assigned = TeacherActivityData.get(player.worldObj).getAssignedId();
@@ -48,6 +51,19 @@ public final class CommandCraftonica extends CommandBase {
         } else {
             throw new WrongUsageException(getCommandUsage(sender));
         }
+    }
+
+    private void showcase(EntityPlayerMP player) {
+        if (!player.canCommandSenderUseCommand(2, getCommandName())) {
+            player.addChatMessage(new ChatComponentTranslation("message.craftonica.teacher.denied"));
+            return;
+        }
+        int x = ((int) Math.floor(player.posX) & ~15) - 24;
+        int y = Math.max(4, (int) Math.floor(player.posY));
+        int z = ((int) Math.floor(player.posZ) & ~15) - 8;
+        ShowcaseGenerator.generate((WorldServer) player.worldObj, player, x, y, z);
+        player.setPositionAndUpdate(x + 24.5D, y + 1.0D, z + 2.5D);
+        player.addChatMessage(new ChatComponentTranslation("message.craftonica.showcase.created", x, y, z));
     }
 
     private void check(EntityPlayerMP player, String[] args) {

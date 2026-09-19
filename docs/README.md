@@ -3,6 +3,7 @@
 - [Instalacao de cliente e servidor](installation-1.0.md)
 - [Guia do aluno](student-guide.md)
 - [Guia do professor](teacher-guide.md)
+- [Mapa laboratório Arduino](showcase-map.md)
 - [Compatibilidade e sandbox Arduino](firmware-compiler.md)
 - [Migracao e rollback](../README.md#migracao-e-rollback-de-mundos)
 - [Solucao de problemas](troubleshooting.md)

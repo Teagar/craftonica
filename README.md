@@ -11,6 +11,11 @@ Para instalar e operar a versão estável, comece em
 [`docs/installation-1.0.md`](docs/installation-1.0.md). Os roteiros de aluno,
 professor, solução de problemas e release estão no [`docs/README.md`](docs/README.md).
 
+Um operador pode gerar automaticamente uma sala superplana com seis projetos
+Arduino clássicos usando `/craftonica showcase create`. Consulte
+[`docs/showcase-map.md`](docs/showcase-map.md) antes de executar: a área delimitada
+ao redor do jogador é substituída pela sala.
+
 A arquitetura normativa da RoboBoard e do pipeline de sketches está em
 [`docs/rfc/0002-runtime-arduino-compatible-seguro.md`](docs/rfc/0002-runtime-arduino-compatible-seguro.md).
 

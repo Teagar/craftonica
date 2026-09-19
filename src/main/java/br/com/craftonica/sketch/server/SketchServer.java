@@ -274,7 +274,7 @@ public final class SketchServer {
 
     private static void sendState(EntityPlayerMP player, TileEntityRoboBoard board, String code, String diagnostics) {
         RoboBoardState.SerialHistorySnapshot history = board.getSerialHistorySnapshot();
-        byte[] source = board.hasInstalledSketchSource() ? board.getInstalledSketchSource() : new byte[0];
+        byte[] source = board.getEditorSketchSource();
         EditorStateMessage state = new EditorStateMessage(board.getWorldObj().provider.dimensionId,
                 board.xCoord, board.yCoord, board.zCoord, board.getBoardId(), board.getGeneration(),
                 board.getRevision(), board.getStatus().ordinal(), board.getFault(), source, code, diagnostics,
