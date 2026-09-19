@@ -8,13 +8,17 @@ import net.minecraft.network.NetworkManager;
 import net.minecraft.network.Packet;
 import net.minecraft.network.play.server.S35PacketUpdateTileEntity;
 import net.minecraft.tileentity.TileEntity;
+import br.com.craftonica.persistence.NbtMigrations;
 
 /** Server-authoritative breaker state with delayed trip and compact client sync. */
 public final class TileEntityCircuitBreaker extends TileEntity {
     private final ProtectionState protection = new ProtectionState();
+    private boolean migrationPending;
+    private NBTTagCompound preservedFutureState;
 
     @Override public void updateEntity() {
         if (worldObj == null || worldObj.isRemote) return;
+        if (migrationPending) { migrationPending = false; markDirty(); }
         if (protection.applyPendingTrip()) {
             markDirty();
             worldObj.markBlockForUpdate(xCoord, yCoord, zCoord);
@@ -38,11 +42,17 @@ public final class TileEntityCircuitBreaker extends TileEntity {
 
     @Override public void writeToNBT(NBTTagCompound tag) {
         super.writeToNBT(tag);
+        if (preservedFutureState != null) { NbtMigrations.copyInto(preservedFutureState, tag); return; }
+        tag.setInteger("CraftonicaDataVersion", NbtMigrations.SIMPLE_DATA_VERSION);
         tag.setBoolean("Tripped", protection.isTripped());
         tag.setBoolean("PendingTrip", protection.isPendingTrip());
     }
     @Override public void readFromNBT(NBTTagCompound tag) {
         super.readFromNBT(tag);
+        preservedFutureState = tag.hasKey("CraftonicaDataVersion")
+                && tag.getInteger("CraftonicaDataVersion") != NbtMigrations.SIMPLE_DATA_VERSION
+                ? NbtMigrations.copy(tag) : null;
+        migrationPending = !tag.hasKey("CraftonicaDataVersion");
         protection.setTripped(tag.getBoolean("Tripped"));
         protection.setPendingTrip(tag.getBoolean("PendingTrip"));
     }

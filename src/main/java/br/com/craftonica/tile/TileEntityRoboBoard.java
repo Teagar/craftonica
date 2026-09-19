@@ -9,6 +9,7 @@ import br.com.craftonica.runtime.protocol.RuntimeProtocol;
 import br.com.craftonica.runtime.server.RuntimeServer;
 import br.com.craftonica.runtime.server.RuntimeSupervisor;
 import br.com.craftonica.runtime.server.RoboBoardIoBridge;
+import br.com.craftonica.persistence.NbtMigrations;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.NetworkManager;
 import net.minecraft.network.Packet;
@@ -37,10 +38,16 @@ public final class TileEntityRoboBoard extends TileEntity {
     private RequestMetadata requestMetadata;
     private long resumeAfterWorldTick = Long.MIN_VALUE;
     private boolean portsInitialized;
+    private boolean migrationPending;
+    private NBTTagCompound preservedInvalidState;
 
     @Override
     public void updateEntity() {
         if (worldObj == null || worldObj.isRemote || unloaded) return;
+        if (migrationPending) {
+            migrationPending = false;
+            markDirty();
+        }
         if (!portsInitialized) {
             portsInitialized = true;
             RoboBoardIoBridge.invalidateAdjacentPorts(this);
@@ -117,6 +124,7 @@ public final class TileEntityRoboBoard extends TileEntity {
         cancelInFlight();
         int oldVisual = visualFlags();
         long revision = state.installVerifiedFirmware(firmware, expectedRevision);
+        preservedInvalidState = null;
         invalidatePortsAndDefer();
         publishMutation(oldVisual);
         return revision;
@@ -126,6 +134,7 @@ public final class TileEntityRoboBoard extends TileEntity {
         requireServer();
         int oldVisual = visualFlags();
         long revision = state.installCompiledSketch(sources, firmware, expectedRevision);
+        preservedInvalidState = null;
         cancelInFlight();
         invalidatePortsAndDefer();
         publishMutation(oldVisual);
@@ -186,6 +195,10 @@ public final class TileEntityRoboBoard extends TileEntity {
     @Override
     public void writeToNBT(NBTTagCompound tag) {
         super.writeToNBT(tag);
+        if (preservedInvalidState != null) {
+            NbtMigrations.copyInto(preservedInvalidState, tag);
+            return;
+        }
         RoboBoardState.Persisted persisted = state.snapshot();
         tag.setInteger("Schema", persisted.schema);
         tag.setLong("BoardMost", persisted.boardId.getMostSignificantBits());
@@ -220,36 +233,42 @@ public final class TileEntityRoboBoard extends TileEntity {
     @Override
     public void readFromNBT(NBTTagCompound tag) {
         super.readFromNBT(tag);
-        UUID boardId = tag.hasKey("BoardMost") && tag.hasKey("BoardLeast")
-                ? new UUID(tag.getLong("BoardMost"), tag.getLong("BoardLeast")) : null;
-        boolean hasSerialHistory = tag.hasKey("SerialHistory");
-        byte[] serialHistory = hasSerialHistory ? tag.getByteArray("SerialHistory") : tag.getByteArray("LastTx");
+        NbtMigrations.Result migration = NbtMigrations.migrateRoboBoard(tag);
+        NBTTagCompound persisted = migration.getValue();
+        UUID boardId = persisted.hasKey("BoardMost") && persisted.hasKey("BoardLeast")
+                ? new UUID(persisted.getLong("BoardMost"), persisted.getLong("BoardLeast")) : null;
+        boolean hasSerialHistory = persisted.hasKey("SerialHistory");
+        byte[] serialHistory = hasSerialHistory ? persisted.getByteArray("SerialHistory") : persisted.getByteArray("LastTx");
         state = RoboBoardState.restore(new RoboBoardState.Persisted(
-                tag.hasKey("Schema") ? tag.getInteger("Schema") : -1,
+                persisted.hasKey("Schema") ? persisted.getInteger("Schema") : -1,
                 boardId,
-                tag.getLong("Generation"),
-                tag.getLong("Revision"),
-                tag.getByteArray("Firmware"),
-                tag.getByteArray("FirmwareHash"),
-                tag.getByteArray("Checkpoint"),
-                tag.getByteArray("CheckpointHash"),
-                tag.hasKey("Status") ? tag.getByte("Status") : -1,
-                tag.getString("Fault"),
-                tag.getBoolean("Running"),
-                tag.getBoolean("D13"),
-                tag.getInteger("OutputMask"),
-                tag.getInteger("HighMask"),
-                tag.getInteger("PwmMask"),
-                intArray(tag, "PwmMode"),
-                intArray(tag, "PwmPrescaler"),
-                intArray(tag, "PwmCompare"),
-                tag.getInteger("StableInputMask"),
-                tag.getInteger("IndeterminateInputMask"), serialHistory,
-                hasSerialHistory ? tag.getLong("SerialStart") : 0,
-                hasSerialHistory ? tag.getLong("SerialEnd") : serialHistory.length,
-                hasSerialHistory && tag.getBoolean("SerialTruncated"),
-                tag.hasKey("SketchSource") ? tag.getByteArray("SketchSource") : new byte[0],
-                tag.hasKey("HasSketchSource") && tag.getBoolean("HasSketchSource")));
+                persisted.getLong("Generation"),
+                persisted.getLong("Revision"),
+                persisted.getByteArray("Firmware"),
+                persisted.getByteArray("FirmwareHash"),
+                persisted.getByteArray("Checkpoint"),
+                persisted.getByteArray("CheckpointHash"),
+                persisted.hasKey("Status") ? persisted.getByte("Status") : -1,
+                persisted.getString("Fault"),
+                persisted.getBoolean("Running"),
+                persisted.getBoolean("D13"),
+                persisted.getInteger("OutputMask"),
+                persisted.getInteger("HighMask"),
+                persisted.getInteger("PwmMask"),
+                intArray(persisted, "PwmMode"),
+                intArray(persisted, "PwmPrescaler"),
+                intArray(persisted, "PwmCompare"),
+                persisted.getInteger("StableInputMask"),
+                persisted.getInteger("IndeterminateInputMask"), serialHistory,
+                hasSerialHistory ? persisted.getLong("SerialStart") : 0,
+                hasSerialHistory ? persisted.getLong("SerialEnd") : serialHistory.length,
+                hasSerialHistory && persisted.getBoolean("SerialTruncated"),
+                persisted.hasKey("SketchSource") ? persisted.getByteArray("SketchSource") : new byte[0],
+                persisted.hasKey("HasSketchSource") && persisted.getBoolean("HasSketchSource")));
+        boolean invalid = "UNKNOWN_SCHEMA".equals(state.getFault()) || "INVALID_IDENTITY".equals(state.getFault())
+                || "INVALID_PERSISTED_STATE".equals(state.getFault());
+        preservedInvalidState = !migration.isSupported() || invalid ? NbtMigrations.copy(tag) : null;
+        migrationPending = migration.isSupported() && migration.isChanged() && !invalid;
         unloaded = false;
         inFlight = null;
         requestMetadata = null;

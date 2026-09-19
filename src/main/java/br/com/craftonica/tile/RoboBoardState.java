@@ -6,6 +6,7 @@ import br.com.craftonica.runtime.core.AvrCheckpointCodec;
 import br.com.craftonica.runtime.core.AvrFault;
 import br.com.craftonica.runtime.core.AvrMachineState;
 import br.com.craftonica.runtime.protocol.RuntimeProtocol;
+import br.com.craftonica.persistence.NbtMigrations;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -17,7 +18,7 @@ import java.util.UUID;
 
 /** Pure, bounded persistent state for a RoboBoard. Forge adaptation lives in the tile entity. */
 public final class RoboBoardState {
-    public static final int SCHEMA_VERSION = 1;
+    public static final int SCHEMA_VERSION = NbtMigrations.ROBO_BOARD_SCHEMA_VERSION;
     public static final int MAX_CHECKPOINT_BYTES = 16384;
     public static final int MAX_FAULT_BYTES = 96;
     public static final int OUTPUT_PIN_COUNT = 20;

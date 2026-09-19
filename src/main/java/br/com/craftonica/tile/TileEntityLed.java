@@ -10,15 +10,19 @@ import net.minecraft.network.Packet;
 import net.minecraft.network.play.server.S35PacketUpdateTileEntity;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.EnumSkyBlock;
+import br.com.craftonica.persistence.NbtMigrations;
 
 public final class TileEntityLed extends TileEntity {
     private final LedState state = new LedState();
+    private boolean migrationPending;
+    private NBTTagCompound preservedFutureState;
 
     @Override
     public void updateEntity() {
         if (worldObj.isRemote) {
             return;
         }
+        if (migrationPending) { migrationPending = false; markDirty(); }
         BlockPosition position = new BlockPosition(xCoord, yCoord, zCoord);
         CircuitResult result = ElectricalNetworkManager.forWorld(worldObj).getLocalResult(position);
         boolean wasBurned = state.isBurned();
@@ -42,12 +46,18 @@ public final class TileEntityLed extends TileEntity {
     @Override
     public void writeToNBT(NBTTagCompound tag) {
         super.writeToNBT(tag);
+        if (preservedFutureState != null) { NbtMigrations.copyInto(preservedFutureState, tag); return; }
+        tag.setInteger("CraftonicaDataVersion", NbtMigrations.SIMPLE_DATA_VERSION);
         tag.setBoolean("Burned", state.isBurned());
     }
 
     @Override
     public void readFromNBT(NBTTagCompound tag) {
         super.readFromNBT(tag);
+        preservedFutureState = tag.hasKey("CraftonicaDataVersion")
+                && tag.getInteger("CraftonicaDataVersion") != NbtMigrations.SIMPLE_DATA_VERSION
+                ? NbtMigrations.copy(tag) : null;
+        migrationPending = !tag.hasKey("CraftonicaDataVersion");
         state.setBurned(tag.getBoolean("Burned"));
     }
 

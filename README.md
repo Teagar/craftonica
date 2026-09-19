@@ -40,6 +40,27 @@ importante porque uma tarefa `runClient` de desenvolvimento pode recriar o JAR
 com nomes MCP, que não é instalável em launchers comuns. O instalador também
 publica o worker AVR e seu launcher isolado em `minecraft/craftonica-runtime`.
 
+### Migração e rollback de mundos
+
+No primeiro carregamento de um mundo por esta geração do formato, o servidor
+cria uma cópia verificada antes de iniciar os serviços do Craftônica. O backup
+fica ao lado da pasta do mundo em
+`.craftonica-backups/<mundo>/<id>/world`; `manifest.bin` contém tamanhos e
+SHA-256 dos arquivos copiados. `session.lock` não é copiado. A publicação e o
+marcador `craftonica/migration-state.bin` usam troca atômica no mesmo filesystem.
+
+Essa etapa acontece durante o carregamento, antes do primeiro tick, e pode levar
+tempo em mundos grandes. Se faltar espaço, houver link simbólico, alteração
+concorrente ou não for possível publicar atomicamente, o carregamento é
+interrompido sem avançar o marcador. Não execute duas instâncias sobre o mesmo
+save.
+
+Para rollback, feche completamente o Minecraft/servidor e preserve a pasta
+migrada para diagnóstico. O backup é revalidado integralmente em toda abertura
+do mundo; depois de uma abertura bem-sucedida com o JAR atual, restaure o
+conteúdo da pasta `world` do backup em uma pasta de save vazia. Nunca abra o
+diretório já migrado diretamente com uma versão antiga do mod.
+
 Para desenvolvimento:
 
 ```sh

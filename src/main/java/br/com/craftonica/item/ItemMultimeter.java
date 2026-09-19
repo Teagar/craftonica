@@ -19,6 +19,7 @@ import net.minecraft.util.ChatComponentTranslation;
 import net.minecraft.world.World;
 
 import java.util.Locale;
+import br.com.craftonica.persistence.NbtMigrations;
 
 public final class ItemMultimeter extends Item {
     private static final String TAG_MODE = "CraftonicaMode";
@@ -28,6 +29,7 @@ public final class ItemMultimeter extends Item {
     private static final String TAG_PROBE_Y = "CraftonicaProbeY";
     private static final String TAG_PROBE_Z = "CraftonicaProbeZ";
     private static final String TAG_PROBE_SIDE = "CraftonicaProbeSide";
+    private static final String TAG_DATA_VERSION = "CraftonicaDataVersion";
 
     public ItemMultimeter() {
         setUnlocalizedName("multimeter");
@@ -210,7 +212,18 @@ public final class ItemMultimeter extends Item {
         if (stack.getTagCompound() == null) {
             stack.setTagCompound(new NBTTagCompound());
         }
-        return stack.getTagCompound();
+        NBTTagCompound tag = stack.getTagCompound();
+        migrateTag(tag);
+        return tag;
+    }
+
+    static void migrateTag(NBTTagCompound tag) {
+        if (tag.hasKey(TAG_DATA_VERSION)) return;
+        tag.setString(TAG_MODE, MultimeterMode.fromId(tag.getString(TAG_MODE)).getId());
+        if (tag.getBoolean(TAG_PROBE_SET)
+                && (!tag.hasKey(TAG_PROBE_SIDE) || tag.getInteger(TAG_PROBE_SIDE) < 0
+                || tag.getInteger(TAG_PROBE_SIDE) > 5)) clearProbe(tag);
+        tag.setInteger(TAG_DATA_VERSION, NbtMigrations.SIMPLE_DATA_VERSION);
     }
 
     private void setFirstProbe(NBTTagCompound tag, int dimension, BlockPosition position, int side) {
@@ -222,7 +235,7 @@ public final class ItemMultimeter extends Item {
         tag.setInteger(TAG_PROBE_SIDE, side);
     }
 
-    private void clearProbe(NBTTagCompound tag) {
+    private static void clearProbe(NBTTagCompound tag) {
         tag.removeTag(TAG_PROBE_SET);
         tag.removeTag(TAG_PROBE_DIMENSION);
         tag.removeTag(TAG_PROBE_X);

@@ -13,6 +13,11 @@ import br.com.craftonica.runtime.server.RuntimeServer;
 import br.com.craftonica.sketch.network.EditorStateMessage;
 import br.com.craftonica.sketch.network.SketchNetwork;
 import br.com.craftonica.sketch.server.SketchServer;
+import br.com.craftonica.persistence.WorldBackupService;
+import cpw.mods.fml.common.eventhandler.EventPriority;
+import net.minecraft.world.storage.SaveHandler;
+
+import java.io.IOException;
 
 public class CommonProxy {
     public void preInit() {
@@ -31,9 +36,17 @@ public class CommonProxy {
         FMLCommonHandler.instance().bus().register(SketchServer.EVENTS);
     }
 
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
     public void onWorldLoad(WorldEvent.Load event) {
         if (!event.world.isRemote && event.world.provider.dimensionId == 0) {
+            try {
+                if (!(event.world.getSaveHandler() instanceof SaveHandler))
+                    throw new IOException("Unsupported world save handler: "
+                            + event.world.getSaveHandler().getClass().getName());
+                WorldBackupService.prepare(((SaveHandler) event.world.getSaveHandler()).getWorldDirectory().toPath());
+            } catch (IOException failure) {
+                throw new IllegalStateException("Craftonica could not create a verified pre-migration backup", failure);
+            }
             RuntimeServer.start();
             SketchServer.start();
         }

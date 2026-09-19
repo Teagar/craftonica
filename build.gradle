@@ -90,6 +90,13 @@ task verifyFirmwareGates(type: Test, dependsOn: testClasses) {
     include "**/firmware/*Test.class"
 }
 
+task verifyMigrationGates(type: Test, dependsOn: testClasses) {
+    include "**/persistence/*Test.class"
+    include "**/item/ItemMultimeterMigrationTest.class"
+    include "**/lesson/LessonProgressDataTest.class"
+    include "**/lesson/TeacherActivityTest.class"
+}
+
 task firmwareIntegration(type: Test, dependsOn: testClasses) {
     include "**/firmware/FirmwareCompilerIntegrationTest.class"
     systemProperty "craftonica.firmware.integration", "true"
@@ -143,3 +150,4 @@ build.dependsOn verifyReleaseJar
 build.dependsOn verifyElectricalGates
 build.dependsOn verifyFirmwareGates
 build.dependsOn verifyRuntimeGates
+build.dependsOn verifyMigrationGates
