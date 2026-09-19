@@ -10,6 +10,7 @@ import br.com.craftonica.runtime.server.RuntimeServer;
 import br.com.craftonica.runtime.server.RuntimeSupervisor;
 import br.com.craftonica.runtime.server.RoboBoardIoBridge;
 import br.com.craftonica.persistence.NbtMigrations;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.NetworkManager;
 import net.minecraft.network.Packet;
@@ -38,6 +39,7 @@ public final class TileEntityRoboBoard extends TileEntity {
     private RequestMetadata requestMetadata;
     private long resumeAfterWorldTick = Long.MIN_VALUE;
     private boolean portsInitialized;
+    private UUID ownerId;
     private boolean migrationPending;
     private NBTTagCompound preservedInvalidState;
 
@@ -200,6 +202,11 @@ public final class TileEntityRoboBoard extends TileEntity {
             return;
         }
         RoboBoardState.Persisted persisted = state.snapshot();
+        tag.setInteger("AccessSchema", 1);
+        if (ownerId != null) {
+            tag.setLong("OwnerMost", ownerId.getMostSignificantBits());
+            tag.setLong("OwnerLeast", ownerId.getLeastSignificantBits());
+        }
         tag.setInteger("Schema", persisted.schema);
         tag.setLong("BoardMost", persisted.boardId.getMostSignificantBits());
         tag.setLong("BoardLeast", persisted.boardId.getLeastSignificantBits());
@@ -235,6 +242,8 @@ public final class TileEntityRoboBoard extends TileEntity {
         super.readFromNBT(tag);
         NbtMigrations.Result migration = NbtMigrations.migrateRoboBoard(tag);
         NBTTagCompound persisted = migration.getValue();
+        ownerId = persisted.hasKey("OwnerMost") && persisted.hasKey("OwnerLeast")
+                ? new UUID(persisted.getLong("OwnerMost"), persisted.getLong("OwnerLeast")) : null;
         UUID boardId = persisted.hasKey("BoardMost") && persisted.hasKey("BoardLeast")
                 ? new UUID(persisted.getLong("BoardMost"), persisted.getLong("BoardLeast")) : null;
         boolean hasSerialHistory = persisted.hasKey("SerialHistory");
@@ -493,6 +502,17 @@ public final class TileEntityRoboBoard extends TileEntity {
     public byte[] getCheckpoint() { return state.getCheckpoint(); }
     public RoboBoardState.Status getStatus() { return state.getStatus(); }
     public String getFault() { return state.getFault(); }
+    public UUID getOwnerId() { return ownerId; }
+    public boolean claimOwner(UUID playerId) {
+        if (ownerId != null || playerId == null) return false;
+        ownerId = playerId;
+        markDirty();
+        return true;
+    }
+    public boolean canAccess(EntityPlayer player) {
+        return player != null && (ownerId != null && ownerId.equals(player.getUniqueID())
+                || player.canCommandSenderUseCommand(2, "craftonica"));
+    }
     public boolean isRunning() { return useClientVisual() ? clientRunning : state.isRunning(); }
     public boolean hasFault() { return useClientVisual() ? clientFault : state.hasFault(); }
     public boolean hasFirmware() { return useClientVisual() ? clientHasFirmware : state.hasFirmware(); }

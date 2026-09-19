@@ -10,6 +10,8 @@ import cpw.mods.fml.common.registry.GameRegistry;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.UUID;
+
 import static org.junit.Assert.*;
 
 public final class PersistentTileMigrationTest {
@@ -75,6 +77,22 @@ public final class PersistentTileMigrationTest {
         NBTTagCompound rewritten = new NBTTagCompound(); unsupported.writeToNBT(rewritten);
         assertEquals(99, rewritten.getInteger("Schema"));
         assertEquals("keep", rewritten.getString("OpaqueFutureData"));
+    }
+
+    @Test
+    public void roboBoardOwnerSurvivesRoundTrip() {
+        UUID owner = UUID.randomUUID();
+        TileEntityRoboBoard original = new TileEntityRoboBoard();
+        assertTrue(original.claimOwner(owner));
+        assertFalse(original.claimOwner(UUID.randomUUID()));
+
+        NBTTagCompound saved = new NBTTagCompound();
+        original.writeToNBT(saved);
+        TileEntityRoboBoard restored = new TileEntityRoboBoard();
+        restored.readFromNBT(saved);
+
+        assertEquals(1, saved.getInteger("AccessSchema"));
+        assertEquals(owner, restored.getOwnerId());
     }
 
     @Test

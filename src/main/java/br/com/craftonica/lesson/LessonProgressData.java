@@ -130,7 +130,12 @@ public final class LessonProgressData extends WorldSavedData {
 
     private Progress progress(UUID player) {
         Progress progress = players.get(player);
-        if (progress == null) { progress = new Progress(); players.put(player, progress); }
+        if (progress == null) {
+            if (players.size() >= MAX_PLAYERS)
+                throw new IllegalStateException("Limite de jogadores com progresso atingido");
+            progress = new Progress();
+            players.put(player, progress);
+        }
         return progress;
     }
 

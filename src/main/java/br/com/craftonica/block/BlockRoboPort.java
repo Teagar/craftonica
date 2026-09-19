@@ -4,6 +4,7 @@ import br.com.craftonica.CraftonicaCreativeTab;
 import br.com.craftonica.network.BlockPosition;
 import br.com.craftonica.network.ElectricalNetworkManager;
 import br.com.craftonica.tile.TileEntityRoboPort;
+import br.com.craftonica.tile.TileEntityRoboBoard;
 import net.minecraft.block.BlockContainer;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.player.EntityPlayer;
@@ -42,6 +43,8 @@ public final class BlockRoboPort extends BlockContainer implements IElectricalBl
         if (!(tile instanceof TileEntityRoboPort)) return false;
         if (!world.isRemote) {
             TileEntityRoboPort port = (TileEntityRoboPort) tile;
+            TileEntityRoboBoard board = port.getBoundBoard();
+            if (board == null || !board.canAccess(player)) return false;
             try {
                 port.cycleRole(port.getRevision());
                 player.addChatMessage(new ChatComponentTranslation(

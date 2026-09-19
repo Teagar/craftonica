@@ -8,6 +8,8 @@ import net.minecraft.block.material.Material;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.item.ItemStack;
 import net.minecraft.world.World;
 import br.com.craftonica.sketch.server.SketchServer;
 
@@ -25,6 +27,24 @@ public final class BlockRoboBoard extends BlockContainer {
     @Override
     public TileEntity createNewTileEntity(World world, int metadata) {
         return new TileEntityRoboBoard();
+    }
+
+    @Override
+    public void onBlockPlacedBy(World world, int x, int y, int z, EntityLivingBase placer, ItemStack stack) {
+        if (!world.isRemote && placer instanceof EntityPlayer) {
+            TileEntity tile = world.getTileEntity(x, y, z);
+            if (tile instanceof TileEntityRoboBoard)
+                ((TileEntityRoboBoard) tile).claimOwner(((EntityPlayer) placer).getUniqueID());
+        }
+    }
+
+    @Override
+    public boolean removedByPlayer(World world, EntityPlayer player, int x, int y, int z, boolean willHarvest) {
+        if (!world.isRemote) {
+            TileEntity tile = world.getTileEntity(x, y, z);
+            if (tile instanceof TileEntityRoboBoard && !((TileEntityRoboBoard) tile).canAccess(player)) return false;
+        }
+        return super.removedByPlayer(world, player, x, y, z, willHarvest);
     }
 
     @Override

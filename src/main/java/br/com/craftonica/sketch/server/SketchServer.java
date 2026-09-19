@@ -14,6 +14,7 @@ import br.com.craftonica.tile.RoboBoardState;
 import br.com.craftonica.tile.TileEntityRoboBoard;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
+import cpw.mods.fml.common.gameevent.PlayerEvent;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.WorldServer;
@@ -32,10 +33,13 @@ import java.util.concurrent.ArrayBlockingQueue;
 /** Main-thread ingress, validation, mutation, and non-blocking compiler completion coordinator. */
 public final class SketchServer {
     private static final int MAX_INGRESS = 256;
+    private static final int MAX_INGRESS_PER_TICK = 32;
+    private static final int MAX_QUEUED_PER_PLAYER = 8;
     private static final double MAX_DISTANCE_SQUARED = 64.0;
     private static final ArrayBlockingQueue<Ingress> INGRESS = new ArrayBlockingQueue<Ingress>(MAX_INGRESS);
     private static final Map<UUID, Pending> BY_PLAYER = new HashMap<UUID, Pending>();
     private static final Map<BoardKey, Pending> BY_BOARD = new HashMap<BoardKey, Pending>();
+    private static final Map<UUID, Integer> QUEUED = new HashMap<UUID, Integer>();
     private static final PlayerCompileRateLimiter RATE_LIMITER = new PlayerCompileRateLimiter();
 
     public static final SketchServer EVENTS = new SketchServer();
@@ -52,8 +56,14 @@ public final class SketchServer {
     }
 
     public static void enqueue(EntityPlayerMP player, EditorActionMessage message) {
-        if (player != null && message != null && message.isValid())
-            INGRESS.offer(new Ingress(player, player.getUniqueID(), message));
+        if (player == null || message == null || !message.isValid()) return;
+        UUID playerId = player.getUniqueID();
+        synchronized (QUEUED) {
+            Integer count = QUEUED.get(playerId);
+            if (count != null && count >= MAX_QUEUED_PER_PLAYER) return;
+            if (!INGRESS.offer(new Ingress(player, playerId, message))) return;
+            QUEUED.put(playerId, count == null ? 1 : count + 1);
+        }
     }
 
     public static void openEditor(EntityPlayerMP player, TileEntityRoboBoard board) {
@@ -61,20 +71,29 @@ public final class SketchServer {
                 || player.worldObj != board.getWorldObj()
                 || player.getDistanceSq(board.xCoord + 0.5, board.yCoord + 0.5, board.zCoord + 0.5)
                 > MAX_DISTANCE_SQUARED) return;
-        sendState(player, board, "craftonica.editor.ready", "");
+        if (board.getOwnerId() == null) board.claimOwner(player.getUniqueID());
+        if (board.canAccess(player)) sendState(player, board, "craftonica.editor.ready", "");
     }
 
     @SubscribeEvent
     public void onServerTick(TickEvent.ServerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
         Ingress ingress;
-        while ((ingress = INGRESS.poll()) != null) process(ingress);
+        for (int processed = 0; processed < MAX_INGRESS_PER_TICK && (ingress = INGRESS.poll()) != null; processed++) {
+            decrementQueued(ingress.playerId);
+            process(ingress);
+        }
         pollCompilations();
     }
 
     @SubscribeEvent
     public void onWorldUnload(WorldEvent.Unload event) {
         if (!event.world.isRemote) cancelDimension(event.world.provider.dimensionId);
+    }
+
+    @SubscribeEvent
+    public void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
+        if (event.player instanceof EntityPlayerMP) cancelPlayer(event.player.getUniqueID());
     }
 
     private static void process(Ingress ingress) {
@@ -90,6 +109,7 @@ public final class SketchServer {
         if (!(tile instanceof TileEntityRoboBoard)) return;
         TileEntityRoboBoard board = (TileEntityRoboBoard) tile;
         if (!request.getBoardId().equals(board.getBoardId()) || request.getGeneration() != board.getGeneration()) return;
+        if (!board.canAccess(player)) return;
         if (request.getAction() == SketchAction.REFRESH) {
             sendState(player, board, compilationCode(board, player.getUniqueID()), "");
             return;
@@ -172,12 +192,11 @@ public final class SketchServer {
         WorldServer world = DimensionManager.getWorld(pending.boardKey.dimension);
         TileEntityRoboBoard board = loadedBoard(world, pending.boardKey.x, pending.boardKey.y, pending.boardKey.z);
         String diagnostics = diagnostics(result);
+        if (!canView(player, board)) return;
         if (result == null || !result.isSuccess()) {
-            if (canView(player, board))
-                sendState(player, board, resultCode(result), diagnostics);
+            sendState(player, board, resultCode(result), diagnostics);
             return;
         }
-        if (!canView(player, board)) return;
         CRLFirmware firmware = result.getFirmware();
         byte[] sourceHash = pending.sources.getSourceHash();
         if (board == null || !CompilationTarget.matches(pending.boardKey.boardId, pending.generation,
@@ -196,6 +215,7 @@ public final class SketchServer {
 
     private static boolean canView(EntityPlayerMP player, TileEntityRoboBoard board) {
         return player != null && board != null && player.isEntityAlive() && player.playerNetServerHandler != null
+                && board.canAccess(player)
                 && player.worldObj == board.getWorldObj()
                 && player.getDistanceSq(board.xCoord + 0.5, board.yCoord + 0.5, board.zCoord + 0.5)
                 <= MAX_DISTANCE_SQUARED;
@@ -272,13 +292,34 @@ public final class SketchServer {
             iterator.remove();
         }
         Iterator<Ingress> ingress = INGRESS.iterator();
-        while (ingress.hasNext()) if (ingress.next().request.getDimension() == dimension) ingress.remove();
+        while (ingress.hasNext()) {
+            Ingress queued = ingress.next();
+            if (queued.request.getDimension() == dimension) { ingress.remove(); decrementQueued(queued.playerId); }
+        }
     }
 
     private static void cancelAll() {
         for (Pending pending : BY_PLAYER.values()) pending.handle.cancel();
         BY_PLAYER.clear();
         BY_BOARD.clear();
+        synchronized (QUEUED) { QUEUED.clear(); }
+    }
+
+    private static void cancelPlayer(UUID playerId) {
+        Pending pending = BY_PLAYER.remove(playerId);
+        if (pending != null) { pending.handle.cancel(); BY_BOARD.remove(pending.boardKey); }
+        Iterator<Ingress> ingress = INGRESS.iterator();
+        while (ingress.hasNext()) if (playerId.equals(ingress.next().playerId)) ingress.remove();
+        synchronized (QUEUED) { QUEUED.remove(playerId); }
+        RATE_LIMITER.remove(playerId);
+    }
+
+    private static void decrementQueued(UUID playerId) {
+        synchronized (QUEUED) {
+            Integer count = QUEUED.get(playerId);
+            if (count == null || count <= 1) QUEUED.remove(playerId);
+            else QUEUED.put(playerId, count - 1);
+        }
     }
 
     private static final class Ingress {

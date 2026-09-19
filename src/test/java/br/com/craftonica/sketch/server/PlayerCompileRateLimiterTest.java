@@ -32,6 +32,17 @@ public final class PlayerCompileRateLimiterTest {
         assertTrue(limiter.tryAcquire(second));
     }
 
+    @Test
+    public void removingPlayerDropsTheirBucket() {
+        PlayerCompileRateLimiter limiter = new PlayerCompileRateLimiter(new MutableClock());
+        UUID player = UUID.randomUUID();
+        assertTrue(limiter.tryAcquire(player));
+        assertTrue(limiter.tryAcquire(player));
+        assertFalse(limiter.tryAcquire(player));
+        limiter.remove(player);
+        assertTrue(limiter.tryAcquire(player));
+    }
+
     private static final class MutableClock implements PlayerCompileRateLimiter.Clock {
         long now;
         @Override public long nanoTime() { return now; }

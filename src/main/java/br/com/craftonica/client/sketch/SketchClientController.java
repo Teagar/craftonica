@@ -3,6 +3,7 @@ package br.com.craftonica.client.sketch;
 import br.com.craftonica.sketch.network.EditorStateMessage;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
+import cpw.mods.fml.common.network.FMLNetworkEvent;
 import net.minecraft.client.Minecraft;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -42,6 +43,13 @@ public final class SketchClientController {
         if (event.phase != TickEvent.Phase.END) return;
         ClientEditorState state;
         while ((state = pending.poll()) != null) applyOnClientThread(state);
+    }
+
+    @SubscribeEvent
+    public void onDisconnect(FMLNetworkEvent.ClientDisconnectionFromServerEvent event) {
+        pending.clear();
+        closedEditors.clear();
+        drafts.clear();
     }
 
     private void applyOnClientThread(ClientEditorState state) {

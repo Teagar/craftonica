@@ -71,6 +71,12 @@ public final class ItemMultimeter extends Item {
         BlockPosition first = new BlockPosition(tag.getInteger(TAG_PROBE_X), tag.getInteger(TAG_PROBE_Y),
                 tag.getInteger(TAG_PROBE_Z));
         int firstSide = tag.getInteger(TAG_PROBE_SIDE);
+        if (firstSide < 0 || firstSide > 5
+                || player.getDistanceSq(first.x + 0.5, first.y + 0.5, first.z + 0.5) > 64.0) {
+            clearProbe(tag);
+            player.addChatMessage(new ChatComponentTranslation("message.craftonica.multimeter.probe_expired"));
+            return true;
+        }
         if (first.equals(position) && firstSide == side) {
             player.addChatMessage(new ChatComponentTranslation("message.craftonica.multimeter.same_probe"));
             return true;

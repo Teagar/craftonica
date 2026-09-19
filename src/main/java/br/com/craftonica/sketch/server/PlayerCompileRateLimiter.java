@@ -40,6 +40,7 @@ public final class PlayerCompileRateLimiter {
     }
 
     public void clear() { buckets.clear(); }
+    public void remove(UUID playerId) { buckets.remove(playerId); }
 
     private static final class Bucket {
         double tokens;
