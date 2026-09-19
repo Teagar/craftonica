@@ -3,7 +3,6 @@ package br.com.craftonica.block;
 import br.com.craftonica.CraftonicaCreativeTab;
 import br.com.craftonica.render.CraftonicaRenderIds;
 import br.com.craftonica.tile.TileEntityLed;
-import br.com.craftonica.block.WireColor;
 import net.minecraft.block.BlockContainer;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.EntityLivingBase;
@@ -16,53 +15,44 @@ import net.minecraft.world.World;
 
 import java.util.ArrayList;
 
-
 public final class BlockLed extends BlockContainer implements IElectricalBlock, IRotatableElectricalBlock {
-    private IIcon sideIcon;
-    private IIcon onIcon;
-    private IIcon burnedIcon;
+    private IIcon glassIcon;
+    private IIcon coreOffIcon;
+    private IIcon coreOnIcon;
+    private IIcon coreBurnedIcon;
     private IIcon anodeIcon;
     private IIcon cathodeIcon;
 
     public BlockLed() {
-        super(Material.iron);
+        super(Material.glass);
         setBlockName("led");
-        setBlockTextureName("craftonica:led_off");
+        setBlockTextureName("craftonica:led_glass");
         setCreativeTab(CraftonicaCreativeTab.INSTANCE);
         setHardness(1.0F);
+        setStepSound(soundTypeGlass);
     }
 
     @Override
     public void registerBlockIcons(IIconRegister register) {
-        sideIcon = register.registerIcon("craftonica:led_off");
-        onIcon = register.registerIcon("craftonica:led_on");
-        burnedIcon = register.registerIcon("craftonica:led_burned");
+        glassIcon = register.registerIcon("craftonica:led_glass");
+        coreOffIcon = register.registerIcon("craftonica:led_core_off");
+        coreOnIcon = register.registerIcon("craftonica:led_core_on");
+        coreBurnedIcon = register.registerIcon("craftonica:led_core_burned");
         anodeIcon = register.registerIcon("craftonica:led_anode");
         cathodeIcon = register.registerIcon("craftonica:led_cathode");
-        blockIcon = sideIcon;
+        blockIcon = glassIcon;
     }
 
     @Override
     public IIcon getIcon(int side, int metadata) {
         int anode = metadata & 7;
-        return side == anode ? anodeIcon : side == opposite(anode) ? cathodeIcon : sideIcon;
+        return side == anode ? anodeIcon : side == opposite(anode) ? cathodeIcon : glassIcon;
     }
 
     @Override
     public IIcon getIcon(IBlockAccess world, int x, int y, int z, int side) {
         int anode = world.getBlockMetadata(x, y, z) & 7;
-        if (side == anode) {
-            return anodeIcon;
-        }
-        if (side == opposite(anode)) {
-            return cathodeIcon;
-        }
-        TileEntity tile = world.getTileEntity(x, y, z);
-        if (tile instanceof TileEntityLed) {
-            TileEntityLed led = (TileEntityLed) tile;
-            return led.isBurned() ? burnedIcon : led.getBrightness() > 0 ? onIcon : sideIcon;
-        }
-        return sideIcon;
+        return side == anode ? anodeIcon : side == opposite(anode) ? cathodeIcon : glassIcon;
     }
 
     @Override
@@ -88,25 +78,22 @@ public final class BlockLed extends BlockContainer implements IElectricalBlock, 
 
     @Override
     public void setBlockBoundsBasedOnState(IBlockAccess world, int x, int y, int z) {
-        int anode = getAnodeSide(world, x, y, z);
-        if (anode == 2 || anode == 3) {
-            setBlockBounds(0.3125F, 0.3125F, 0.0F, 0.6875F, 0.9375F, 1.0F);
-        } else {
-            setBlockBounds(0.0F, 0.3125F, 0.3125F, 1.0F, 0.9375F, 0.6875F);
-        }
+        setBlockBounds(0, 0, 0, 1, 1, 1);
     }
 
     public IIcon getBodyIcon(IBlockAccess world, int x, int y, int z) {
-        TileEntity tile = world.getTileEntity(x, y, z);
-        if (tile instanceof TileEntityLed) {
-            TileEntityLed led = (TileEntityLed) tile;
-            return led.isBurned() ? burnedIcon : led.getBrightness() > 0 ? onIcon : sideIcon;
-        }
-        return sideIcon;
+        return glassIcon;
     }
 
     public IIcon getBodyIcon() {
-        return sideIcon;
+        return glassIcon;
+    }
+
+    public IIcon getCoreIcon(IBlockAccess world, int x, int y, int z) {
+        TileEntity tile = world == null ? null : world.getTileEntity(x, y, z);
+        if (!(tile instanceof TileEntityLed)) return coreOffIcon;
+        TileEntityLed led = (TileEntityLed) tile;
+        return led.isBurned() ? coreBurnedIcon : led.getBrightness() > 0 ? coreOnIcon : coreOffIcon;
     }
 
     public IIcon getAnodeIcon() {
@@ -144,7 +131,16 @@ public final class BlockLed extends BlockContainer implements IElectricalBlock, 
         TileEntityLed led = (TileEntityLed) tile;
         if (led.isBurned()) return 0x454545;
         int rgb = WireColor.rgb(led.getColor());
-        return led.getBrightness() > 0 ? rgb : dim(rgb);
+        return led.getBrightness() > 0 ? rgb : inactiveColor(rgb);
+    }
+
+    public int getCoreColor(IBlockAccess world, int x, int y, int z) {
+        TileEntity tile = world == null ? null : world.getTileEntity(x, y, z);
+        if (!(tile instanceof TileEntityLed)) return 0x404040;
+        TileEntityLed led = (TileEntityLed) tile;
+        if (led.isBurned()) return 0x242424;
+        int rgb = WireColor.rgb(led.getColor());
+        return led.getBrightness() > 0 ? rgb : inactiveCoreColor(rgb);
     }
 
     @Override
@@ -156,10 +152,18 @@ public final class BlockLed extends BlockContainer implements IElectricalBlock, 
         return drops;
     }
 
-    private int dim(int rgb) {
-        int r = (int) (((rgb >> 16) & 255) * 0.35F);
-        int g = (int) (((rgb >> 8) & 255) * 0.35F);
-        int b = (int) ((rgb & 255) * 0.35F);
+    public static int inactiveColor(int rgb) {
+        int r = (rgb >> 16) & 255, g = (rgb >> 8) & 255, b = rgb & 255;
+        r = (int) (r * 0.35F + 170 * 0.65F);
+        g = (int) (g * 0.35F + 170 * 0.65F);
+        b = (int) (b * 0.35F + 170 * 0.65F);
+        return r << 16 | g << 8 | b;
+    }
+
+    public static int inactiveCoreColor(int rgb) {
+        int r = 36 + (int) (((rgb >> 16) & 255) * 0.30F);
+        int g = 36 + (int) (((rgb >> 8) & 255) * 0.30F);
+        int b = 36 + (int) ((rgb & 255) * 0.30F);
         return r << 16 | g << 8 | b;
     }
 
@@ -175,6 +179,11 @@ public final class BlockLed extends BlockContainer implements IElectricalBlock, 
     @Override
     public boolean renderAsNormalBlock() {
         return false;
+    }
+
+    @Override
+    public int getRenderBlockPass() {
+        return 1;
     }
 
     @Override
