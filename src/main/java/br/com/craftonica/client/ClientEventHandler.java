@@ -87,6 +87,7 @@ public final class ClientEventHandler {
                 || stack.getItem() == ModItems.MULTIMETER
                 || stack.getItem() == ModItems.WRENCH
                 || stack.getItem() == ModItems.ROBO_PORT_CONFIGURATOR
+                || stack.getItem() == ModItems.WIRE_ROUTER
                 || stack.getItem() == ModItems.MANUAL;
     }
 

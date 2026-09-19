@@ -193,6 +193,7 @@ public final class ShowcaseGenerator {
         inventory.setInventorySlotContents(5, new ItemStack(ModBlocks.RESISTOR_220, 8));
         inventory.setInventorySlotContents(6, new ItemStack(ModBlocks.LED, 4));
         inventory.setInventorySlotContents(7, new ItemStack(ModItems.ROBO_PORT_CONFIGURATOR));
+        inventory.setInventorySlotContents(8, new ItemStack(ModItems.WIRE_ROUTER));
     }
 
     private static ItemStack book(Project project) {

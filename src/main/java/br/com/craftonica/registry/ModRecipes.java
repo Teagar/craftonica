@@ -100,6 +100,14 @@ public final class ModRecipes {
                 'I', Items.iron_ingot,
                 'C', Items.comparator);
 
+        GameRegistry.addRecipe(new ItemStack(ModItems.WIRE_ROUTER),
+                " I ",
+                "RCR",
+                " I ",
+                'I', Items.iron_ingot,
+                'R', Items.redstone,
+                'C', Items.shears);
+
         GameRegistry.addShapelessRecipe(new ItemStack(ModItems.MANUAL), Items.book, Items.redstone);
     }
 

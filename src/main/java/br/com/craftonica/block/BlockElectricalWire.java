@@ -1,17 +1,21 @@
 package br.com.craftonica.block;
 
 import br.com.craftonica.CraftonicaCreativeTab;
+import br.com.craftonica.registry.ModItems;
 import br.com.craftonica.render.CraftonicaRenderIds;
+import br.com.craftonica.tile.TileEntityElectricalWire;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockContainer;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
-public final class BlockElectricalWire extends Block implements IElectricalBlock {
+public final class BlockElectricalWire extends BlockContainer implements IElectricalBlock {
     public BlockElectricalWire() {
         super(Material.circuits);
         setBlockName("electricalWire");
@@ -23,12 +27,20 @@ public final class BlockElectricalWire extends Block implements IElectricalBlock
 
     @Override
     public boolean canConnectOnSide(IBlockAccess world, int x, int y, int z, int side) {
-        return side >= 0 && side < 6;
+        if (side < 0 || side >= 6) return false;
+        TileEntity tile = world.getTileEntity(x, y, z);
+        return !(tile instanceof TileEntityElectricalWire)
+                || ((TileEntityElectricalWire) tile).canConnect(side);
+    }
+
+    @Override public TileEntity createNewTileEntity(World world, int metadata) {
+        return new TileEntityElectricalWire();
     }
 
     public int getConnectionMask(IBlockAccess world, int x, int y, int z) {
         int mask = 0;
         for (ForgeDirection direction : ForgeDirection.VALID_DIRECTIONS) {
+            if (!canConnectOnSide(world, x, y, z, direction.ordinal())) continue;
             Block neighbor = world.getBlock(x + direction.offsetX, y + direction.offsetY, z + direction.offsetZ);
             if (neighbor instanceof IElectricalBlock && ((IElectricalBlock) neighbor).canConnectOnSide(
                     world,
@@ -93,6 +105,7 @@ public final class BlockElectricalWire extends Block implements IElectricalBlock
     public boolean onBlockActivated(World world, int x, int y, int z, EntityPlayer player,
                                     int side, float hitX, float hitY, float hitZ) {
         ItemStack held = player.getCurrentEquippedItem();
+        if (held != null && held.getItem() == ModItems.WIRE_ROUTER) return false;
         if (held == null || held.getItem() != Items.dye) {
             return false;
         }

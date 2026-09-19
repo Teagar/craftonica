@@ -23,6 +23,7 @@ import br.com.craftonica.tile.TileEntityRoboBoard;
 import br.com.craftonica.tile.TileEntityRoboPort;
 import br.com.craftonica.tile.TileEntityAnalogSensor;
 import br.com.craftonica.tile.TileEntityEducationalActuator;
+import br.com.craftonica.tile.TileEntityElectricalWire;
 import cpw.mods.fml.common.registry.GameRegistry;
 
 public final class ModBlocks {
@@ -79,5 +80,6 @@ public final class ModBlocks {
         GameRegistry.registerTileEntity(TileEntityRoboPort.class, "craftonica_robo_port");
         GameRegistry.registerTileEntity(TileEntityAnalogSensor.class, "craftonica_analog_sensor");
         GameRegistry.registerTileEntity(TileEntityEducationalActuator.class, "craftonica_educational_actuator");
+        GameRegistry.registerTileEntity(TileEntityElectricalWire.class, "craftonica_electrical_wire");
     }
 }
