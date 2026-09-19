@@ -277,7 +277,7 @@ public final class TileEntityRoboPort extends TileEntity {
             Role candidate = Role.values()[pin];
             if (isDigitalRoleAvailable(candidate)) return candidate;
         }
-        return Role.D0;
+        return Role.POWER_5V;
     }
 
     private boolean isDigitalRoleAvailable(Role candidate) {

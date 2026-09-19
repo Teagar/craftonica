@@ -46,7 +46,9 @@ public final class ClientEventHandler {
     @SubscribeEvent
     public void onPlayerInteract(PlayerInteractEvent event) {
         if (event.action == PlayerInteractEvent.Action.RIGHT_CLICK_BLOCK && event.world != null
-                && event.world.isRemote && event.world.getBlock(event.x, event.y, event.z) instanceof BlockRoboBoard) {
+                && event.world.isRemote && event.world.getBlock(event.x, event.y, event.z) instanceof BlockRoboBoard
+                && (event.entityPlayer.getHeldItem() == null
+                || event.entityPlayer.getHeldItem().getItem() != ModItems.ROBO_PORT_CONFIGURATOR)) {
             SketchClientController.INSTANCE.allowOpen(event.world.provider.dimensionId, event.x, event.y, event.z);
         }
     }
@@ -84,6 +86,7 @@ public final class ClientEventHandler {
                 || block instanceof BlockRoboBoard
                 || stack.getItem() == ModItems.MULTIMETER
                 || stack.getItem() == ModItems.WRENCH
+                || stack.getItem() == ModItems.ROBO_PORT_CONFIGURATOR
                 || stack.getItem() == ModItems.MANUAL;
     }
 

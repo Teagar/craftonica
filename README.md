@@ -119,7 +119,8 @@ mantêm os terminais distinguíveis sem depender somente de cor.
 
 Coloque o RoboPort diretamente contra uma face da RoboBoard e clique nele para
 escolher seu papel. A face oposta à placa é o único terminal que entra na rede.
-Até seis portas físicas podem coexistir; A0-A5 mantêm os pinos AVR 14-19. Leituras
+Use o Configurador de RoboPort na placa e depois em cada terminal para vincular até
+64 blocos de distância; clique comum apenas consulta o canal. A0-A5 mantêm os pinos AVR 14-19. Leituras
 digitais usam LOW até 1,5 V, HIGH a partir de 3 V e conservam o último estado na
 faixa indeterminada. Uma entrada ainda sem solução conserva o último estado
 estável, inicialmente LOW, e fica marcada como indeterminada no diagnóstico da

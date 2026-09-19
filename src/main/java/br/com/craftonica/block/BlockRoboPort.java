@@ -3,6 +3,7 @@ package br.com.craftonica.block;
 import br.com.craftonica.CraftonicaCreativeTab;
 import br.com.craftonica.network.BlockPosition;
 import br.com.craftonica.network.ElectricalNetworkManager;
+import br.com.craftonica.registry.ModItems;
 import br.com.craftonica.tile.TileEntityRoboPort;
 import br.com.craftonica.tile.TileEntityRoboBoard;
 import net.minecraft.block.BlockContainer;
@@ -41,19 +42,14 @@ public final class BlockRoboPort extends BlockContainer implements IElectricalBl
                                     float hitX, float hitY, float hitZ) {
         TileEntity tile = world.getTileEntity(x, y, z);
         if (!(tile instanceof TileEntityRoboPort)) return false;
+        if (player.getCurrentEquippedItem() != null
+                && player.getCurrentEquippedItem().getItem() == ModItems.ROBO_PORT_CONFIGURATOR) return false;
         if (!world.isRemote) {
             TileEntityRoboPort port = (TileEntityRoboPort) tile;
             TileEntityRoboBoard board = port.getBoundBoard();
-            if (board == null || !board.canAccess(player)) return false;
-            try {
-                port.cycleRole(port.getRevision());
-                player.addChatMessage(new ChatComponentTranslation(
-                        "message.craftonica.roboport.role", port.getRole().name()));
-            } catch (IllegalStateException invalidBindingOrRevision) {
-                return false;
-            }
-            ElectricalNetworkManager.forWorld(world).invalidateAround(new BlockPosition(x, y, z));
-            world.markBlockForUpdate(x, y, z);
+            player.addChatMessage(new ChatComponentTranslation(board == null
+                    ? "message.craftonica.roboport.unbound" : "message.craftonica.roboport.role",
+                    port.getRole().name()));
         }
         return true;
     }

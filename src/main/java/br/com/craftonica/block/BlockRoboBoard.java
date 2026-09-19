@@ -12,6 +12,7 @@ import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.item.ItemStack;
 import net.minecraft.world.World;
 import br.com.craftonica.sketch.server.SketchServer;
+import br.com.craftonica.registry.ModItems;
 
 /** Programmable board shell. Electrical terminals are intentionally deferred to CRL-32. */
 public final class BlockRoboBoard extends BlockContainer {
@@ -50,6 +51,8 @@ public final class BlockRoboBoard extends BlockContainer {
     @Override
     public boolean onBlockActivated(World world, int x, int y, int z, EntityPlayer player,
                                     int side, float hitX, float hitY, float hitZ) {
+        if (player.getCurrentEquippedItem() != null
+                && player.getCurrentEquippedItem().getItem() == ModItems.ROBO_PORT_CONFIGURATOR) return false;
         if (world.isRemote) {
             Craftonica.proxy.prepareEditorOpen(world.provider.dimensionId, x, y, z);
             return true;

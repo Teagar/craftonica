@@ -92,6 +92,14 @@ public final class ModRecipes {
                 " I ",
                 'I', Items.iron_ingot);
 
+        GameRegistry.addRecipe(new ItemStack(ModItems.ROBO_PORT_CONFIGURATOR),
+                " R ",
+                "ICI",
+                " I ",
+                'R', Items.redstone,
+                'I', Items.iron_ingot,
+                'C', Items.comparator);
+
         GameRegistry.addShapelessRecipe(new ItemStack(ModItems.MANUAL), Items.book, Items.redstone);
     }
 
