@@ -119,6 +119,51 @@ limites. Ao segurar um componente direcional, uma prévia translúcida mostra no
 mundo a orientação resultante antes da colocação; os símbolos `+`, `-` e GND
 mantêm os terminais distinguíveis sem depender somente de cor.
 
+### Maturidade visual
+
+Este inventário é a referência para mudanças em modelos e texturas. Os estados
+significam:
+
+- **Ausente**: ainda não existe asset específico; equivalentes provisórios do
+  Minecraft não contam como trabalho visual iniciado.
+- **Protótipo**: existe e pode ser revisado para melhorar leitura, escala ou
+  acabamento.
+- **Final**: visual aprovado. Não altere modelo, geometria, UV, paleta ou textura
+  sem uma solicitação explícita que também atualize esta tabela.
+
+| Componente ou item | Modelo | Textura | Observação |
+| --- | --- | --- | --- |
+| Fio elétrico (16 cores) | **Final** | **Final** | Conexões nas seis faces e identificação por cor aprovadas. |
+| Fonte CC de 5 V | **Final** | **Final** | Corpo, terminal positivo e orientação aprovados. |
+| GND | **Final** | **Final** | Corpo, símbolo e terminal de retorno aprovados. |
+| Resistor de 220 ohms | **Final** | **Final** | Corpo axial e anéis físicos contínuos aprovados. |
+| Resistor de 1 kohm | **Final** | **Final** | Corpo axial e anéis físicos contínuos aprovados. |
+| Resistor de 10 kohms | **Final** | **Final** | Corpo axial e anéis físicos contínuos aprovados. |
+| Botão elétrico | Protótipo | Protótipo | Estados aberto e fechado já distinguíveis. |
+| LED (16 cores) | Protótipo | Protótipo | Corpo, terminais e estados elétricos implementados. |
+| Disjuntor | Protótipo | Protótipo | Visual funcional sujeito a acabamento. |
+| Diodo | Protótipo | Protótipo | Polaridade já indicada no mundo. |
+| Chave de alavanca | Protótipo | Protótipo | Estados funcionais já modelados. |
+| Potenciômetro de 10 kohms | Protótipo | Protótipo | Corpo e terminais A, cursor e B implementados. |
+| RoboBoard | Protótipo | Protótipo | Placa funcional, ainda sujeita a detalhamento visual. |
+| RoboPort | Protótipo | Protótipo | Terminal funcional, ainda sujeito a acabamento. |
+| Sensor de luz | Protótipo | Protótipo | Asset funcional existente. |
+| Sensor de temperatura | Protótipo | Protótipo | Asset funcional existente. |
+| Buzzer | Protótipo | Protótipo | Estados inativo e ativo existentes. |
+| Motor CC | Protótipo | Protótipo | Estados inativo e ativo existentes. |
+| Multímetro | Protótipo | Protótipo | Modelo portátil e tela de medição implementados. |
+| Configurador de RoboPort | Protótipo | Protótipo | Modelo portátil e tela de configuração implementados. |
+| Chave inglesa | Ausente | Protótipo | Possui sprite, mas ainda não possui modelo próprio. |
+| Roteador de fios | Ausente | Protótipo | Possui sprite, mas ainda não possui modelo próprio. |
+| Manual do Craftônica | Ausente | Protótipo | Possui sprite e interface de livro vanilla. |
+| Sensor de distância | Ausente | Ausente | Planejado no roadmap; ainda não registrado. |
+| Servo | Ausente | Ausente | Planejado no roadmap; ainda não registrado. |
+| Ponte H | Ausente | Ausente | Planejada no roadmap; ainda não registrada. |
+
+Ao adicionar um componente, inclua-o nesta tabela no mesmo commit. Um asset novo
+começa como **Protótipo**; somente uma aprovação explícita pode promovê-lo a
+**Final**.
+
 ### RoboBoard e componentes educacionais
 
 Coloque o RoboPort diretamente contra uma face da RoboBoard e clique nele para
