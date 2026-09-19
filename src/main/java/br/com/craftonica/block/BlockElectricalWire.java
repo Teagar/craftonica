@@ -8,6 +8,7 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockContainer;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
@@ -31,6 +32,22 @@ public final class BlockElectricalWire extends BlockContainer implements IElectr
         TileEntity tile = world.getTileEntity(x, y, z);
         return !(tile instanceof TileEntityElectricalWire)
                 || ((TileEntityElectricalWire) tile).canConnect(side);
+    }
+
+    @Override
+    public void onBlockPlacedBy(World world, int x, int y, int z, EntityLivingBase placer, ItemStack stack) {
+        super.onBlockPlacedBy(world, x, y, z, placer, stack);
+        if (world.isRemote || (stack.getItemDamage() & 15) != 0) return;
+        int[] adjacent = new int[6];
+        for (int side = 0; side < 6; side++) {
+            ForgeDirection direction = ForgeDirection.getOrientation(side);
+            int nx = x + direction.offsetX, ny = y + direction.offsetY, nz = z + direction.offsetZ;
+            adjacent[side] = world.getBlock(nx, ny, nz) == this
+                    ? world.getBlockMetadata(nx, ny, nz) & 15 : -1;
+        }
+        int inherited = WireColor.inherit(stack.getItemDamage(), adjacent);
+        if (inherited != (world.getBlockMetadata(x, y, z) & 15))
+            world.setBlockMetadataWithNotify(x, y, z, inherited, 3);
     }
 
     @Override public TileEntity createNewTileEntity(World world, int metadata) {

@@ -259,6 +259,8 @@ um terminal elétrico válido, evitando conexões visuais falsas.
 Use qualquer um dos 16 corantes vanilla com clique direito para mudar a cor de
 um fio. A cor é preservada ao quebrar e recolocar o bloco e serve apenas para
 organização visual: fios de cores diferentes continuam eletricamente conectados.
+Um fio padrão herda automaticamente a cor quando todos os fios vizinhos possuem
+a mesma cor; diante de cores conflitantes, ele mantém a cor do item.
 Use o Roteador de fios para bloquear uma face específica quando cabos paralelos
 precisarem permanecer em redes elétricas separadas; a máscara fica salva no mundo.
 
