@@ -20,7 +20,7 @@ public final class TileEntityRoboPort extends TileEntity {
 
     public enum Role {
         D0, D1, D2, D3, D4, D5, D6, D7, D8, D9,
-        D10, D11, D12, D13, D14, D15, D16, D17, D18, D19,
+        D10, D11, D12, D13, A0, A1, A2, A3, A4, A5,
         POWER_5V, GROUND;
 
         public boolean isDigital() { return ordinal() < RoboBoardState.OUTPUT_PIN_COUNT; }

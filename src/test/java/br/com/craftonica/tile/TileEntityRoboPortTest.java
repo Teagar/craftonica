@@ -41,6 +41,21 @@ public final class TileEntityRoboPortTest {
     }
 
     @Test
+    public void analogNamesPreserveLegacyAvrOrdinals() {
+        assertEquals(14, TileEntityRoboPort.Role.A0.ordinal());
+        assertEquals(19, TileEntityRoboPort.Role.A5.ordinal());
+        assertEquals(14, TileEntityRoboPort.Role.A0.getPin());
+        assertEquals(19, TileEntityRoboPort.Role.A5.getPin());
+
+        NBTTagCompound legacy = new NBTTagCompound();
+        legacy.setInteger("PortSchema", TileEntityRoboPort.SCHEMA_VERSION);
+        legacy.setByte("Role", (byte) 14);
+        TileEntityRoboPort port = new TileEntityRoboPort();
+        port.readFromNBT(legacy);
+        assertEquals(TileEntityRoboPort.Role.A0, port.getRole());
+    }
+
+    @Test
     public void driveModelUsesFiniteFiveVoltSourcesAndPwmAverage() {
         assertNull(TileEntityRoboPort.calculateDriveVoltage(
                 TileEntityRoboPort.Role.D3, false, false, false, 0));

@@ -33,13 +33,13 @@ public final class ShowcaseGenerator {
             new Project("03 SEMAFORO", "D10 D11 D12", TileEntityRoboPort.Role.D10,
                     "void setup(){pinMode(10,OUTPUT);pinMode(11,OUTPUT);pinMode(12,OUTPUT);}",
                     "void loop(){digitalWrite(10,HIGH);delay(3000);digitalWrite(10,LOW);digitalWrite(11,HIGH);delay(700);digitalWrite(11,LOW);digitalWrite(12,HIGH);delay(3000);digitalWrite(12,LOW);}"),
-            new Project("04 SENSOR LUZ", "A0 + Serial", TileEntityRoboPort.Role.D14,
+            new Project("04 SENSOR LUZ", "A0 + Serial", TileEntityRoboPort.Role.A0,
                     "void setup(){Serial.begin(9600);}",
                     "void loop(){Serial.println(analogRead(A0));delay(250);}"),
-            new Project("05 POTENCIOMETRO", "A1 + PWM D9", TileEntityRoboPort.Role.D15,
+            new Project("05 POTENCIOMETRO", "A1 + PWM D9", TileEntityRoboPort.Role.A1,
                     "void setup(){pinMode(9,OUTPUT);Serial.begin(9600);}",
                     "void loop(){int v=analogRead(A1);analogWrite(9,v/4);Serial.println(v);delay(50);}"),
-            new Project("06 TEMPERATURA", "A2 + D8", TileEntityRoboPort.Role.D16,
+            new Project("06 TEMPERATURA", "A2 + D8", TileEntityRoboPort.Role.A2,
                     "void setup(){pinMode(8,OUTPUT);Serial.begin(9600);}",
                     "void loop(){int t=analogRead(A2);digitalWrite(8,t>600);Serial.println(t);delay(250);}")
     };

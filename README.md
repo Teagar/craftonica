@@ -104,7 +104,7 @@ reiniciar. Se o serviço legado de assets estiver indisponível, use:
 - Editor industrial de `Sketch.ino` aberto com clique direito na RoboBoard, com
   compilação isolada, controle de execução e monitor Serial didático apenas TX.
 - RoboPort físico, limitado a uma porta por face da RoboBoard, configurável como
-  D0-D19, alimentação de 5 V ou GND.
+  D0-D13, A0-A5, alimentação de 5 V ou GND.
 - Sensores analógicos de luz e temperatura com saída determinística de 0-5 V.
 - Buzzer de 220 ohms e motor CC de 100 ohms como cargas educacionais com
   indicação visual de atividade.
@@ -119,7 +119,7 @@ mantêm os terminais distinguíveis sem depender somente de cor.
 
 Coloque o RoboPort diretamente contra uma face da RoboBoard e clique nele para
 escolher seu papel. A face oposta à placa é o único terminal que entra na rede.
-Até seis portas físicas podem coexistir; D14-D19 também alimentam A0-A5. Leituras
+Até seis portas físicas podem coexistir; A0-A5 mantêm os pinos AVR 14-19. Leituras
 digitais usam LOW até 1,5 V, HIGH a partir de 3 V e conservam o último estado na
 faixa indeterminada. Uma entrada ainda sem solução conserva o último estado
 estável, inicialmente LOW, e fica marcada como indeterminada no diagnóstico da
