@@ -56,6 +56,17 @@ public class LedStateTest {
         assertEquals(0, state.getBrightness());
     }
 
+    @Test
+    public void unavailableSolvedNetworkClearsPreviousBrightness() {
+        LedState state = new LedState();
+        state.update(result(CircuitStatus.CLOSED, 0.013636));
+
+        assertTrue(state.update(null));
+
+        assertEquals(0, state.getBrightness());
+        assertEquals(0, state.getOvercurrentTicks());
+    }
+
     private CircuitResult result(CircuitStatus status, double current) {
         return new CircuitResult(status, 5.0, current, 220.0, "test");
     }

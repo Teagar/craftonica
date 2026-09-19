@@ -150,6 +150,10 @@ public final class ElectricalNetworkManager {
         return cache == null ? null : cache.legacy;
     }
 
+    public boolean hasPublishedNetwork(BlockPosition position) {
+        return published.containsKey(position);
+    }
+
     public boolean shareNetwork(BlockPosition first, BlockPosition second) {
         NetworkCache cache = published.get(first);
         return cache != null && cache.members.contains(second);
