@@ -7,8 +7,12 @@ import br.com.craftonica.network.BlockPosition;
 import br.com.craftonica.network.ElectricalNetworkManager;
 import br.com.craftonica.tile.TileEntityRoboBoard;
 import br.com.craftonica.tile.TileEntityRoboPort;
+import br.com.craftonica.tool.network.ToolActionMessage;
+import br.com.craftonica.tool.network.ToolNetwork;
+import br.com.craftonica.tool.network.ToolStateMessage;
 import net.minecraft.block.Block;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -39,6 +43,13 @@ public final class ItemRoboPortConfigurator extends Item {
         return configurePort(stack, player, world, x, y, z, side);
     }
 
+    @Override
+    public ItemStack onItemRightClick(ItemStack stack, World world, EntityPlayer player) {
+        if (!world.isRemote && player instanceof EntityPlayerMP)
+            sendState(stack, (EntityPlayerMP) player, null, "tool.craftonica.configurator.ready", "");
+        return stack;
+    }
+
     private boolean selectBoard(ItemStack stack, EntityPlayer player, World world, int x, int y, int z) {
         TileEntity tile = world.getTileEntity(x, y, z);
         if (!(tile instanceof TileEntityRoboBoard)) return false;
@@ -49,7 +60,8 @@ public final class ItemRoboPortConfigurator extends Item {
         }
         if (player.isSneaking()) {
             if (stack.hasTagCompound()) stack.getTagCompound().removeTag(SELECTION);
-            player.addChatMessage(new ChatComponentTranslation("message.craftonica.roboport_configurator.cleared"));
+            if (player instanceof EntityPlayerMP)
+                sendState(stack, (EntityPlayerMP) player, null, "tool.craftonica.configurator.cleared", "");
             return true;
         }
         UUID id = board.getBoardId();
@@ -60,8 +72,8 @@ public final class ItemRoboPortConfigurator extends Item {
         selected.setLong("Least", id.getLeastSignificantBits());
         if (!stack.hasTagCompound()) stack.setTagCompound(new NBTTagCompound());
         stack.getTagCompound().setTag(SELECTION, selected);
-        player.addChatMessage(new ChatComponentTranslation(
-                "message.craftonica.roboport_configurator.selected", x, y, z));
+        if (player instanceof EntityPlayerMP)
+            sendState(stack, (EntityPlayerMP) player, null, "tool.craftonica.configurator.selected", "");
         return true;
     }
 
@@ -73,6 +85,9 @@ public final class ItemRoboPortConfigurator extends Item {
         if (board == null) {
             player.addChatMessage(new ChatComponentTranslation(
                     "message.craftonica.roboport_configurator.no_selection"));
+            if (player instanceof EntityPlayerMP)
+                sendState(stack, (EntityPlayerMP) player, null,
+                        "tool.craftonica.configurator.no_selection", "");
             return true;
         }
         if (!board.canAccess(player)) {
@@ -87,22 +102,51 @@ public final class ItemRoboPortConfigurator extends Item {
                         TileEntityRoboPort.MAX_LINK_DISTANCE));
                 return true;
             }
-            player.addChatMessage(new ChatComponentTranslation(
-                    "message.craftonica.roboport_configurator.bound", port.getRole().name()));
-        } else {
-            try {
-                port.cycleRole(port.getRevision());
-                player.addChatMessage(new ChatComponentTranslation(
-                        "message.craftonica.roboport_configurator.role", port.getRole().name()));
-            } catch (IllegalStateException invalidState) {
-                player.addChatMessage(new ChatComponentTranslation(
-                        "message.craftonica.roboport_configurator.invalid"));
-                return true;
-            }
         }
         ElectricalNetworkManager.forWorld(world).invalidateAround(new BlockPosition(x, y, z));
         world.markBlockForUpdate(x, y, z);
+        if (player instanceof EntityPlayerMP)
+            sendState(stack, (EntityPlayerMP) player, port,
+                    "tool.craftonica.configurator.port", "");
         return true;
+    }
+
+    public void handleGuiAction(ItemStack stack, EntityPlayerMP player, ToolActionMessage action) {
+        if (action.getAction() == br.com.craftonica.tool.network.ToolAction.ROBOPORT_CLEAR_BOARD) {
+            if (stack.hasTagCompound()) stack.getTagCompound().removeTag(SELECTION);
+            sendState(stack, player, null, "tool.craftonica.configurator.cleared", "");
+            return;
+        }
+        if (action.getAction() != br.com.craftonica.tool.network.ToolAction.ROBOPORT_ROLE) return;
+        if (player.getDistanceSq(action.getX() + 0.5, action.getY() + 0.5, action.getZ() + 0.5) > 4096.0)
+            return;
+        TileEntity tile = player.worldObj.getTileEntity(action.getX(), action.getY(), action.getZ());
+        if (!(tile instanceof TileEntityRoboPort)) return;
+        TileEntityRoboPort port = (TileEntityRoboPort) tile;
+        TileEntityRoboBoard board = selectedBoard(stack, player.worldObj);
+        int ordinal = action.getValue();
+        if (board == null || !board.canAccess(player) || !port.isBoundTo(board)
+                || ordinal < 0 || ordinal >= TileEntityRoboPort.Role.values().length) return;
+        try {
+            port.setRole(TileEntityRoboPort.Role.values()[ordinal], action.getRevision());
+            ElectricalNetworkManager.forWorld(player.worldObj).invalidateAround(
+                    new BlockPosition(port.xCoord, port.yCoord, port.zCoord));
+            player.worldObj.markBlockForUpdate(port.xCoord, port.yCoord, port.zCoord);
+            sendState(stack, player, port, "tool.craftonica.configurator.role_changed", "");
+        } catch (IllegalStateException rejected) {
+            sendState(stack, player, port, "tool.craftonica.configurator.role_unavailable", "");
+        }
+    }
+
+    private void sendState(ItemStack stack, EntityPlayerMP player, TileEntityRoboPort port,
+                           String headline, String detail) {
+        TileEntityRoboBoard board = selectedBoard(stack, player.worldObj);
+        ToolNetwork.sendTo(player, ToolStateMessage.roboPort(player.worldObj.provider.dimensionId,
+                board != null, board == null ? 0 : board.xCoord, board == null ? 0 : board.yCoord,
+                board == null ? 0 : board.zCoord,
+                port != null, port == null ? 0 : port.xCoord, port == null ? 0 : port.yCoord,
+                port == null ? 0 : port.zCoord, port == null ? 0 : port.getRole().ordinal(),
+                port == null ? 0 : port.getRevision(), headline, detail));
     }
 
     private TileEntityRoboBoard selectedBoard(ItemStack stack, World world) {
