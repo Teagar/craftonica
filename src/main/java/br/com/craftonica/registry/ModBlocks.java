@@ -15,6 +15,7 @@ import br.com.craftonica.block.BlockRoboPort;
 import br.com.craftonica.block.BlockAnalogSensor;
 import br.com.craftonica.block.BlockEducationalActuator;
 import br.com.craftonica.item.ItemBlockElectricalWire;
+import br.com.craftonica.item.ItemBlockLed;
 import br.com.craftonica.tile.TileEntityLed;
 import br.com.craftonica.tile.TileEntityCircuitBreaker;
 import br.com.craftonica.tile.TileEntityElectricalLever;
@@ -61,7 +62,7 @@ public final class ModBlocks {
         GameRegistry.registerBlock(RESISTOR_220, "resistor_220");
         GameRegistry.registerBlock(RESISTOR_1K, "resistor_1k");
         GameRegistry.registerBlock(RESISTOR_10K, "resistor_10k");
-        GameRegistry.registerBlock(LED, "led");
+        GameRegistry.registerBlock(LED, ItemBlockLed.class, "led");
         GameRegistry.registerBlock(CIRCUIT_BREAKER, "circuit_breaker");
         GameRegistry.registerBlock(DIODE, "diode");
         GameRegistry.registerBlock(LEVER, "electrical_lever");

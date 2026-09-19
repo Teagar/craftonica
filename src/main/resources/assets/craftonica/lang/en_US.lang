@@ -7,6 +7,7 @@ tile.resistor220.name=220 ohm Resistor
 tile.resistor1k.name=1 kohm Resistor
 tile.resistor10k.name=10 kohm Resistor
 tile.led.name=LED
+tile.led.tooltip.2=Available in all 16 wool colors; off is dim and on emphasizes its color.
 tile.circuitBreaker.name=Rearmable circuit breaker
 tile.diode.name=DC diode
 tile.electricalLever.name=Electrical lever switch

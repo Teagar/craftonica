@@ -7,6 +7,7 @@ tile.resistor220.name=Resistor 220 ohms
 tile.resistor1k.name=Resistor 1 kohm
 tile.resistor10k.name=Resistor 10 kohms
 tile.led.name=LED
+tile.led.tooltip.2=Disponível nas 16 cores de lã; apagado é opaco e ligado realça a cor.
 tile.circuitBreaker.name=Disjuntor rearmável
 tile.diode.name=Diodo DC
 tile.electricalLever.name=Chave de alavanca elétrica

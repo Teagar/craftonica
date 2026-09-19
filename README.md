@@ -256,6 +256,9 @@ base, bulbo e duas pernas. O terminal vermelho indica positivo/ânodo; o termina
 azul-ciano indica GND/cátodo. O fio só desenha um braço quando a face vizinha é
 um terminal elétrico válido, evitando conexões visuais falsas.
 
+LEDs existem nas 16 cores de lã. A cor fica opaca quando desligada e saturada
+quando ligada, sem alterar polaridade, corrente ou persistência de sobrecorrente.
+
 Use qualquer um dos 16 corantes vanilla com clique direito para mudar a cor de
 um fio. A cor é preservada ao quebrar e recolocar o bloco e serve apenas para
 organização visual: fios de cores diferentes continuam eletricamente conectados.

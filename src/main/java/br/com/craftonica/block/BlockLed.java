@@ -3,6 +3,7 @@ package br.com.craftonica.block;
 import br.com.craftonica.CraftonicaCreativeTab;
 import br.com.craftonica.render.CraftonicaRenderIds;
 import br.com.craftonica.tile.TileEntityLed;
+import br.com.craftonica.block.WireColor;
 import net.minecraft.block.BlockContainer;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.EntityLivingBase;
@@ -12,6 +13,8 @@ import net.minecraft.client.renderer.texture.IIconRegister;
 import net.minecraft.util.IIcon;
 import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
+
+import java.util.ArrayList;
 
 
 public final class BlockLed extends BlockContainer implements IElectricalBlock, IRotatableElectricalBlock {
@@ -133,6 +136,31 @@ public final class BlockLed extends BlockContainer implements IElectricalBlock, 
     public int getLightValue(IBlockAccess world, int x, int y, int z) {
         TileEntity tile = world.getTileEntity(x, y, z);
         return tile instanceof TileEntityLed ? ((TileEntityLed) tile).getBrightness() : 0;
+    }
+
+    public int getVisualColor(IBlockAccess world, int x, int y, int z) {
+        TileEntity tile = world.getTileEntity(x, y, z);
+        if (!(tile instanceof TileEntityLed)) return WireColor.rgb(1);
+        TileEntityLed led = (TileEntityLed) tile;
+        if (led.isBurned()) return 0x454545;
+        int rgb = WireColor.rgb(led.getColor());
+        return led.getBrightness() > 0 ? rgb : dim(rgb);
+    }
+
+    @Override
+    public ArrayList<ItemStack> getDrops(World world, int x, int y, int z, int metadata, int fortune) {
+        ArrayList<ItemStack> drops = new ArrayList<ItemStack>();
+        TileEntity tile = world.getTileEntity(x, y, z);
+        int color = tile instanceof TileEntityLed ? ((TileEntityLed) tile).getColor() : 1;
+        drops.add(new ItemStack(this, 1, color));
+        return drops;
+    }
+
+    private int dim(int rgb) {
+        int r = (int) (((rgb >> 16) & 255) * 0.35F);
+        int g = (int) (((rgb >> 8) & 255) * 0.35F);
+        int b = (int) ((rgb & 255) * 0.35F);
+        return r << 16 | g << 8 | b;
     }
 
     private int opposite(int side) {
