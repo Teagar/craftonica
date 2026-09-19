@@ -104,6 +104,22 @@ public final class TileEntityRoboPort extends TileEntity {
         return revision;
     }
 
+    public long setRole(Role selected, long expectedRevision) {
+        requireServer();
+        if (selected == null || !validateBinding())
+            throw new IllegalStateException("RoboPort is not bound to exactly one loaded board");
+        if (revision != expectedRevision) throw new IllegalStateException("Stale RoboPort revision");
+        if (revision == Long.MAX_VALUE) throw new IllegalStateException("RoboPort revision exhausted");
+        if (selected.isDigital() && selected != role && !isDigitalRoleAvailable(selected))
+            throw new IllegalStateException("Digital role is already assigned");
+        if (selected != role) {
+            role = selected;
+            revision++;
+            markDirty();
+        }
+        return revision;
+    }
+
     /** Canonical Thevenin voltage exposed to the nodal extractor. */
     public Double getDriveVoltage() {
         TileEntityRoboBoard board = getBoundBoard();

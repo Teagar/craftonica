@@ -45,9 +45,10 @@ public final class ElectricalBlockRenderer implements ISimpleBlockRenderingHandl
             }
 
             @Override
-            public void renderTopRotated(double minX, double minY, double minZ,
-                                         double maxX, double maxY, double maxZ, IIcon icon) {
-                renderPart(block, renderer, minX, minY, minZ, maxX, maxY, maxZ, icon, color, 255, true);
+            public void renderResistorBody(double minX, double minY, double minZ,
+                                           double maxX, double maxY, double maxZ, IIcon icon, int axis) {
+                renderPart(block, renderer, minX, minY, minZ, maxX, maxY, maxZ,
+                        icon, color, 255, axis == 0);
             }
         });
         GL11.glTranslatef(0.5F, 0.5F, 0.5F);
@@ -69,9 +70,10 @@ public final class ElectricalBlockRenderer implements ISimpleBlockRenderingHandl
             }
 
             @Override
-            public void renderTopRotated(double minX, double minY, double minZ,
-                                         double maxX, double maxY, double maxZ, IIcon icon) {
-                renderPart(block, renderer, minX, minY, minZ, maxX, maxY, maxZ, icon, 0xFFFFFF, 150, true);
+            public void renderResistorBody(double minX, double minY, double minZ,
+                                           double maxX, double maxY, double maxZ, IIcon icon, int axis) {
+                renderPart(block, renderer, minX, minY, minZ, maxX, maxY, maxZ,
+                        icon, 0xFFFFFF, 150, axis == 0);
             }
         });
     }
@@ -108,10 +110,10 @@ public final class ElectricalBlockRenderer implements ISimpleBlockRenderingHandl
             }
 
             @Override
-            public void renderTopRotated(double minX, double minY, double minZ,
-                                         double maxX, double maxY, double maxZ, IIcon icon) {
+            public void renderResistorBody(double minX, double minY, double minZ,
+                                           double maxX, double maxY, double maxZ, IIcon icon, int axis) {
                 renderWorldPart(renderer, block, x, y, z,
-                        minX, minY, minZ, maxX, maxY, maxZ, icon, color, true);
+                        minX, minY, minZ, maxX, maxY, maxZ, icon, color, axis == 0);
             }
         });
         return true;
@@ -188,14 +190,33 @@ public final class ElectricalBlockRenderer implements ISimpleBlockRenderingHandl
         int axis = metadata & 1;
         IIcon body = block.getBodyIcon(metadata);
         IIcon lead = block.getTerminalIcon();
+        boolean physicalBands = block instanceof BlockResistor;
         if (axis == 0) {
-            parts.renderTopRotated(5 * P, 5 * P, 4 * P, 11 * P, 11 * P, 12 * P, body);
+            if (physicalBands) parts.render(5 * P, 5 * P, 4 * P, 11 * P, 11 * P, 12 * P, body);
+            else parts.renderResistorBody(5 * P, 5 * P, 4 * P, 11 * P, 11 * P, 12 * P, body, axis);
             parts.render(7 * P, 7 * P, 0, 9 * P, 9 * P, 4 * P, lead);
             parts.render(7 * P, 7 * P, 12 * P, 9 * P, 9 * P, 1, lead);
         } else {
-            parts.render(4 * P, 5 * P, 5 * P, 12 * P, 11 * P, 11 * P, body);
+            if (physicalBands) parts.render(4 * P, 5 * P, 5 * P, 12 * P, 11 * P, 11 * P, body);
+            else parts.renderResistorBody(4 * P, 5 * P, 5 * P, 12 * P, 11 * P, 11 * P, body, axis);
             parts.render(0, 7 * P, 7 * P, 4 * P, 9 * P, 9 * P, lead);
             parts.render(12 * P, 7 * P, 7 * P, 1, 9 * P, 9 * P, lead);
+        }
+        if (physicalBands) renderResistorBands((BlockResistor) block, axis, parts);
+    }
+
+    private void renderResistorBands(BlockResistor block, int axis, PartRenderer parts) {
+        double[] centers = {5.25 * P, 7.0 * P, 8.75 * P, 10.75 * P};
+        int[] colors = block.getBandColors();
+        for (int index = 0; index < colors.length; index++) {
+            double min = centers[index] - 0.38 * P;
+            double max = centers[index] + 0.38 * P;
+            if (axis == 0)
+                parts.renderTinted(4.85 * P, 4.85 * P, min, 11.15 * P, 11.15 * P, max,
+                        block.getBandIcon(), colors[index]);
+            else
+                parts.renderTinted(min, 4.85 * P, 4.85 * P, max, 11.15 * P, 11.15 * P,
+                        block.getBandIcon(), colors[index]);
         }
     }
 
@@ -331,7 +352,7 @@ public final class ElectricalBlockRenderer implements ISimpleBlockRenderingHandl
                             IIcon icon, int color, int alpha, boolean rotateTop) {
         Tessellator tessellator = Tessellator.instance;
         renderer.setRenderBounds(minX, minY, minZ, maxX, maxY, maxZ);
-        renderer.uvRotateBottom = rotateTop ? 1 : 0;
+        renderer.uvRotateBottom = rotateTop ? 2 : 0;
         renderer.uvRotateTop = rotateTop ? 1 : 0;
         tessellator.startDrawingQuads();
         tessellator.setNormal(0, -1, 0);
@@ -373,7 +394,7 @@ public final class ElectricalBlockRenderer implements ISimpleBlockRenderingHandl
                                  double maxX, double maxY, double maxZ,
                                  IIcon icon, int color, boolean rotateTop) {
         renderer.setRenderBounds(minX, minY, minZ, maxX, maxY, maxZ);
-        renderer.uvRotateBottom = rotateTop ? 1 : 0;
+        renderer.uvRotateBottom = rotateTop ? 2 : 0;
         renderer.uvRotateTop = rotateTop ? 1 : 0;
         renderer.setOverrideBlockTexture(icon);
         renderer.renderStandardBlockWithColorMultiplier(block, x, y, z,
@@ -402,7 +423,7 @@ public final class ElectricalBlockRenderer implements ISimpleBlockRenderingHandl
         void renderTinted(double minX, double minY, double minZ,
                           double maxX, double maxY, double maxZ, IIcon icon, int tint);
 
-        void renderTopRotated(double minX, double minY, double minZ,
-                              double maxX, double maxY, double maxZ, IIcon icon);
+        void renderResistorBody(double minX, double minY, double minZ,
+                                double maxX, double maxY, double maxZ, IIcon icon, int axis);
     }
 }

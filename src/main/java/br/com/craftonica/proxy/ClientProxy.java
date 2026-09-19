@@ -3,11 +3,15 @@ package br.com.craftonica.proxy;
 import br.com.craftonica.client.ClientEventHandler;
 import br.com.craftonica.client.automation.AutomationBridge;
 import br.com.craftonica.client.render.ElectricalBlockRenderer;
+import br.com.craftonica.client.render.HandheldToolRenderer;
 import br.com.craftonica.client.sketch.SketchClientController;
+import br.com.craftonica.client.tool.ToolClientController;
 import br.com.craftonica.render.CraftonicaRenderIds;
 import br.com.craftonica.sketch.network.EditorStateMessage;
+import br.com.craftonica.tool.network.ToolStateMessage;
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.client.registry.RenderingRegistry;
+import net.minecraftforge.client.MinecraftForgeClient;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiScreenBook;
 import net.minecraft.entity.player.EntityPlayer;
@@ -25,8 +29,14 @@ public final class ClientProxy extends CommonProxy {
         CraftonicaRenderIds.ELECTRICAL_COMPONENT = RenderingRegistry.getNextAvailableRenderId();
         ElectricalBlockRenderer renderer = new ElectricalBlockRenderer();
         RenderingRegistry.registerBlockHandler(renderer);
+        HandheldToolRenderer toolRenderer = new HandheldToolRenderer();
+        MinecraftForgeClient.registerItemRenderer(br.com.craftonica.registry.ModItems.MULTIMETER, toolRenderer);
+        MinecraftForgeClient.registerItemRenderer(
+                br.com.craftonica.registry.ModItems.ROBO_PORT_CONFIGURATOR, toolRenderer);
         MinecraftForge.EVENT_BUS.register(new ClientEventHandler(renderer));
         FMLCommonHandler.instance().bus().register(SketchClientController.INSTANCE);
+        FMLCommonHandler.instance().bus().register(ToolClientController.INSTANCE);
+        MinecraftForge.EVENT_BUS.register(ToolClientController.INSTANCE);
         AutomationBridge.startConfigured();
     }
 
@@ -53,5 +63,10 @@ public final class ClientProxy extends CommonProxy {
     @Override
     public void prepareEditorOpen(int dimension, int x, int y, int z) {
         SketchClientController.INSTANCE.allowOpen(dimension, x, y, z);
+    }
+
+    @Override
+    public void handleToolState(ToolStateMessage state) {
+        ToolClientController.INSTANCE.enqueue(state);
     }
 }

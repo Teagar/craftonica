@@ -14,6 +14,9 @@ import br.com.craftonica.sketch.network.EditorStateMessage;
 import br.com.craftonica.sketch.network.SketchNetwork;
 import br.com.craftonica.sketch.server.SketchServer;
 import br.com.craftonica.persistence.WorldBackupService;
+import br.com.craftonica.tool.network.ToolNetwork;
+import br.com.craftonica.tool.network.ToolStateMessage;
+import br.com.craftonica.tool.server.ToolServer;
 import cpw.mods.fml.common.eventhandler.EventPriority;
 import net.minecraft.world.storage.SaveHandler;
 
@@ -22,6 +25,7 @@ import java.io.IOException;
 public class CommonProxy {
     public void preInit() {
         SketchNetwork.initialize();
+        ToolNetwork.initialize();
         ModBlocks.register();
         ModItems.register();
         ModRecipes.register();
@@ -34,6 +38,7 @@ public class CommonProxy {
         MinecraftForge.EVENT_BUS.register(this);
         MinecraftForge.EVENT_BUS.register(SketchServer.EVENTS);
         FMLCommonHandler.instance().bus().register(SketchServer.EVENTS);
+        FMLCommonHandler.instance().bus().register(ToolServer.EVENTS);
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
@@ -69,5 +74,8 @@ public class CommonProxy {
 
     /** Client proxy clears the local close guard before the server answers an explicit interaction. */
     public void prepareEditorOpen(int dimension, int x, int y, int z) {
+    }
+
+    public void handleToolState(ToolStateMessage state) {
     }
 }
