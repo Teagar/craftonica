@@ -10,6 +10,7 @@ import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.TextureMap;
+import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
@@ -38,8 +39,13 @@ public final class ClientEventHandler {
             return;
         }
         String prefix = stack.getUnlocalizedName() + ".tooltip.";
+        Minecraft minecraft = Minecraft.getMinecraft();
+        ScaledResolution resolution = new ScaledResolution(
+                minecraft, minecraft.displayWidth, minecraft.displayHeight);
+        int maxWidth = Math.max(80, resolution.getScaledWidth() - 32);
         for (int line = 0; StatCollector.canTranslate(prefix + line); line++) {
-            event.toolTip.add(EnumChatFormatting.GRAY + StatCollector.translateToLocal(prefix + line));
+            event.toolTip.addAll(minecraft.fontRenderer.listFormattedStringToWidth(
+                    EnumChatFormatting.GRAY + StatCollector.translateToLocal(prefix + line), maxWidth));
         }
     }
 

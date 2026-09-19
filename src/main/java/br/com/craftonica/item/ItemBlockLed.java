@@ -8,6 +8,7 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.StatCollector;
 import net.minecraft.world.World;
 
 import java.util.List;
@@ -23,6 +24,12 @@ public final class ItemBlockLed extends ItemBlock {
     @Override
     public int getColorFromItemStack(ItemStack stack, int pass) {
         return WireColor.rgb(stack.getItemDamage());
+    }
+
+    @Override
+    public String getItemStackDisplayName(ItemStack stack) {
+        return super.getItemStackDisplayName(stack) + " - "
+                + StatCollector.translateToLocal("color.craftonica." + (stack.getItemDamage() & 15));
     }
 
     @Override

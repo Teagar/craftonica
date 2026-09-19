@@ -37,6 +37,18 @@ public final class ElectricalBlockRenderer implements ISimpleBlockRenderingHandl
                                IIcon icon) {
                 renderPart(block, renderer, minX, minY, minZ, maxX, maxY, maxZ, icon, color, 255);
             }
+
+            @Override
+            public void renderTinted(double minX, double minY, double minZ,
+                                     double maxX, double maxY, double maxZ, IIcon icon, int tint) {
+                renderPart(block, renderer, minX, minY, minZ, maxX, maxY, maxZ, icon, tint, 255);
+            }
+
+            @Override
+            public void renderTopRotated(double minX, double minY, double minZ,
+                                         double maxX, double maxY, double maxZ, IIcon icon) {
+                renderPart(block, renderer, minX, minY, minZ, maxX, maxY, maxZ, icon, color, 255, true);
+            }
         });
         GL11.glTranslatef(0.5F, 0.5F, 0.5F);
     }
@@ -49,6 +61,18 @@ public final class ElectricalBlockRenderer implements ISimpleBlockRenderingHandl
                                IIcon icon) {
                 renderPart(block, renderer, minX, minY, minZ, maxX, maxY, maxZ, icon, 0xFFFFFF, 150);
             }
+
+            @Override
+            public void renderTinted(double minX, double minY, double minZ,
+                                     double maxX, double maxY, double maxZ, IIcon icon, int tint) {
+                renderPart(block, renderer, minX, minY, minZ, maxX, maxY, maxZ, icon, tint, 150);
+            }
+
+            @Override
+            public void renderTopRotated(double minX, double minY, double minZ,
+                                         double maxX, double maxY, double maxZ, IIcon icon) {
+                renderPart(block, renderer, minX, minY, minZ, maxX, maxY, maxZ, icon, 0xFFFFFF, 150, true);
+            }
         });
     }
 
@@ -57,7 +81,6 @@ public final class ElectricalBlockRenderer implements ISimpleBlockRenderingHandl
                                     final Block block, int modelId, final RenderBlocks renderer) {
         int metadata = world.getBlockMetadata(x, y, z);
         final int color = block instanceof BlockElectricalWire ? WireColor.rgb(metadata)
-                : block instanceof BlockLed ? ((BlockLed) block).getVisualColor(world, x, y, z)
                 : block instanceof BlockAnalogSensor
                 ? ((BlockAnalogSensor) block).getVisualColor(world, x, y, z) : 0xFFFFFF;
         renderModel(block, metadata, world, x, y, z, new PartRenderer() {
@@ -75,6 +98,20 @@ public final class ElectricalBlockRenderer implements ISimpleBlockRenderingHandl
                         ((color >> 8) & 255) / 255.0F,
                         (color & 255) / 255.0F);
                 renderer.clearOverrideBlockTexture();
+            }
+
+            @Override
+            public void renderTinted(double minX, double minY, double minZ,
+                                     double maxX, double maxY, double maxZ, IIcon icon, int tint) {
+                renderWorldPart(renderer, block, x, y, z,
+                        minX, minY, minZ, maxX, maxY, maxZ, icon, tint, false);
+            }
+
+            @Override
+            public void renderTopRotated(double minX, double minY, double minZ,
+                                         double maxX, double maxY, double maxZ, IIcon icon) {
+                renderWorldPart(renderer, block, x, y, z,
+                        minX, minY, minZ, maxX, maxY, maxZ, icon, color, true);
             }
         });
         return true;
@@ -152,7 +189,7 @@ public final class ElectricalBlockRenderer implements ISimpleBlockRenderingHandl
         IIcon body = block.getBodyIcon(metadata);
         IIcon lead = block.getTerminalIcon();
         if (axis == 0) {
-            parts.render(5 * P, 5 * P, 4 * P, 11 * P, 11 * P, 12 * P, body);
+            parts.renderTopRotated(5 * P, 5 * P, 4 * P, 11 * P, 11 * P, 12 * P, body);
             parts.render(7 * P, 7 * P, 0, 9 * P, 9 * P, 4 * P, lead);
             parts.render(7 * P, 7 * P, 12 * P, 9 * P, 9 * P, 1, lead);
         } else {
@@ -251,10 +288,12 @@ public final class ElectricalBlockRenderer implements ISimpleBlockRenderingHandl
     private void renderLed(BlockLed block, int metadata, IBlockAccess world, int x, int y, int z,
                            PartRenderer parts) {
         IIcon body = world == null ? block.getBodyIcon() : block.getBodyIcon(world, x, y, z);
-        parts.render(5 * P, 5 * P, 5 * P, 11 * P, 8 * P, 11 * P, body);
-        parts.render(6 * P, 8 * P, 6 * P, 10 * P, 13 * P, 10 * P, body);
-        parts.render(7 * P, 13 * P, 7 * P, 9 * P, 15 * P, 9 * P, body);
-        int anode = normalizeHorizontal(metadata & 7);
+        int bodyColor = world == null ? WireColor.rgb(metadata)
+                : block.getVisualColor(world, x, y, z);
+        parts.renderTinted(5 * P, 5 * P, 5 * P, 11 * P, 8 * P, 11 * P, body, bodyColor);
+        parts.renderTinted(6 * P, 8 * P, 6 * P, 10 * P, 13 * P, 10 * P, body, bodyColor);
+        parts.renderTinted(7 * P, 13 * P, 7 * P, 9 * P, 15 * P, 9 * P, body, bodyColor);
+        int anode = world == null ? 3 : normalizeHorizontal(metadata & 7);
         renderLead(parts, anode, block.getAnodeIcon(), 6 * P, 10 * P);
         renderLead(parts, opposite(anode), block.getCathodeIcon(), 7 * P, 9 * P);
     }
@@ -282,9 +321,18 @@ public final class ElectricalBlockRenderer implements ISimpleBlockRenderingHandl
     private void renderPart(Block block, RenderBlocks renderer,
                             double minX, double minY, double minZ,
                             double maxX, double maxY, double maxZ,
-                            IIcon icon, int color, int alpha) {
+                             IIcon icon, int color, int alpha) {
+        renderPart(block, renderer, minX, minY, minZ, maxX, maxY, maxZ, icon, color, alpha, false);
+    }
+
+    private void renderPart(Block block, RenderBlocks renderer,
+                            double minX, double minY, double minZ,
+                            double maxX, double maxY, double maxZ,
+                            IIcon icon, int color, int alpha, boolean rotateTop) {
         Tessellator tessellator = Tessellator.instance;
         renderer.setRenderBounds(minX, minY, minZ, maxX, maxY, maxZ);
+        renderer.uvRotateBottom = rotateTop ? 1 : 0;
+        renderer.uvRotateTop = rotateTop ? 1 : 0;
         tessellator.startDrawingQuads();
         tessellator.setNormal(0, -1, 0);
         tessellator.setColorRGBA_I(color, alpha);
@@ -315,6 +363,26 @@ public final class ElectricalBlockRenderer implements ISimpleBlockRenderingHandl
         tessellator.setColorRGBA_I(color, alpha);
         renderer.renderFaceXPos(block, 0, 0, 0, icon);
         tessellator.draw();
+        renderer.uvRotateBottom = 0;
+        renderer.uvRotateTop = 0;
+    }
+
+    private void renderWorldPart(RenderBlocks renderer, Block block,
+                                 int x, int y, int z,
+                                 double minX, double minY, double minZ,
+                                 double maxX, double maxY, double maxZ,
+                                 IIcon icon, int color, boolean rotateTop) {
+        renderer.setRenderBounds(minX, minY, minZ, maxX, maxY, maxZ);
+        renderer.uvRotateBottom = rotateTop ? 1 : 0;
+        renderer.uvRotateTop = rotateTop ? 1 : 0;
+        renderer.setOverrideBlockTexture(icon);
+        renderer.renderStandardBlockWithColorMultiplier(block, x, y, z,
+                ((color >> 16) & 255) / 255.0F,
+                ((color >> 8) & 255) / 255.0F,
+                (color & 255) / 255.0F);
+        renderer.clearOverrideBlockTexture();
+        renderer.uvRotateBottom = 0;
+        renderer.uvRotateTop = 0;
     }
 
     @Override
@@ -330,5 +398,11 @@ public final class ElectricalBlockRenderer implements ISimpleBlockRenderingHandl
     private interface PartRenderer {
         void render(double minX, double minY, double minZ,
                     double maxX, double maxY, double maxZ, IIcon icon);
+
+        void renderTinted(double minX, double minY, double minZ,
+                          double maxX, double maxY, double maxZ, IIcon icon, int tint);
+
+        void renderTopRotated(double minX, double minY, double minZ,
+                              double maxX, double maxY, double maxZ, IIcon icon);
     }
 }
