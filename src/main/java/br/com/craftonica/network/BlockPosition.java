@@ -1,6 +1,6 @@
 package br.com.craftonica.network;
 
-public final class BlockPosition {
+public final class BlockPosition implements Comparable<BlockPosition> {
     public final int x;
     public final int y;
     public final int z;
@@ -28,6 +28,15 @@ public final class BlockPosition {
         int result = x;
         result = 31 * result + y;
         return 31 * result + z;
+    }
+
+    @Override
+    public int compareTo(BlockPosition other) {
+        int result = Integer.compare(x, other.x);
+        if (result == 0) {
+            result = Integer.compare(y, other.y);
+        }
+        return result == 0 ? Integer.compare(z, other.z) : result;
     }
 
     @Override

@@ -5,3 +5,7 @@ run/
 *.iml
 .idea/
 *.log
+__pycache__/
+*.pyc
+.firmware-cache/
+firmware/out/

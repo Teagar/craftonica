@@ -15,7 +15,7 @@ buildscript {
 
 apply plugin: "forge"
 
-version = "0.1.0"
+version = "1.0.0"
 group = "br.com.craftonica"
 archivesBaseName = "craftonica"
 
@@ -63,3 +63,106 @@ processResources {
         exclude "mcmod.info"
     }
 }
+
+task verifyReleaseJar(dependsOn: reobf) << {
+    def jarFile = file("${buildDir}/libs/${archivesBaseName}-${version}.jar")
+    def archive = new java.util.zip.ZipFile(jarFile)
+    try {
+        def entry = archive.getEntry("br/com/craftonica/block/BlockElectricalWire.class")
+        def bytes = archive.getInputStream(entry).bytes
+        def constants = new String(bytes, "ISO-8859-1")
+        if (constants.contains("circuits") || !constants.contains("field_151594_q")) {
+            throw new GradleException("Release JAR is not reobfuscated for Forge runtime")
+        }
+    } finally {
+        archive.close()
+    }
+}
+
+task verifyReleaseMetadata(dependsOn: processResources) << {
+    def release = version.toString()
+    def source = file("src/main/java/br/com/craftonica/Craftonica.java").getText("UTF-8")
+    def metadata = file("${buildDir}/resources/main/mcmod.info").getText("UTF-8")
+    def readme = file("README.md").getText("UTF-8")
+    if (!source.contains("VERSION = \"${release}\""))
+        throw new GradleException("Craftonica.VERSION differs from project version ${release}")
+    if (!metadata.contains("\"version\": \"${release}\""))
+        throw new GradleException("Processed mcmod.info differs from project version ${release}")
+    if (!readme.contains("Craftônica: Robotics Lab ${release}")
+            || !readme.contains("craftonica-${release}.jar"))
+        throw new GradleException("README release metadata differs from project version ${release}")
+}
+
+task verifyElectricalGates(type: Test, dependsOn: testClasses) {
+    include "**/ElectricalSimulationGateTest.class"
+    include "**/DenseLuSolverTest.class"
+    include "**/ResistanceMeasurementTest.class"
+    include "**/ItemMultimeterMeasurementTest.class"
+}
+
+task verifyFirmwareGates(type: Test, dependsOn: testClasses) {
+    include "**/firmware/*Test.class"
+}
+
+task verifyMigrationGates(type: Test, dependsOn: testClasses) {
+    include "**/persistence/*Test.class"
+    include "**/item/ItemMultimeterMigrationTest.class"
+    include "**/lesson/LessonProgressDataTest.class"
+    include "**/lesson/TeacherActivityTest.class"
+}
+
+task firmwareIntegration(type: Test, dependsOn: testClasses) {
+    include "**/firmware/FirmwareCompilerIntegrationTest.class"
+    systemProperty "craftonica.firmware.integration", "true"
+}
+
+task runtimeWorkerJar(type: Jar, dependsOn: classes) {
+    classifier = "runtime-worker"
+    destinationDir = file("${buildDir}/runtime")
+    from sourceSets.main.output
+    include "br/com/craftonica/firmware/**"
+    include "br/com/craftonica/runtime/core/**"
+    include "br/com/craftonica/runtime/protocol/**"
+    include "br/com/craftonica/runtime/worker/**"
+    manifest { attributes "Main-Class": "br.com.craftonica.runtime.worker.RuntimeWorkerMain" }
+}
+
+task verifyRuntimeGates(type: Test, dependsOn: [testClasses, runtimeWorkerJar]) {
+    include "**/runtime/core/*Test.class"
+    include "**/runtime/protocol/*Test.class"
+    include "**/runtime/worker/*Test.class"
+    include "**/runtime/server/*Test.class"
+    include "**/tile/RoboBoardStateTest.class"
+    include "**/tile/TileEntityRoboBoardBudgetTest.class"
+    systemProperty "craftonica.runtime.firmware.integration", "true"
+    systemProperty "craftonica.runtime.workerJar", runtimeWorkerJar.archivePath
+    systemProperty "craftonica.runtime.launcher", file("scripts/runtime/launch-worker.sh")
+    systemProperty "craftonica.runtime.javaHome", System.getProperty("java.home")
+}
+
+task electricalProfile(dependsOn: verifyElectricalGates) << {
+    def report = file("${buildDir}/reports/electrical/crl-26-profile.txt")
+    report.parentFile.mkdirs()
+    report.text = """Craftonica electrical deterministic profile v1
+maxBlocks=1024
+maxTerminals=6144
+maxBranches=2048
+maxUnknownsPerNetwork=256
+maxMatrixCells=65536
+maxActiveLeds=64
+maxActiveSetIterations=16
+maxNetworksPerTick=4
+maxUnknownsPerTick=512
+topologyContactLookup=O(terminals)
+auxiliaryResistanceSourceVolts=1
+auxiliaryNonlinearPolicy=reject
+wallClockGate=false
+"""
+}
+
+build.dependsOn verifyReleaseJar
+build.dependsOn verifyReleaseMetadata
+build.dependsOn verifyElectricalGates
+build.dependsOn verifyFirmwareGates
+build.dependsOn verifyRuntimeGates
+build.dependsOn verifyMigrationGates

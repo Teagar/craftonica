@@ -1,7 +1,7 @@
 package br.com.craftonica.block;
 
-import net.minecraft.world.World;
+import net.minecraft.world.IBlockAccess;
 
 public interface IElectricalBlock {
-    boolean canConnectOnSide(World world, int x, int y, int z, int side);
+    boolean canConnectOnSide(IBlockAccess world, int x, int y, int z, int side);
 }

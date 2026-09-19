@@ -1,0 +1,16 @@
+{
+  "mcp": {
+    "craftonica": {
+      "type": "local",
+      "command": [
+        "python3",
+        "/absolute/path/to/craftonica/tools/mcp/craftonica_mcp.py"
+      ],
+      "enabled": true,
+      "environment": {
+        "CRAFTONICA_AUTOMATION_TOKEN": "same-token-configured-in-prism",
+        "CRAFTONICA_AUTOMATION_URL": "http://127.0.0.1:8765"
+      }
+    }
+  }
+}

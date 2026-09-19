@@ -10,8 +10,9 @@ public final class ElectricalNetworkEvents {
     @SubscribeEvent
     public void onBlockPlaced(BlockEvent.PlaceEvent event) {
         if (!event.world.isRemote) {
-            ElectricalNetworkManager.forWorld(event.world)
-                    .invalidateAround(new BlockPosition(event.x, event.y, event.z));
+            BlockPosition position = new BlockPosition(event.x, event.y, event.z);
+            ElectricalFeedback.placed(event.world, position);
+            ElectricalNetworkManager.forWorld(event.world).invalidateAround(position);
         }
     }
 
