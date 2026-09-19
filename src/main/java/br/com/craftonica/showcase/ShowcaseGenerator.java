@@ -4,6 +4,7 @@ import br.com.craftonica.registry.ModBlocks;
 import br.com.craftonica.registry.ModItems;
 import br.com.craftonica.tile.TileEntityRoboBoard;
 import br.com.craftonica.tile.TileEntityRoboPort;
+import br.com.craftonica.tile.TileEntityLed;
 import net.minecraft.block.Block;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.init.Blocks;
@@ -33,19 +34,20 @@ public final class ShowcaseGenerator {
             new Project("03 SEMAFORO", "D10 D11 D12", TileEntityRoboPort.Role.D10,
                     "void setup(){pinMode(10,OUTPUT);pinMode(11,OUTPUT);pinMode(12,OUTPUT);}",
                     "void loop(){digitalWrite(10,HIGH);delay(3000);digitalWrite(10,LOW);digitalWrite(11,HIGH);delay(700);digitalWrite(11,LOW);digitalWrite(12,HIGH);delay(3000);digitalWrite(12,LOW);}"),
-            new Project("04 SENSOR LUZ", "A0 + Serial", TileEntityRoboPort.Role.D14,
+            new Project("04 SENSOR LUZ", "A0 + Serial", TileEntityRoboPort.Role.A0,
                     "void setup(){Serial.begin(9600);}",
                     "void loop(){Serial.println(analogRead(A0));delay(250);}"),
-            new Project("05 POTENCIOMETRO", "A1 + PWM D9", TileEntityRoboPort.Role.D15,
+            new Project("05 POTENCIOMETRO", "A1 + PWM D9", TileEntityRoboPort.Role.A1,
                     "void setup(){pinMode(9,OUTPUT);Serial.begin(9600);}",
                     "void loop(){int v=analogRead(A1);analogWrite(9,v/4);Serial.println(v);delay(50);}"),
-            new Project("06 TEMPERATURA", "A2 + D8", TileEntityRoboPort.Role.D16,
+            new Project("06 TEMPERATURA", "A2 + D8", TileEntityRoboPort.Role.A2,
                     "void setup(){pinMode(8,OUTPUT);Serial.begin(9600);}",
                     "void loop(){int t=analogRead(A2);digitalWrite(8,t>600);Serial.println(t);delay(250);}")
     };
 
     private ShowcaseGenerator() {}
     public static int projectCount() { return PROJECTS.length; }
+    public static int trafficLightBranchCount() { return 3; }
     public static boolean hasUniqueTitles() {
         Set<String> titles = new HashSet<String>();
         for (Project project : PROJECTS) if (!titles.add(project.title)) return false;
@@ -99,19 +101,19 @@ public final class ShowcaseGenerator {
         int bx = x + 3, bz = z + 4;
         set(world, bx, y, bz, ModBlocks.ROBO_BOARD, 0);
         TileEntity board = world.getTileEntity(bx, y, bz);
+        TileEntityRoboBoard roboBoard = board instanceof TileEntityRoboBoard
+                ? (TileEntityRoboBoard) board : null;
         if (board instanceof TileEntityRoboBoard) {
-            TileEntityRoboBoard roboBoard = (TileEntityRoboBoard) board;
             roboBoard.claimOwner(owner.getUniqueID());
             roboBoard.setTemplateSketchSource(project.setup + "\n\n" + project.loop + "\n");
         }
         port(world, bx + 1, y, bz, project.primaryRole);
         port(world, bx, y, bz + 1, TileEntityRoboPort.Role.GROUND);
-        if (index <= 2) {
+        if (index <= 1) {
             outputLed(world, bx, y, bz, 1);
         }
         if (index == 2) {
-            set(world, x + 8, y, z + 7, ModBlocks.LED, 4);
-            set(world, x + 10, y, z + 7, ModBlocks.LED, 4);
+            trafficLight(world, roboBoard, bx, y, bz);
         } else if (index == 3) sensorInput(world, bx, y, bz, ModBlocks.LIGHT_SENSOR);
         else if (index == 4) potentiometerInputAndLed(world, bx, y, bz);
         else if (index == 5) {
@@ -123,6 +125,42 @@ public final class ShowcaseGenerator {
             set(world, bx - 4, y, bz, ModBlocks.WIRE, 0);
             set(world, bx - 4, y, bz + 1, ModBlocks.WIRE, 0);
         }
+    }
+
+    private static void trafficLight(WorldServer world, TileEntityRoboBoard board, int bx, int y, int bz) {
+        TileEntityRoboPort.Role[] roles = {TileEntityRoboPort.Role.D10,
+                TileEntityRoboPort.Role.D11, TileEntityRoboPort.Role.D12};
+        int[] colors = {1, 11, 2};
+        for (int branch = 0; branch < roles.length; branch++) {
+            int z = bz + branch * 2;
+            remotePort(world, bx + 1, y, z, board, 5, roles[branch]);
+            set(world, bx + 2, y, z, ModBlocks.RESISTOR_220, 1);
+            led(world, bx + 3, y, z, 4, colors[branch]);
+            set(world, bx + 4, y, z, ModBlocks.WIRE, 0);
+        }
+        for (int dz = 0; dz <= 4; dz++) set(world, bx + 4, y, bz + dz, ModBlocks.WIRE, 0);
+        set(world, bx, y, bz + 2, ModBlocks.WIRE, 0);
+        for (int dx = 0; dx <= 4; dx++) set(world, bx + dx, y, bz + 3, ModBlocks.WIRE, 0);
+    }
+
+    private static void led(WorldServer world, int x, int y, int z, int metadata, int color) {
+        set(world, x, y, z, ModBlocks.LED, metadata);
+        TileEntity tile = world.getTileEntity(x, y, z);
+        if (tile instanceof TileEntityLed) {
+            ((TileEntityLed) tile).setColor(color);
+            world.markBlockForUpdate(x, y, z);
+        }
+    }
+
+    private static void remotePort(WorldServer world, int x, int y, int z, TileEntityRoboBoard board,
+                                   int side, TileEntityRoboPort.Role role) {
+        set(world, x, y, z, ModBlocks.ROBO_PORT, 0);
+        TileEntity tile = world.getTileEntity(x, y, z);
+        if (!(tile instanceof TileEntityRoboPort) || board == null) return;
+        TileEntityRoboPort port = (TileEntityRoboPort) tile;
+        if (!port.bindToBoard(board, side)) return;
+        for (int guard = TileEntityRoboPort.Role.values().length + 1;
+             port.getRole() != role && guard > 0; guard--) port.cycleRole(port.getRevision());
     }
 
     private static void outputLed(WorldServer world, int bx, int y, int bz, int direction) {
@@ -192,6 +230,8 @@ public final class ShowcaseGenerator {
         inventory.setInventorySlotContents(4, new ItemStack(ModBlocks.WIRE, 32));
         inventory.setInventorySlotContents(5, new ItemStack(ModBlocks.RESISTOR_220, 8));
         inventory.setInventorySlotContents(6, new ItemStack(ModBlocks.LED, 4));
+        inventory.setInventorySlotContents(7, new ItemStack(ModItems.ROBO_PORT_CONFIGURATOR));
+        inventory.setInventorySlotContents(8, new ItemStack(ModItems.WIRE_ROUTER));
     }
 
     private static ItemStack book(Project project) {
@@ -203,7 +243,7 @@ public final class ShowcaseGenerator {
                 + "\n\nO sketch ja esta na RoboBoard. Abra e compile com Ctrl+S."));
         pages.appendTag(new NBTTagString(project.setup));
         pages.appendTag(new NBTTagString(project.loop));
-        pages.appendTag(new NBTTagString("F5 inicia/para. F6 abre o Serial. Respeite os limites DC da Craftonica 1.0."));
+        pages.appendTag(new NBTTagString("F5 inicia/para. F6 abre o Serial. Respeite os limites DC documentados."));
         tag.setTag("pages", pages); book.setTagCompound(tag);
         return book;
     }

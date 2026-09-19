@@ -56,6 +56,23 @@ public final class PersistentTileMigrationTest {
     }
 
     @Test
+    public void ledColorSurvivesRoundTripAndLegacyDefaultsToRed() {
+        TileEntityLed colored = new TileEntityLed();
+        colored.setColor(12);
+        NBTTagCompound saved = new NBTTagCompound();
+        colored.writeToNBT(saved);
+        TileEntityLed restored = new TileEntityLed();
+        restored.readFromNBT(saved);
+        assertEquals(12, restored.getColor());
+
+        NBTTagCompound legacy = new NBTTagCompound();
+        legacy.setBoolean("Burned", false);
+        TileEntityLed legacyLed = new TileEntityLed();
+        legacyLed.readFromNBT(legacy);
+        assertEquals(1, legacyLed.getColor());
+    }
+
+    @Test
     public void roboBoardCanonicalizesReleasedSchemaAndPreservesUnsupportedData() {
         TileEntityRoboBoard original = new TileEntityRoboBoard();
         NBTTagCompound legacy = new NBTTagCompound(); original.writeToNBT(legacy);

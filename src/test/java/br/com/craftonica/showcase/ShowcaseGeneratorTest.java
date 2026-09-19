@@ -12,5 +12,6 @@ public final class ShowcaseGeneratorTest {
         assertEquals(49, ShowcaseGenerator.WIDTH);
         assertEquals(39, ShowcaseGenerator.DEPTH);
         assertEquals(9, ShowcaseGenerator.HEIGHT);
+        assertEquals(3, ShowcaseGenerator.trafficLightBranchCount());
     }
 }

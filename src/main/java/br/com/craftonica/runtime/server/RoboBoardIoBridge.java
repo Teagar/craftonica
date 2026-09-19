@@ -1,13 +1,12 @@
 package br.com.craftonica.runtime.server;
 
-import br.com.craftonica.block.BlockRoboPort;
 import br.com.craftonica.network.BlockPosition;
 import br.com.craftonica.network.ElectricalNetworkManager;
 import br.com.craftonica.runtime.core.AvrInputs;
 import br.com.craftonica.tile.RoboBoardState;
+import br.com.craftonica.tile.RoboPortRegistry;
 import br.com.craftonica.tile.TileEntityRoboBoard;
 import br.com.craftonica.tile.TileEntityRoboPort;
-import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
 
 /** Loaded-chunk-only adapter between physical RoboPorts and one runtime input snapshot. */
@@ -25,15 +24,8 @@ public final class RoboBoardIoBridge {
         ElectricalNetworkManager manager = ElectricalNetworkManager.forWorld(world);
         TileEntityRoboPort[] ports = new TileEntityRoboPort[RoboBoardState.OUTPUT_PIN_COUNT];
         int duplicateMask = 0;
-        for (int side = 0; side < 6; side++) {
-            int x = board.xCoord + dx(side), y = board.yCoord + dy(side), z = board.zCoord + dz(side);
-            if (!world.getChunkProvider().chunkExists(x >> 4, z >> 4)) continue;
-            if (!(world.getBlock(x, y, z) instanceof BlockRoboPort)) continue;
-            TileEntity tile = world.getTileEntity(x, y, z);
-            if (!(tile instanceof TileEntityRoboPort)) continue;
-            TileEntityRoboPort port = (TileEntityRoboPort) tile;
-            if (!board.getBoardId().equals(port.getOwnerBoardId()) || port.getBoundBoard() != board
-                    || !port.getRole().isDigital() || !port.isInputPin()) continue;
+        for (TileEntityRoboPort port : RoboPortRegistry.loadedPorts(board)) {
+            if (!port.getRole().isDigital() || !port.isInputPin()) continue;
             int pin = port.getLogicalPin();
             int bit = 1 << pin;
             if (ports[pin] != null) {
@@ -75,12 +67,8 @@ public final class RoboBoardIoBridge {
         if (board == null || board.getWorldObj() == null || board.getWorldObj().isRemote) return;
         World world = board.getWorldObj();
         ElectricalNetworkManager manager = ElectricalNetworkManager.forWorld(world);
-        for (int side = 0; side < 6; side++) {
-            int x = board.xCoord + dx(side), y = board.yCoord + dy(side), z = board.zCoord + dz(side);
-            if (!world.getChunkProvider().chunkExists(x >> 4, z >> 4)) continue;
-            if (world.getBlock(x, y, z) instanceof BlockRoboPort)
-                manager.invalidateAround(new BlockPosition(x, y, z));
-        }
+        for (TileEntityRoboPort port : RoboPortRegistry.loadedPorts(board))
+            manager.invalidateAround(new BlockPosition(port.xCoord, port.yCoord, port.zCoord));
     }
 
     static Transfer transferDigital(double voltage, boolean previousHigh) {
@@ -101,11 +89,6 @@ public final class RoboBoardIoBridge {
         if (outward < 0) return null;
         return manager.getTerminalVoltage(new BlockPosition(port.xCoord, port.yCoord, port.zCoord), outward);
     }
-
-    private static int opposite(int side) { return side == 0 ? 1 : side == 1 ? 0 : side == 2 ? 3 : side == 3 ? 2 : side == 4 ? 5 : 4; }
-    private static int dx(int side) { return side == 4 ? -1 : side == 5 ? 1 : 0; }
-    private static int dy(int side) { return side == 0 ? -1 : side == 1 ? 1 : 0; }
-    private static int dz(int side) { return side == 2 ? -1 : side == 3 ? 1 : 0; }
 
     static final class Transfer {
         final boolean high;

@@ -37,14 +37,15 @@ public final class ModRecipes {
         registerResistor(ModBlocks.RESISTOR_1K, 3, 0, 1);
         registerResistor(ModBlocks.RESISTOR_10K, 3, 0, 14);
 
-        GameRegistry.addRecipe(new ItemStack(ModBlocks.LED),
-                " G ",
-                "RTR",
-                " I ",
-                'G', Blocks.glass_pane,
-                'R', new ItemStack(Items.dye, 1, 1),
-                'T', Blocks.redstone_torch,
-                'I', Items.iron_ingot);
+        for (int color = 0; color < 16; color++)
+            GameRegistry.addRecipe(new ItemStack(ModBlocks.LED, 1, color),
+                    " G ",
+                    "RTR",
+                    " I ",
+                    'G', Blocks.glass_pane,
+                    'R', new ItemStack(Items.dye, 1, color),
+                    'T', Blocks.redstone_torch,
+                    'I', Items.iron_ingot);
 
         GameRegistry.addRecipe(new ItemStack(ModBlocks.CIRCUIT_BREAKER),
                 "IRI", "RCR", "IRI",
@@ -91,6 +92,22 @@ public final class ModRecipes {
                 " II",
                 " I ",
                 'I', Items.iron_ingot);
+
+        GameRegistry.addRecipe(new ItemStack(ModItems.ROBO_PORT_CONFIGURATOR),
+                " R ",
+                "ICI",
+                " I ",
+                'R', Items.redstone,
+                'I', Items.iron_ingot,
+                'C', Items.comparator);
+
+        GameRegistry.addRecipe(new ItemStack(ModItems.WIRE_ROUTER),
+                " I ",
+                "RCR",
+                " I ",
+                'I', Items.iron_ingot,
+                'R', Items.redstone,
+                'C', Items.shears);
 
         GameRegistry.addShapelessRecipe(new ItemStack(ModItems.MANUAL), Items.book, Items.redstone);
     }

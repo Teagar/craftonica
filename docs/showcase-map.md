@@ -30,5 +30,4 @@ projetos de entrada, o sensor ou cursor do potenciômetro já está conectado ao
 analógico indicado.
 
 O buzzer e o motor permanecem cargas visuais, sem áudio ou mecânica simulados. O
-semáforo inclui os três LEDs de referência; a bancada principal demonstra o
-primeiro canal e deixa os demais para extensão do aluno.
+semáforo possui três ramos funcionais: D10 vermelho, D11 amarelo e D12 verde.

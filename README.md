@@ -1,4 +1,4 @@
-# Craftônica: Robotics Lab 1.0.0
+# Craftônica: Robotics Lab 1.1.0
 
 MVP educacional para Minecraft 1.7.10 e Forge 10.13.4.1614. O mundo funciona
 como uma bancada: fonte, fios, botão, resistores, LED e GND são blocos reais. A
@@ -8,13 +8,17 @@ O histórico do plano do MVP até a placa Arduino-compatible está em
 [`ROADMAP.md`](ROADMAP.md).
 
 Para instalar e operar a versão estável, comece em
-[`docs/installation-1.0.md`](docs/installation-1.0.md). Os roteiros de aluno,
+[`docs/installation-1.1.md`](docs/installation-1.1.md). Os roteiros de aluno,
 professor, solução de problemas e release estão no [`docs/README.md`](docs/README.md).
 
 Um operador pode gerar automaticamente uma sala superplana com seis projetos
 Arduino clássicos usando `/craftonica showcase create`. Consulte
 [`docs/showcase-map.md`](docs/showcase-map.md) antes de executar: a área delimitada
 ao redor do jogador é substituída pela sala.
+
+O comando `/craftonica uno create` gera uma placa Uno R3 funcional com D0-D13,
+A0-A5, 5 V e GND vinculados à mesma RoboBoard. Consulte
+[`docs/uno-r3-generator.md`](docs/uno-r3-generator.md).
 
 A arquitetura normativa da RoboBoard e do pipeline de sketches está em
 [`docs/rfc/0002-runtime-arduino-compatible-seguro.md`](docs/rfc/0002-runtime-arduino-compatible-seguro.md).
@@ -35,7 +39,7 @@ O projeto não suporta Java posterior ao 8 porque usa ForgeGradle 1.2.
 
 O script baixa uma distribuição Temurin 8 fixada, verifica o SHA-256 e a guarda
 em `~/.cache/craftonica`, sem alterar o Java padrão. O artefato instalável é
-`build/libs/craftonica-1.0.0.jar`.
+`build/libs/craftonica-1.1.0.jar`.
 
 Para reconstruir e instalar com segurança na instância dedicada do Prism:
 
@@ -104,7 +108,7 @@ reiniciar. Se o serviço legado de assets estiver indisponível, use:
 - Editor industrial de `Sketch.ino` aberto com clique direito na RoboBoard, com
   compilação isolada, controle de execução e monitor Serial didático apenas TX.
 - RoboPort físico, limitado a uma porta por face da RoboBoard, configurável como
-  D0-D19, alimentação de 5 V ou GND.
+  D0-D13, A0-A5, alimentação de 5 V ou GND.
 - Sensores analógicos de luz e temperatura com saída determinística de 0-5 V.
 - Buzzer de 220 ohms e motor CC de 100 ohms como cargas educacionais com
   indicação visual de atividade.
@@ -119,7 +123,8 @@ mantêm os terminais distinguíveis sem depender somente de cor.
 
 Coloque o RoboPort diretamente contra uma face da RoboBoard e clique nele para
 escolher seu papel. A face oposta à placa é o único terminal que entra na rede.
-Até seis portas físicas podem coexistir; D14-D19 também alimentam A0-A5. Leituras
+Use o Configurador de RoboPort na placa e depois em cada terminal para vincular até
+64 blocos de distância; clique comum apenas consulta o canal. A0-A5 mantêm os pinos AVR 14-19. Leituras
 digitais usam LOW até 1,5 V, HIGH a partir de 3 V e conservam o último estado na
 faixa indeterminada. Uma entrada ainda sem solução conserva o último estado
 estável, inicialmente LOW, e fica marcada como indeterminada no diagnóstico da
@@ -255,9 +260,16 @@ base, bulbo e duas pernas. O terminal vermelho indica positivo/ânodo; o termina
 azul-ciano indica GND/cátodo. O fio só desenha um braço quando a face vizinha é
 um terminal elétrico válido, evitando conexões visuais falsas.
 
+LEDs existem nas 16 cores de lã. A cor fica opaca quando desligada e saturada
+quando ligada, sem alterar polaridade, corrente ou persistência de sobrecorrente.
+
 Use qualquer um dos 16 corantes vanilla com clique direito para mudar a cor de
 um fio. A cor é preservada ao quebrar e recolocar o bloco e serve apenas para
 organização visual: fios de cores diferentes continuam eletricamente conectados.
+Um fio padrão herda automaticamente a cor quando todos os fios vizinhos possuem
+a mesma cor; diante de cores conflitantes, ele mantém a cor do item.
+Use o Roteador de fios para bloquear uma face específica quando cabos paralelos
+precisarem permanecer em redes elétricas separadas; a máscara fica salva no mundo.
 
 ## Texturas
 

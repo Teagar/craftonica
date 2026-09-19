@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.1.0 - 2026-09-19
+
+- RoboPorts remotos vinculados por configurador, com D0-D13, A0-A5, 5 V e GND.
+- Roteamento de fios por face, heranca de cor e tingimento com as 16 cores de la.
+- LEDs nas 16 cores de la, com estados desligado, ligado e queimado distinguiveis.
+- Semaforo funcional no showcase, controlado independentemente por D10-D12.
+- Gerador `/craftonica uno create` para uma placa Uno R3 funcional com 22 terminais.
+- Sincronizacao visual imediata das cores dos LEDs criados pelos geradores.
+
 ## 1.0.0 - 2026-09-19
 
 - Simulacao nodal DC servidor-autoritativa para redes serie/paralelo.

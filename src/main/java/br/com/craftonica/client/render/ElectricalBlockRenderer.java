@@ -57,6 +57,7 @@ public final class ElectricalBlockRenderer implements ISimpleBlockRenderingHandl
                                     final Block block, int modelId, final RenderBlocks renderer) {
         int metadata = world.getBlockMetadata(x, y, z);
         final int color = block instanceof BlockElectricalWire ? WireColor.rgb(metadata)
+                : block instanceof BlockLed ? ((BlockLed) block).getVisualColor(world, x, y, z)
                 : block instanceof BlockAnalogSensor
                 ? ((BlockAnalogSensor) block).getVisualColor(world, x, y, z) : 0xFFFFFF;
         renderModel(block, metadata, world, x, y, z, new PartRenderer() {

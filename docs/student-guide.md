@@ -20,7 +20,8 @@ dois cliques em faces eletricas definem as pontas A e B.
 ## RoboBoard
 
 Coloque RoboPorts diretamente nas faces da placa e clique para selecionar
-D0-D19, 5 V ou GND. Abra a RoboBoard e edite `Sketch.ino`. Atalhos: `Ctrl+S`
+D0-D13, A0-A5, 5 V ou GND usando o Configurador de RoboPort. Selecione a placa,
+vincule cada terminal e use novamente para trocar o canal. Abra a RoboBoard e edite `Sketch.ino`. Atalhos: `Ctrl+S`
 compila, `F5` inicia/para, `F6` alterna Editor/Serial, `F7` recarrega e `Ctrl+L`
 limpa apenas a visualizacao Serial.
 

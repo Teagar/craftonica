@@ -14,4 +14,16 @@ public final class WireColor {
     public static int rgb(int dyeDamage) {
         return RGB[dyeDamage & 15];
     }
+
+    public static int inherit(int selected, int... adjacent) {
+        if ((selected & 15) != 0 || adjacent == null) return selected & 15;
+        int inherited = -1;
+        for (int color : adjacent) {
+            if (color < 0) continue;
+            color &= 15;
+            if (inherited < 0) inherited = color;
+            else if (inherited != color) return selected & 15;
+        }
+        return inherited < 0 ? selected & 15 : inherited;
+    }
 }

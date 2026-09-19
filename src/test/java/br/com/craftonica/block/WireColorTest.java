@@ -30,4 +30,17 @@ public final class WireColorTest {
         }
         assertEquals(16, colors.size());
     }
+
+    @Test
+    public void defaultWireInheritsOnlyOneUnambiguousNeighborColor() {
+        assertEquals(12, WireColor.inherit(0, -1, 12, -1));
+        assertEquals(12, WireColor.inherit(0, 12, 12, -1));
+        assertEquals(0, WireColor.inherit(0, 12, 4, -1));
+        assertEquals(0, WireColor.inherit(0, -1, -1));
+    }
+
+    @Test
+    public void explicitlyColoredWireKeepsItsItemColor() {
+        assertEquals(4, WireColor.inherit(4, 12, 12));
+    }
 }

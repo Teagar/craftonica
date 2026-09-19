@@ -14,6 +14,7 @@ import br.com.craftonica.persistence.NbtMigrations;
 
 public final class TileEntityLed extends TileEntity {
     private final LedState state = new LedState();
+    private int color = 1;
     private boolean migrationPending;
     private NBTTagCompound preservedFutureState;
 
@@ -43,12 +44,20 @@ public final class TileEntityLed extends TileEntity {
         return state.getBrightness();
     }
 
+    public int getColor() { return color; }
+
+    public void setColor(int color) {
+        this.color = color & 15;
+        markDirty();
+    }
+
     @Override
     public void writeToNBT(NBTTagCompound tag) {
         super.writeToNBT(tag);
         if (preservedFutureState != null) { NbtMigrations.copyInto(preservedFutureState, tag); return; }
         tag.setInteger("CraftonicaDataVersion", NbtMigrations.SIMPLE_DATA_VERSION);
         tag.setBoolean("Burned", state.isBurned());
+        tag.setByte("LedColor", (byte) color);
     }
 
     @Override
@@ -59,6 +68,7 @@ public final class TileEntityLed extends TileEntity {
                 ? NbtMigrations.copy(tag) : null;
         migrationPending = !tag.hasKey("CraftonicaDataVersion");
         state.setBurned(tag.getBoolean("Burned"));
+        color = tag.hasKey("LedColor") ? tag.getByte("LedColor") & 15 : 1;
     }
 
     @Override
@@ -66,6 +76,7 @@ public final class TileEntityLed extends TileEntity {
         NBTTagCompound tag = new NBTTagCompound();
         tag.setBoolean("Burned", state.isBurned());
         tag.setByte("Brightness", (byte) state.getBrightness());
+        tag.setByte("LedColor", (byte) color);
         return new S35PacketUpdateTileEntity(xCoord, yCoord, zCoord, 1, tag);
     }
 
@@ -73,6 +84,7 @@ public final class TileEntityLed extends TileEntity {
     public void onDataPacket(NetworkManager network, S35PacketUpdateTileEntity packet) {
         NBTTagCompound tag = packet.func_148857_g();
         state.setClientState(tag.getBoolean("Burned"), tag.getByte("Brightness"));
+        color = tag.getByte("LedColor") & 15;
         refreshLightAndRender();
     }
 
