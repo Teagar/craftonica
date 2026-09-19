@@ -112,4 +112,21 @@ public class EditorDocumentTest {
         assertEquals("draft", document.getText());
         assertTrue(document.isDirty());
     }
+
+    @Test
+    public void cachedUtf8LengthTracksUndoRedoAndReplacement() {
+        EditorDocument document = new EditorDocument(16);
+        document.setAuthoritativeText("é");
+        assertEquals(2, document.getUtf8Length());
+        document.moveEnd(false);
+        assertTrue(document.insert("€"));
+        assertEquals(5, document.getUtf8Length());
+        assertTrue(document.undo());
+        assertEquals(2, document.getUtf8Length());
+        assertTrue(document.redo());
+        assertEquals(5, document.getUtf8Length());
+        document.selectAll();
+        assertTrue(document.insert("a"));
+        assertEquals(1, document.getUtf8Length());
+    }
 }

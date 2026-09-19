@@ -172,14 +172,7 @@ public final class ElectricalNetworkManager {
     public BranchResult getBranchResult(BlockPosition position) {
         NetworkCache cache = published.get(position);
         if (cache == null || !cache.nodal.isSolved()) return null;
-        BranchResult found = null;
-        for (BranchResult branch : cache.nodal.getBranchResults().values()) {
-            if (!position.equals(branch.getBranch().getPosition())) continue;
-            if (branch.getBranch().getComponentKind().endsWith("_internal")) continue;
-            if (found != null) return null;
-            found = branch;
-        }
-        return found;
+        return cache.branchesByPosition.get(position);
     }
 
     public Double getTerminalVoltage(BlockPosition position, int side) {
@@ -450,11 +443,25 @@ public final class ElectricalNetworkManager {
     private static final class NetworkCache {
         private final long generation; private final Set<BlockPosition> members;
         private final NodalCircuitResult nodal; private final CircuitResult legacy; private final NodalCircuit circuit; private final MnaSystem system; private final Set<Long> frontierChunks;
+        private final Map<BlockPosition, BranchResult> branchesByPosition;
         private NetworkCache(long generation, Set<BlockPosition> members, NodalCircuitResult nodal, CircuitResult legacy, NodalCircuit circuit, MnaSystem system, Set<Long> frontierChunks) {
             this.generation = generation;
             this.members = Collections.unmodifiableSet(new TreeSet<BlockPosition>(members));
             this.nodal = nodal; this.legacy = legacy; this.circuit = circuit; this.system = system;
             this.frontierChunks = Collections.unmodifiableSet(new HashSet<Long>(frontierChunks));
+            Map<BlockPosition, BranchResult> branches = new HashMap<BlockPosition, BranchResult>();
+            Set<BlockPosition> ambiguous = new HashSet<BlockPosition>();
+            if (nodal != null) {
+                for (BranchResult branch : nodal.getBranchResults().values()) {
+                    BlockPosition position = branch.getBranch().getPosition();
+                    if (branch.getBranch().getComponentKind().endsWith("_internal") || ambiguous.contains(position)) continue;
+                    if (branches.containsKey(position)) {
+                        branches.remove(position);
+                        ambiguous.add(position);
+                    } else branches.put(position, branch);
+                }
+            }
+            this.branchesByPosition = Collections.unmodifiableMap(branches);
         }
     }
 }

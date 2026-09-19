@@ -166,6 +166,7 @@ craftonica.editor.button.stop=Parar
 craftonica.editor.button.reload=Recarregar
 craftonica.editor.tab.editor=Editor
 craftonica.editor.tab.serial=Serial
+craftonica.editor.shortcuts=^S comp. | F5 roda | F6 aba | F7 recar.
 craftonica.editor.diagnostics=DIAGNÓSTICOS
 craftonica.editor.diagnostics.empty=Sem diagnósticos do compilador.
 craftonica.editor.serial.empty=Nenhum byte transmitido na visualização local.

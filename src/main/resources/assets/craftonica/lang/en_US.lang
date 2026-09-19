@@ -161,6 +161,7 @@ craftonica.editor.button.stop=Stop
 craftonica.editor.button.reload=Reload
 craftonica.editor.tab.editor=Editor
 craftonica.editor.tab.serial=Serial
+craftonica.editor.shortcuts=^S build | F5 run | F6 tab | F7 reload
 craftonica.editor.diagnostics=DIAGNOSTICS
 craftonica.editor.diagnostics.empty=No compiler diagnostics.
 craftonica.editor.serial.empty=No transmitted bytes in the local view.

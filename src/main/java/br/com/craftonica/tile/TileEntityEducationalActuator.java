@@ -15,10 +15,12 @@ import net.minecraft.tileentity.TileEntity;
 /** Read-only visualization of solved load activity; it never changes electrical topology. */
 public final class TileEntityEducationalActuator extends TileEntity {
     public static final double NOMINAL_VOLTS = 5.0;
+    static final int SAMPLE_INTERVAL_TICKS = 4;
     private int activityLevel;
 
     @Override public void updateEntity() {
         if (worldObj == null || worldObj.isRemote) return;
+        if (!isSampleTick(worldObj.getTotalWorldTime(), xCoord, yCoord, zCoord)) return;
         Block block = worldObj.getBlock(xCoord, yCoord, zCoord);
         int next = 0;
         if (block instanceof BlockEducationalActuator) {
@@ -45,6 +47,10 @@ public final class TileEntityEducationalActuator extends TileEntity {
         double powerEquivalentVolts = Math.sqrt(Math.abs(absorbedPower) * resistanceOhms);
         double effectiveVolts = Math.max(voltageMagnitude, powerEquivalentVolts);
         return clampLevel((int) Math.floor(effectiveVolts * 15.0 / NOMINAL_VOLTS + 0.5));
+    }
+
+    static boolean isSampleTick(long tick, int x, int y, int z) {
+        return Math.floorMod(tick + x * 31L + y * 17L + z, SAMPLE_INTERVAL_TICKS) == 0;
     }
 
     @Override public Packet getDescriptionPacket() {

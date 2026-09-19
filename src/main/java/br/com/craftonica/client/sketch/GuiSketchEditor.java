@@ -32,6 +32,8 @@ public final class GuiSketchEditor extends GuiScreen {
     private int firstLine;
     private int horizontalColumn;
     private int paneTop, paneBottom, paneLeft, paneRight, gutterRight;
+    private String indexedText;
+    private List<Line> indexedLines;
 
     GuiSketchEditor(ClientEditorState initial, String draft, long draftRevision) {
         state = initial;
@@ -73,18 +75,30 @@ public final class GuiSketchEditor extends GuiScreen {
         Keyboard.enableRepeatEvents(true);
         buttonList.clear();
         int gap = 3;
-        int available = width - 16 - gap * 4;
-        int buttonWidth = Math.max(46, available / 5);
-        int x = 8;
-        buttonList.add(new GuiButton(COMPILE, x, 20, buttonWidth, 18, tr("craftonica.editor.button.compile")));
-        x += buttonWidth + gap;
-        buttonList.add(new GuiButton(START_STOP, x, 20, buttonWidth, 18, ""));
-        x += buttonWidth + gap;
-        buttonList.add(new GuiButton(RELOAD, x, 20, buttonWidth, 18, tr("craftonica.editor.button.reload")));
-        x += buttonWidth + gap;
-        buttonList.add(new GuiButton(EDITOR, x, 20, buttonWidth, 18, tr("craftonica.editor.tab.editor")));
-        x += buttonWidth + gap;
-        buttonList.add(new GuiButton(SERIAL, x, 20, width - 8 - x, 18, tr("craftonica.editor.tab.serial")));
+        if (width < 400) {
+            int actionWidth = (width - 16 - gap * 2) / 3;
+            buttonList.add(new GuiButton(COMPILE, 8, 20, actionWidth, 18, tr("craftonica.editor.button.compile")));
+            buttonList.add(new GuiButton(START_STOP, 8 + actionWidth + gap, 20, actionWidth, 18, ""));
+            buttonList.add(new GuiButton(RELOAD, 8 + (actionWidth + gap) * 2, 20, actionWidth, 18,
+                    tr("craftonica.editor.button.reload")));
+            int tabWidth = (width - 16 - gap) / 2;
+            buttonList.add(new GuiButton(EDITOR, 8, 41, tabWidth, 18, tr("craftonica.editor.tab.editor")));
+            buttonList.add(new GuiButton(SERIAL, 8 + tabWidth + gap, 41, tabWidth, 18,
+                    tr("craftonica.editor.tab.serial")));
+        } else {
+            int available = width - 16 - gap * 4;
+            int buttonWidth = available / 5;
+            int x = 8;
+            buttonList.add(new GuiButton(COMPILE, x, 20, buttonWidth, 18, tr("craftonica.editor.button.compile")));
+            x += buttonWidth + gap;
+            buttonList.add(new GuiButton(START_STOP, x, 20, buttonWidth, 18, ""));
+            x += buttonWidth + gap;
+            buttonList.add(new GuiButton(RELOAD, x, 20, buttonWidth, 18, tr("craftonica.editor.button.reload")));
+            x += buttonWidth + gap;
+            buttonList.add(new GuiButton(EDITOR, x, 20, buttonWidth, 18, tr("craftonica.editor.tab.editor")));
+            x += buttonWidth + gap;
+            buttonList.add(new GuiButton(SERIAL, x, 20, width - 8 - x, 18, tr("craftonica.editor.tab.serial")));
+        }
         layout();
         updateButtons();
     }
@@ -134,6 +148,10 @@ public final class GuiSketchEditor extends GuiScreen {
         }
         if (key == Keyboard.KEY_F5) {
             send(isRunning() ? SketchAction.STOP : SketchAction.START, null);
+            return;
+        }
+        if (key == Keyboard.KEY_F7) {
+            reload();
             return;
         }
         if (ctrl && key == Keyboard.KEY_S) {
@@ -198,17 +216,29 @@ public final class GuiSketchEditor extends GuiScreen {
         drawGradientRect(0, 0, width, height, PCB, 0xff030907);
         drawRect(5, 4, width - 5, 17, PANEL_ALT);
         drawRect(5, 17, width - 5, 18, TRACE);
-        fontRendererObj.drawString("CRAFTONICA // Sketch.ino", 9, 7, CYAN);
+        String title = "CRAFTONICA // Sketch.ino";
+        fontRendererObj.drawString(title, 9, 7, CYAN);
         String revision = "R" + editingRevision + (document.isDirty() ? " *" : "");
-        fontRendererObj.drawString(revision, width - 9 - fontRendererObj.getStringWidth(revision), 7, AMBER);
+        int revisionX = width - 9 - fontRendererObj.getStringWidth(revision);
+        fontRendererObj.drawString(revision, revisionX, 7, AMBER);
+        String shortcuts = tr("craftonica.editor.shortcuts");
+        int shortcutWidth = fontRendererObj.getStringWidth(shortcuts);
+        int shortcutX = 19 + fontRendererObj.getStringWidth(title);
+        if (shortcutX + shortcutWidth + 10 <= revisionX)
+            fontRendererObj.drawString(shortcuts, shortcutX, 7, MUTED);
         super.drawScreen(mouseX, mouseY, partialTicks);
 
-        drawRect(6, 41, width - 6, 51, PANEL_ALT);
+        int statusTop = width < 400 ? 62 : 41;
+        drawRect(6, statusTop, width - 6, statusTop + 10, PANEL_ALT);
         String status = tr("craftonica.editor.status." + statusName(state.status));
         String compiler = localizedCode(state.compilationState);
-        fontRendererObj.drawString(status + "  //  " + compiler, 10, 42, state.status == 4 ? 0xffff6b5f : TEXT);
         String count = document.getUtf8Length() + " / " + SourceBundle.MAX_FILE_BYTES + " B";
-        fontRendererObj.drawString(count, width - 10 - fontRendererObj.getStringWidth(count), 42,
+        int countX = width - 10 - fontRendererObj.getStringWidth(count);
+        String statusLine = fontRendererObj.trimStringToWidth(status + "  //  " + compiler,
+                Math.max(8, countX - 14));
+        fontRendererObj.drawString(statusLine, 10, statusTop + 1,
+                state.status == 4 ? 0xffff6b5f : TEXT);
+        fontRendererObj.drawString(count, countX, statusTop + 1,
                 document.getUtf8Length() >= SourceBundle.MAX_FILE_BYTES ? 0xffff6b5f : MUTED);
 
         drawRect(paneLeft, paneTop, paneRight, paneBottom, PANEL);
@@ -332,7 +362,7 @@ public final class GuiSketchEditor extends GuiScreen {
     private void layout() {
         paneLeft = 6;
         paneRight = width - 6;
-        paneTop = 54;
+        paneTop = width < 400 ? 75 : 54;
         int diagnosticHeight = height < 260 ? 38 : 48;
         paneBottom = Math.max(paneTop + 40, height - diagnosticHeight - 10);
         gutterRight = paneLeft + 34;
@@ -353,8 +383,9 @@ public final class GuiSketchEditor extends GuiScreen {
     }
 
     private List<Line> lines() {
-        List<Line> values = new ArrayList<Line>();
         String text = document.getText();
+        if (text == indexedText && indexedLines != null) return indexedLines;
+        List<Line> values = new ArrayList<Line>();
         int start = 0;
         for (int i = 0; i < text.length(); i++) {
             if (text.charAt(i) == '\n') {
@@ -363,7 +394,9 @@ public final class GuiSketchEditor extends GuiScreen {
             }
         }
         values.add(new Line(start, text.length()));
-        return values;
+        indexedText = text;
+        indexedLines = values;
+        return indexedLines;
     }
 
     private static int lineAt(List<Line> lines, int position) {

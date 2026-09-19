@@ -19,6 +19,7 @@ public final class TileEntityAnalogSensor extends TileEntity {
     public static final int OUTPUT_RESISTANCE_OHMS = 1000;
     public static final double MIN_TEMPERATURE = -0.5;
     public static final double MAX_TEMPERATURE = 2.0;
+    static final int SAMPLE_INTERVAL_TICKS = 4;
 
     private int lastMicrovolts;
     private int visualLevel;
@@ -29,6 +30,7 @@ public final class TileEntityAnalogSensor extends TileEntity {
         long tick = worldObj.getTotalWorldTime();
         if (tick == lastSampleTick) return;
         lastSampleTick = tick;
+        if (!isSampleTick(tick, xCoord, yCoord, zCoord)) return;
 
         Block block = worldObj.getBlock(xCoord, yCoord, zCoord);
         if (!(block instanceof BlockAnalogSensor)) return;
@@ -59,6 +61,10 @@ public final class TileEntityAnalogSensor extends TileEntity {
 
     public static int coarseLevel(int microvolts) {
         return (int) (clampMicrovolts(microvolts) * 15L / MAX_MICROVOLTS);
+    }
+
+    static boolean isSampleTick(long tick, int x, int y, int z) {
+        return Math.floorMod(tick + x * 31L + y * 17L + z, SAMPLE_INTERVAL_TICKS) == 0;
     }
 
     @Override public void writeToNBT(NBTTagCompound tag) {

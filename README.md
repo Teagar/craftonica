@@ -129,7 +129,8 @@ instalado somente após a verificação do firmware. O servidor continua autorit
 sobre revisão, execução e falhas.
 
 Atalhos: `Ctrl+S` compila, `F5` inicia ou para, `F6` alterna Editor/Serial,
-`Ctrl+L` limpa somente a visualização Serial local e `Esc` fecha. A aba Serial é
+`F7` recarrega o fonte instalado, `Ctrl+L` limpa somente a visualização Serial
+local e `Esc` fecha. A aba Serial é
 explicitamente apenas TX, sem entrada RX. Ela exibe bytes transmitidos de forma
 segura, com offsets; o histórico do servidor é limitado aos 8 KiB mais recentes e
 avisa quando dados antigos foram truncados.

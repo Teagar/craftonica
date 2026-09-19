@@ -12,6 +12,7 @@ public final class EditorDocument {
     private final Deque<Snapshot> undo = new ArrayDeque<Snapshot>();
     private final Deque<Snapshot> redo = new ArrayDeque<Snapshot>();
     private String text = "";
+    private int utf8Length;
     private int caret;
     private int anchor;
     private int preferredColumn = -1;
@@ -28,13 +29,15 @@ public final class EditorDocument {
     public int getSelectionEnd() { return Math.max(caret, anchor); }
     public boolean hasSelection() { return caret != anchor; }
     public boolean isDirty() { return dirty; }
-    public int getUtf8Length() { return text.getBytes(StandardCharsets.UTF_8).length; }
+    public int getUtf8Length() { return utf8Length; }
     public byte[] getUtf8() { return text.getBytes(StandardCharsets.UTF_8); }
 
     public void setAuthoritativeText(String value) {
         String clean = sanitize(value);
-        if (utf8Length(clean) > maximumBytes) throw new IllegalArgumentException("Text exceeds byte limit");
+        int cleanLength = utf8Length(clean);
+        if (cleanLength > maximumBytes) throw new IllegalArgumentException("Text exceeds byte limit");
         text = clean;
+        utf8Length = cleanLength;
         caret = anchor = 0;
         preferredColumn = -1;
         dirty = false;
@@ -53,9 +56,11 @@ public final class EditorDocument {
         int start = getSelectionStart();
         int end = getSelectionEnd();
         String next = text.substring(0, start) + clean + text.substring(end);
-        if (utf8Length(next) > maximumBytes) return false;
+        int nextLength = utf8Length(next);
+        if (nextLength > maximumBytes) return false;
         remember();
         text = next;
+        utf8Length = nextLength;
         caret = anchor = start + clean.length();
         preferredColumn = -1;
         dirty = true;
@@ -137,6 +142,7 @@ public final class EditorDocument {
     private boolean replaceRange(int start, int end, String replacement) {
         remember();
         text = text.substring(0, start) + replacement + text.substring(end);
+        utf8Length = utf8Length(text);
         caret = anchor = start + replacement.length();
         preferredColumn = -1;
         dirty = true;
@@ -197,10 +203,11 @@ public final class EditorDocument {
         redo.clear();
     }
 
-    private Snapshot snapshot() { return new Snapshot(text, caret, anchor, dirty); }
+    private Snapshot snapshot() { return new Snapshot(text, caret, anchor, dirty, utf8Length); }
 
     private void restore(Snapshot value) {
         text = value.text;
+        utf8Length = value.utf8Length;
         caret = value.caret;
         anchor = value.anchor;
         dirty = value.dirty;
@@ -233,10 +240,11 @@ public final class EditorDocument {
 
     private static final class Snapshot {
         final String text;
-        final int caret, anchor;
+        final int caret, anchor, utf8Length;
         final boolean dirty;
-        Snapshot(String text, int caret, int anchor, boolean dirty) {
+        Snapshot(String text, int caret, int anchor, boolean dirty, int utf8Length) {
             this.text = text; this.caret = caret; this.anchor = anchor; this.dirty = dirty;
+            this.utf8Length = utf8Length;
         }
     }
 }
