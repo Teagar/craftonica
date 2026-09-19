@@ -25,14 +25,15 @@ public final class TileEntityLed extends TileEntity {
         }
         if (migrationPending) { migrationPending = false; markDirty(); }
         BlockPosition position = new BlockPosition(xCoord, yCoord, zCoord);
-        CircuitResult result = ElectricalNetworkManager.forWorld(worldObj).getLocalResult(position);
+        ElectricalNetworkManager manager = ElectricalNetworkManager.forWorld(worldObj);
+        CircuitResult result = manager.getLocalResult(position);
         boolean wasBurned = state.isBurned();
-        if (result != null && state.update(result)) {
+        if ((result != null || manager.hasPublishedNetwork(position)) && state.update(result)) {
             markDirty();
             refreshLightAndRender();
         }
         if (!wasBurned && state.isBurned()) {
-            ElectricalNetworkManager.forWorld(worldObj).invalidateAround(position);
+            manager.invalidateAround(position);
         }
     }
 
