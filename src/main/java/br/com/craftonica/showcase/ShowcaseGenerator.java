@@ -146,7 +146,10 @@ public final class ShowcaseGenerator {
     private static void led(WorldServer world, int x, int y, int z, int metadata, int color) {
         set(world, x, y, z, ModBlocks.LED, metadata);
         TileEntity tile = world.getTileEntity(x, y, z);
-        if (tile instanceof TileEntityLed) ((TileEntityLed) tile).setColor(color);
+        if (tile instanceof TileEntityLed) {
+            ((TileEntityLed) tile).setColor(color);
+            world.markBlockForUpdate(x, y, z);
+        }
     }
 
     private static void remotePort(WorldServer world, int x, int y, int z, TileEntityRoboBoard board,
@@ -240,7 +243,7 @@ public final class ShowcaseGenerator {
                 + "\n\nO sketch ja esta na RoboBoard. Abra e compile com Ctrl+S."));
         pages.appendTag(new NBTTagString(project.setup));
         pages.appendTag(new NBTTagString(project.loop));
-        pages.appendTag(new NBTTagString("F5 inicia/para. F6 abre o Serial. Respeite os limites DC da Craftonica 1.0."));
+        pages.appendTag(new NBTTagString("F5 inicia/para. F6 abre o Serial. Respeite os limites DC documentados."));
         tag.setTag("pages", pages); book.setTagCompound(tag);
         return book;
     }

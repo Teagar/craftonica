@@ -2,7 +2,7 @@
 
 ## Preparacao
 
-1. Instale cliente/servidor conforme [`installation-1.0.md`](installation-1.0.md).
+1. Instale cliente/servidor conforme [`installation-1.1.md`](installation-1.1.md).
 2. Crie um mundo de teste separado e valide os seis laboratorios publicados.
 3. Entregue aos alunos o [guia do aluno](student-guide.md) e as limitacoes do modelo.
 4. Em multiplayer, mantenha professores como operadores nivel 2 para o bypass

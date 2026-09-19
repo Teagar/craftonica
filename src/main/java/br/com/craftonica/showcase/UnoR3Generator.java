@@ -121,7 +121,10 @@ public final class UnoR3Generator {
     private static void led(WorldServer world, int x, int y, int z, int color) {
         set(world, x, y, z, ModBlocks.LED, 4);
         TileEntity tile = world.getTileEntity(x, y, z);
-        if (tile instanceof TileEntityLed) ((TileEntityLed) tile).setColor(color);
+        if (tile instanceof TileEntityLed) {
+            ((TileEntityLed) tile).setColor(color);
+            world.markBlockForUpdate(x, y, z);
+        }
     }
 
     private static void sign(WorldServer world, int x, int y, int z, String a, String b, String c, String d) {
