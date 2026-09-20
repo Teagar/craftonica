@@ -1,8 +1,8 @@
 package br.com.craftonica.showcase;
 
 import br.com.craftonica.registry.ModBlocks;
+import br.com.craftonica.robot.EntityMobileRobot;
 import net.minecraft.block.Block;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.AxisAlignedBB;
@@ -21,7 +21,7 @@ public final class RobotArenaGenerator {
         if (world == null || player == null || player.worldObj != world) throw new IllegalArgumentException("world/player");
         if (oy < 2 || oy + CLEAR_HEIGHT >= world.getHeight()) return Result.failure("HEIGHT_OUT_OF_RANGE");
         if (!allChunksLoaded(world, ox, oz)) return Result.failure("UNLOADED_CHUNK");
-        if (!entitiesCompatible(world, player, ox, oy, oz)) return Result.failure("ENTITY_IN_FUTURE_WALL");
+        if (!robotsCompatible(world, ox, oy, oz)) return Result.failure("ROBOT_IN_FUTURE_WALL");
 
         RobotArenaBlueprint blueprint = new RobotArenaBlueprint();
         RobotArenaLayout layout = blueprint.layout();
@@ -58,24 +58,29 @@ public final class RobotArenaGenerator {
     }
 
     @SuppressWarnings("unchecked")
-    private static boolean entitiesCompatible(WorldServer world, EntityPlayerMP player, int ox, int oy, int oz) {
+    private static boolean robotsCompatible(WorldServer world, int ox, int oy, int oz) {
         AxisAlignedBB volume = AxisAlignedBB.getBoundingBox(ox, oy, oz,
                 ox + RobotArenaLayout.WIDTH, oy + CLEAR_HEIGHT + 1, oz + RobotArenaLayout.DEPTH);
-        List<Entity> entities = world.getEntitiesWithinAABBExcludingEntity(player, volume);
+        List<EntityMobileRobot> robots = world.getEntitiesWithinAABB(EntityMobileRobot.class, volume);
         RobotArenaLayout layout = new RobotArenaLayout();
-        for (Entity entity : entities) {
-            int minX = (int) StrictMath.floor(entity.boundingBox.minX - ox);
-            int maxX = (int) StrictMath.floor(entity.boundingBox.maxX - ox);
-            int minZ = (int) StrictMath.floor(entity.boundingBox.minZ - oz);
-            int maxZ = (int) StrictMath.floor(entity.boundingBox.maxZ - oz);
-            for (int x = minX; x <= maxX; x++) for (int z = minZ; z <= maxZ; z++) {
-                RobotArenaLayout.Cell cell = x < 0 || z < 0 || x >= RobotArenaLayout.WIDTH
-                        || z >= RobotArenaLayout.DEPTH ? RobotArenaLayout.Cell.WALL
-                        : layout.cell(x / RobotArenaLayout.SCALE, z / RobotArenaLayout.SCALE);
-                if (x < 0 || z < 0 || x >= RobotArenaLayout.WIDTH || z >= RobotArenaLayout.DEPTH
-                        || cell == RobotArenaLayout.Cell.WALL || cell == RobotArenaLayout.Cell.SMALL_MDF
-                        || cell == RobotArenaLayout.Cell.SMALL_FOAM) return false;
-            }
+        for (EntityMobileRobot robot : robots)
+            if (!robotFootprintCompatible(robot.boundingBox, ox, oz, layout)) return false;
+        return true;
+    }
+
+    static boolean robotFootprintCompatible(AxisAlignedBB bounds, int ox, int oz, RobotArenaLayout layout) {
+        if (bounds == null || layout == null) throw new IllegalArgumentException("robot footprint");
+        int minX = (int) StrictMath.floor(bounds.minX - ox);
+        int maxX = (int) StrictMath.floor(bounds.maxX - ox);
+        int minZ = (int) StrictMath.floor(bounds.minZ - oz);
+        int maxZ = (int) StrictMath.floor(bounds.maxZ - oz);
+        for (int x = minX; x <= maxX; x++) for (int z = minZ; z <= maxZ; z++) {
+            RobotArenaLayout.Cell cell = x < 0 || z < 0 || x >= RobotArenaLayout.WIDTH
+                    || z >= RobotArenaLayout.DEPTH ? RobotArenaLayout.Cell.WALL
+                    : layout.cell(x / RobotArenaLayout.SCALE, z / RobotArenaLayout.SCALE);
+            if (x < 0 || z < 0 || x >= RobotArenaLayout.WIDTH || z >= RobotArenaLayout.DEPTH
+                    || cell == RobotArenaLayout.Cell.WALL || cell == RobotArenaLayout.Cell.SMALL_MDF
+                    || cell == RobotArenaLayout.Cell.SMALL_FOAM) return false;
         }
         return true;
     }

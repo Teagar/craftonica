@@ -9,7 +9,8 @@ Operadores podem gerar a arena com:
 O volume de 51 × 51 blocos é centralizado na posição atual e usa o nível dos pés
 como piso de circulação. Todos os chunks do volume precisam estar carregados; o
 comando recusa a operação antes de alterar qualquer bloco caso encontre chunk
-ausente, altura inválida ou uma entidade na posição de uma futura parede/alvo.
+ausente, altura inválida ou um robô móvel na posição de uma futura parede/alvo.
+Animais, itens caídos e outras entidades transitórias não bloqueiam a regeneração.
 Na primeira criação, a origem é persistida por dimensão. Chamadas posteriores e
 reinícios reutilizam essa origem em vez de calcular outra a partir da posição para
 a qual o jogador foi teleportado.
@@ -41,8 +42,8 @@ comando novamente na mesma posição produz exatamente a mesma planta, sem empil
 paredes ou deixar resíduos. Blocos fora do volume não são consultados nem alterados.
 
 Robôs que já estejam em corredores permanecem no mundo durante uma regeneração.
-Se a caixa de colisão de qualquer entidade cruzaria uma futura parede ou alvo, o
-comando é recusado. Para recuperação, pare o firmware, leve ou recrie o robô na
+Se a caixa de colisão de um robô cruzaria uma futura parede ou alvo, o comando é
+recusado. Para recuperação, pare o firmware, leve ou recrie o robô na
 área amarela e use a chave inglesa conforme o roteiro de desmontagem.
 
 A arena é formada por blocos persistentes normais e o robô conserva seu manifesto,

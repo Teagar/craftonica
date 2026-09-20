@@ -4,6 +4,7 @@ import br.com.craftonica.registry.ModBlocks;
 import br.com.craftonica.sensor.AcousticMaterialProfile;
 import br.com.craftonica.sensor.UltrasonicMeasurementModel;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.util.AxisAlignedBB;
 import org.junit.Test;
 
 import java.util.ArrayDeque;
@@ -143,6 +144,17 @@ public final class RobotArenaLayoutTest {
         NBTTagCompound tag = new NBTTagCompound(); tag.setInteger("Schema", 99);
         RobotArenaData restored = new RobotArenaData(); restored.readFromNBT(tag);
         assertNull(restored.getOrigin(0));
+    }
+
+    @Test public void regenerationProtectsRobotOnlyWhenFutureGeometryWouldTrapIt() {
+        RobotArenaLayout layout = new RobotArenaLayout();
+        int center = RobotArenaLayout.blockCenter(1);
+        assertTrue(RobotArenaGenerator.robotFootprintCompatible(
+                AxisAlignedBB.getBoundingBox(center - 0.8, 0, center - 0.8,
+                        center + 0.8, 1, center + 0.8), 0, 0, layout));
+        assertFalse(RobotArenaGenerator.robotFootprintCompatible(
+                AxisAlignedBB.getBoundingBox(0.1, 0, center - 0.8,
+                        1.9, 1, center + 0.8), 0, 0, layout));
     }
 
     private void apply(Map<String, String> world, RobotArenaBlueprint blueprint) {
