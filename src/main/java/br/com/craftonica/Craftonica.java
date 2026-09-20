@@ -19,6 +19,9 @@ public final class Craftonica {
     public static final String MOD_NAME = "Craftonica: Robotics Lab";
     public static final String VERSION = "1.1.0";
 
+    @Mod.Instance(MOD_ID)
+    public static Craftonica instance;
+
     @SidedProxy(
             clientSide = "br.com.craftonica.proxy.ClientProxy",
             serverSide = "br.com.craftonica.proxy.CommonProxy"

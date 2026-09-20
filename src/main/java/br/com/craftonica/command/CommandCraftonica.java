@@ -11,6 +11,8 @@ import br.com.craftonica.network.BlockPosition;
 import br.com.craftonica.showcase.ShowcaseGenerator;
 import br.com.craftonica.showcase.UnoR3Generator;
 import br.com.craftonica.showcase.UltrasonicLabGenerator;
+import br.com.craftonica.robot.EntityMobileRobot;
+import br.com.craftonica.robot.MobileRobotSpawner;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.command.WrongUsageException;
@@ -44,6 +46,8 @@ public final class CommandCraftonica extends CommandBase {
             uno(player);
         } else if (args.length == 2 && "sonar".equals(args[0]) && "create".equals(args[1])) {
             sonar(player);
+        } else if (args.length == 2 && "robot".equals(args[0]) && "create".equals(args[1])) {
+            robot(player);
         } else if (args.length == 2 && "lesson".equals(args[0]) && "list".equals(args[1])) {
             for (String id : LessonCatalog.ids()) player.addChatMessage(new ChatComponentText(id));
             String assigned = TeacherActivityData.get(player.worldObj).getAssignedId();
@@ -97,6 +101,16 @@ public final class CommandCraftonica extends CommandBase {
         UltrasonicLabGenerator.generate((WorldServer) player.worldObj, player, x, y, z);
         player.setPositionAndUpdate(x + UltrasonicLabGenerator.WIDTH / 2 + 0.5D, y + 1.0D, z + 2.5D);
         player.addChatMessage(new ChatComponentTranslation("message.craftonica.sonar.created", x, y, z));
+    }
+
+    private void robot(EntityPlayerMP player) {
+        if (!player.canCommandSenderUseCommand(2, getCommandName())) {
+            player.addChatMessage(new ChatComponentTranslation("message.craftonica.teacher.denied"));
+            return;
+        }
+        EntityMobileRobot robot = MobileRobotSpawner.spawnInFront((WorldServer) player.worldObj, player);
+        player.addChatMessage(new ChatComponentTranslation(robot == null
+                ? "message.craftonica.robot.spawn_blocked" : "message.craftonica.robot.created"));
     }
 
     private void check(EntityPlayerMP player, String[] args) {
