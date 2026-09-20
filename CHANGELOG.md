@@ -15,6 +15,7 @@
 - Host AVR movel com firmware/checkpoint/Serial persistentes, identidade por UUID, HC-SR04 por pose e GPIO/PWM ligado aos motores.
 - Montagem física de oito módulos e desmontagem transacional do chassi com validação de orientação e rollback.
 - Metrologia HC-SR04 acumulativa de 400 amostras com métricas, regressão, R² e sketches de filtros que preservam timeouts.
+- Arena idempotente de 51 x 51 blocos com labirinto, materiais acústicos, alvos pequenos e áreas de partida/recuperação.
 
 ## 1.1.0 - 2026-09-19
 
