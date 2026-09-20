@@ -83,7 +83,7 @@ public final class RobotArenaGenerator {
     private static Block block(RobotArenaBlueprint.Voxel voxel) {
         switch (voxel) {
             case AIR: return Blocks.air;
-            case START_FLOOR: case RECOVERY_FLOOR: return Blocks.stained_hardened_clay;
+            case START_FLOOR: case RECOVERY_FLOOR: case EXIT_FLOOR: return Blocks.stained_hardened_clay;
             case MDF_WALL: return Blocks.planks;
             case PLASTIC_WALL: return Blocks.stained_glass;
             case ABSORBENT_WALL: return Blocks.wool;
@@ -95,6 +95,7 @@ public final class RobotArenaGenerator {
     private static int metadata(RobotArenaBlueprint.Voxel voxel) {
         if (voxel == RobotArenaBlueprint.Voxel.START_FLOOR) return 5;
         if (voxel == RobotArenaBlueprint.Voxel.RECOVERY_FLOOR) return 4;
+        if (voxel == RobotArenaBlueprint.Voxel.EXIT_FLOOR) return 1;
         if (voxel == RobotArenaBlueprint.Voxel.ABSORBENT_WALL) return 10;
         return 0;
     }

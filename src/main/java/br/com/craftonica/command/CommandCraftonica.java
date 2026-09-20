@@ -13,6 +13,7 @@ import br.com.craftonica.showcase.UnoR3Generator;
 import br.com.craftonica.showcase.UltrasonicLabGenerator;
 import br.com.craftonica.robot.EntityMobileRobot;
 import br.com.craftonica.robot.MobileRobotSpawner;
+import br.com.craftonica.robot.AutonomousRobotSketch;
 import br.com.craftonica.tile.TileEntityRoboBoard;
 import br.com.craftonica.sensor.UltrasonicMetrologyExporter;
 import br.com.craftonica.showcase.RobotArenaGenerator;
@@ -61,6 +62,9 @@ public final class CommandCraftonica extends CommandBase {
             driveRobot(player, args[2]);
         } else if (args.length == 3 && "robot".equals(args[0]) && "firmware".equals(args[1])) {
             robotFirmware(player, args[2]);
+        } else if (args.length == 3 && "robot".equals(args[0]) && "sketch".equals(args[1])
+                && "autonomous".equals(args[2])) {
+            autonomousSketch(player);
         } else if (args.length == 2 && "lesson".equals(args[0]) && "list".equals(args[1])) {
             for (String id : LessonCatalog.ids()) player.addChatMessage(new ChatComponentText(id));
             String assigned = TeacherActivityData.get(player.worldObj).getAssignedId();
@@ -199,6 +203,24 @@ public final class CommandCraftonica extends CommandBase {
             player.addChatMessage(new ChatComponentTranslation("message.craftonica.robot.firmware", action));
         } catch (RuntimeException rejected) {
             player.addChatMessage(new ChatComponentTranslation("message.craftonica.robot.firmware_rejected"));
+        }
+    }
+
+    private void autonomousSketch(EntityPlayerMP player) {
+        TileEntityRoboBoard board = nearestBoard(player);
+        if (board == null || !board.canAccess(player)) {
+            player.addChatMessage(new ChatComponentTranslation("message.craftonica.robot.board_not_found"));
+            return;
+        }
+        if (board.hasFirmware() || board.getEditorSketchSource().length != 0) {
+            player.addChatMessage(new ChatComponentTranslation("message.craftonica.robot.sketch_rejected"));
+            return;
+        }
+        try {
+            board.setTemplateSketchSource(AutonomousRobotSketch.load());
+            player.addChatMessage(new ChatComponentTranslation("message.craftonica.robot.sketch_loaded"));
+        } catch (IOException failure) {
+            player.addChatMessage(new ChatComponentTranslation("message.craftonica.robot.sketch_failed"));
         }
     }
 

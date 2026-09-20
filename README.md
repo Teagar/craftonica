@@ -225,6 +225,9 @@ A arena reproduzível de navegação é criada por `/craftonica arena create`. E
 possui corredores de três blocos, curvas, becos, alvos pequenos, paredes rígidas e
 absorventes e áreas marcadas de partida/recuperação. O contrato idempotente e o
 roteiro estão em [`docs/arena-robotica.md`](docs/arena-robotica.md).
+O sketch integrador de desvio com um único HC-SR04 pode ser carregado em uma
+RoboBoard vazia por `/craftonica robot sketch autonomous`; ele filtra três
+tentativas, preserva timeouts e mantém o robô em estado seguro se o sensor falhar.
 
 ## Lições verificáveis
 

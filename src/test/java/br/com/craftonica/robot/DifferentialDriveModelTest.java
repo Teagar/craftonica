@@ -27,4 +27,16 @@ public final class DifferentialDriveModelTest {
         assertEquals(0.0, HBridgeModel.evaluate(true, true, true, false, 31).effort, 0.0);
         assertTrue(HBridgeModel.evaluate(true, true, true, true, 255).braking);
     }
+
+    @Test public void autonomousSketchTimingTurnsApproximatelyNinetyDegrees() {
+        HBridgeModel.Output left = HBridgeModel.evaluate(true, true, true, false, 165);
+        HBridgeModel.Output right = HBridgeModel.evaluate(true, true, false, true, 165);
+        double leftSpeed = 0.0, rightSpeed = 0.0, yaw = 0.0;
+        for (int frame = 0; frame < 20; frame++) for (int substep = 0; substep < 2; substep++) {
+            DifferentialDriveModel.Step step = DifferentialDriveModel.step(
+                    leftSpeed, rightSpeed, left, right, yaw, 0.025);
+            leftSpeed = step.leftSpeed; rightSpeed = step.rightSpeed; yaw += step.deltaYawDegrees;
+        }
+        assertEquals(-87.0, yaw, 3.0);
+    }
 }

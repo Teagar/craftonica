@@ -58,3 +58,30 @@ ensaio não depende de memória transitória do gerador.
 5. Observe timeouts diante dos alvos pequenos/absorventes sem tratá-los como zero.
 6. Estacione na área amarela, pare o firmware e valide a desmontagem.
 7. Reinicie o mundo durante um ensaio e confira pose, firmware e geometria.
+
+## Sketch autônomo de um HC-SR04
+
+Com uma RoboBoard vazia a até 16 blocos, execute:
+
+```text
+/craftonica robot sketch autonomous
+```
+
+Abra a placa, compile com `Ctrl+S`, aproxime-se do robô montado e execute
+`/craftonica robot firmware copy` seguido de `/craftonica robot firmware start`.
+O fonte também está em
+`examples/arduino/hc_sr04_autonomous_robot/hc_sr04_autonomous_robot.ino`.
+
+O controlador usa D7/D6 para TRIG/ECHO, D2/D4/D5 para o lado esquerdo e
+D8/D10/D9 para o lado direito. Cada decisão exige ao menos dois ecos entre três
+tentativas e aplica mediana. Diante de obstáculo, ele freia, recua e usa giros do
+próprio chassi para medir direita e esquerda. Se a frente perder eco, ele freia e
+faz duas varreduras; só realiza um avanço lento quando outra direção confirmou que
+o sensor ainda responde. Se todas as varreduras expirarem, mantém a ponte H em
+freio e registra `TIMEOUT_ALL_STOP,NA` na Serial.
+
+A arena marca em laranja a abertura externa e o início da baia final. No modelo
+lógico de seed fixa, a política frente/direita/esquerda chega a essa saída em no
+máximo 1.024 transições de célula. No mundo físico, a tolerância de giro depende
+de carga, aceleração e colisão; o ensaio final deve registrar tempo, colisões,
+timeouts e sucesso separadamente para paredes rígidas e absorventes.

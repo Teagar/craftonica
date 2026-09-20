@@ -15,11 +15,14 @@ import java.nio.file.Path;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Collections;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertFalse;
 
 public final class AvrFirmwareIntegrationTest {
     @Rule public final TemporaryFolder temporary = new TemporaryFolder();
@@ -124,6 +127,26 @@ public final class AvrFirmwareIntegrationTest {
         byte[] timeoutFirmware = compileExample("TimeoutRejection", "hc_sr04_timeout_rejection");
         assertTrue(executeSerial(timeoutFirmware, sonarInputs, 250).contains(",FORWARD,1\r\n"));
         assertTrue(executeSerial(timeoutFirmware, AvrInputs.allLow(), 700).contains("NA,STOP_NO_ECHO,0\r\n"));
+
+        byte[] autonomous = compileExample("AutonomousRobot", "hc_sr04_autonomous_robot");
+        FirmwareRun clearRun = executeFirmwareUntil(autonomous, ultrasonic(92800L), 500, "FORWARD,");
+        assertTrue(clearRun.text.contains("FORWARD,"));
+        assertForwardPins(clearRun.state); assertPwm(clearRun.pwm, 5, 165); assertPwm(clearRun.pwm, 9, 165);
+
+        FirmwareRun blockedRun = executeFirmwareUntil(autonomous, ultrasonic(27840L), 1800, "UTURN_FORWARD,NA");
+        assertTrue(blockedRun.text.contains("REVERSE,NA"));
+        assertTrue(blockedRun.text.contains("SCAN_RIGHT,NA"));
+        assertTrue(blockedRun.text.contains("SCAN_LEFT,NA"));
+        assertTrue(blockedRun.text.contains("UTURN_FORWARD,NA"));
+        assertForwardPins(blockedRun.state);
+
+        FirmwareRun disconnected = executeFirmwareUntil(autonomous, AvrInputs.allLow(), 3000, "TIMEOUT_ALL_STOP,NA");
+        assertTrue(disconnected.text.contains("TIMEOUT_STOP,NA"));
+        assertTrue(disconnected.text.contains("TIMEOUT_SCAN_RIGHT,NA"));
+        assertTrue(disconnected.text.contains("TIMEOUT_SCAN_LEFT,NA"));
+        assertTrue(disconnected.text.contains("TIMEOUT_ALL_STOP,NA"));
+        assertFalse(disconnected.text.contains("VERIFIED_TIMEOUT_PROBE"));
+        assertBrakePins(disconnected.state);
     }
 
     private byte[] compileExample(String name, String directory) throws Exception {
@@ -156,6 +179,49 @@ public final class AvrFirmwareIntegrationTest {
             if (new String(tx.toByteArray(), StandardCharsets.US_ASCII).contains(expected)) break;
         }
         return new String(tx.toByteArray(), StandardCharsets.US_ASCII);
+    }
+
+    private FirmwareRun executeFirmwareUntil(byte[] firmware, AvrInputs inputs, int slices,
+                                             String expected) throws Exception {
+        AvrMachineState state = new AvrMachineState(); AvrInterpreter interpreter = new AvrInterpreter(firmware);
+        java.io.ByteArrayOutputStream tx = new java.io.ByteArrayOutputStream();
+        List<PwmDescriptor> pwm = new ArrayList<PwmDescriptor>();
+        for (int slice = 0; slice < slices; slice++) {
+            AvrExecutionResult result = interpreter.executeToAbsoluteTarget(state,
+                    state.getCycles() + AvrInterpreter.QUANTUM_CYCLES, inputs);
+            tx.write(result.getTransmittedBytes()); pwm.addAll(result.getPwmDescriptors());
+            if (new String(tx.toByteArray(), StandardCharsets.US_ASCII).contains(expected)) break;
+        }
+        return new FirmwareRun(new String(tx.toByteArray(), StandardCharsets.US_ASCII), state, pwm);
+    }
+
+    private AvrInputs ultrasonic(long echoCycles) {
+        return new AvrInputs(new boolean[AvrInputs.DIGITAL_PIN_COUNT],
+                new int[AvrInputs.ANALOG_CHANNEL_COUNT], new UltrasonicPeripheral(true, 7, 6, echoCycles));
+    }
+
+    private void assertForwardPins(AvrMachineState state) {
+        int portD = state.getMmio(0x2b), portB = state.getMmio(0x25);
+        assertTrue((portD & (1 << 2)) != 0); assertTrue((portD & (1 << 4)) == 0);
+        assertTrue((portB & (1 << 0)) != 0); assertTrue((portB & (1 << 2)) == 0);
+    }
+
+    private void assertBrakePins(AvrMachineState state) {
+        int portD = state.getMmio(0x2b), portB = state.getMmio(0x25);
+        assertEquals((1 << 2) | (1 << 4), portD & ((1 << 2) | (1 << 4)));
+        assertEquals((1 << 0) | (1 << 2), portB & ((1 << 0) | (1 << 2)));
+    }
+
+    private void assertPwm(List<PwmDescriptor> values, int pin, int compare) {
+        for (PwmDescriptor value : values) if (value.getPin() == pin && value.getCompare() == compare) return;
+        throw new AssertionError("missing PWM " + pin + "=" + compare);
+    }
+
+    private static final class FirmwareRun {
+        final String text; final AvrMachineState state; final List<PwmDescriptor> pwm;
+        FirmwareRun(String text, AvrMachineState state, List<PwmDescriptor> pwm) {
+            this.text = text; this.state = state; this.pwm = pwm;
+        }
     }
 
     private byte[] compile(String name, String source) throws Exception {
