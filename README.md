@@ -228,6 +228,8 @@ roteiro estão em [`docs/arena-robotica.md`](docs/arena-robotica.md).
 O sketch integrador de desvio com um único HC-SR04 pode ser carregado em uma
 RoboBoard vazia por `/craftonica robot sketch autonomous`; ele filtra três
 tentativas, preserva timeouts e mantém o robô em estado seguro se o sensor falhar.
+Os limites, gates de soak e a matriz dedicada/multiplayer estão em
+[`docs/validacao-runtime-movel.md`](docs/validacao-runtime-movel.md).
 
 ## Lições verificáveis
 
