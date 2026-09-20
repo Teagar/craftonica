@@ -123,6 +123,8 @@ reiniciar. Se o serviço legado de assets estiver indisponível, use:
   versionado, persistência, sincronização visual e tração diferencial de teste.
 - Host AVR móvel com firmware real, checkpoint, Serial TX, HC-SR04 frontal e
   ponte H controlada pelos pinos D2/D4/D5 e D8/D10/D9.
+- Montagem física validada de oito módulos, convertida transacionalmente em
+  entidade móvel e desmontável sem criar drops ou duplicar componentes.
 
 Todos aparecem na aba criativa `Craftônica` e possuem texturas autorais 16×16.
 Ao passar o cursor sobre um componente, o inventário explica sua função, valor e
@@ -170,8 +172,8 @@ significam:
 | Sensor de distância HC-SR04 | Protótipo | Protótipo | Quatro terminais, transdutores, pulsos e resposta acústica implementados. |
 | Trilhos acústicos (4 materiais) | Protótipo | Protótipo | Alvos configuráveis de 5-50 cm e incidência de 0-60°. |
 | Servo | Ausente | Ausente | Planejado no roadmap; ainda não registrado. |
-| Ponte H | Ausente | Ausente | Planejada no roadmap; ainda não registrada. |
-| Chassi robótico móvel | Protótipo | **Ausente** | Entidade persistente com geometria provisória sem textura própria. |
+| Ponte H | Protótipo | **Ausente** | Bloco funcional provisório reutiliza textura do motor. |
+| Chassi robótico móvel | Protótipo | **Ausente** | Bloco e entidade persistente com geometria provisória sem textura própria. |
 
 Ao adicionar um componente, inclua-o nesta tabela no mesmo commit. Um asset novo
 começa como **Protótipo**; somente uma aprovação explícita pode promovê-lo a

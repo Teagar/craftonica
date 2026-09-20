@@ -463,6 +463,18 @@ public final class TileEntityRoboBoard extends TileEntity {
         RoboBoardStateNbtCodec.write(state, tag);
         return RoboBoardStateNbtCodec.read(tag);
     }
+    public byte[] getTemplateSketchSource() { return templateSketchSource.clone(); }
+    public void restoreFromRobot(RoboBoardState value, byte[] templateSketch, UUID owner) {
+        if (value == null || templateSketch == null || templateSketch.length > SourceBundle.MAX_FILE_BYTES
+                || owner == null || worldObj == null || worldObj.isRemote)
+            throw new IllegalArgumentException("mobile board state");
+        NBTTagCompound tag = new NBTTagCompound();
+        RoboBoardStateNbtCodec.write(value, tag);
+        state = RoboBoardStateNbtCodec.read(tag);
+        ownerId = owner; templateSketchSource = templateSketch.clone(); preservedInvalidState = null;
+        unloaded = false; inFlight = null; requestMetadata = null;
+        markDirty(); worldObj.markBlockForUpdate(xCoord, yCoord, zCoord);
+    }
 
     private static void requirePin(int pin) {
         if (pin < 0 || pin >= RoboBoardState.OUTPUT_PIN_COUNT) throw new IndexOutOfBoundsException("pin");

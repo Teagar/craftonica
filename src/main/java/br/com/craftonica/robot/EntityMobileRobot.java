@@ -12,6 +12,7 @@ import br.com.craftonica.runtime.core.AvrInputs;
 import br.com.craftonica.runtime.protocol.RuntimeProtocol;
 import br.com.craftonica.runtime.server.RoboBoardRuntimeHost;
 import br.com.craftonica.tile.RoboBoardState;
+import br.com.craftonica.registry.ModItems;
 
 /** Server-authoritative persistent shell for the differential chassis. */
 public final class EntityMobileRobot extends Entity {
@@ -41,6 +42,16 @@ public final class EntityMobileRobot extends Entity {
         if (world == null || world.isRemote || ownerId == null) throw new IllegalArgumentException("robot owner");
         EntityMobileRobot robot = new EntityMobileRobot(world);
         robot.state = MobileRobotState.minimal(UUID.randomUUID(), ownerId);
+        robot.syncVisualState();
+        return robot;
+    }
+
+    static EntityMobileRobot createFromAssembly(World world, UUID ownerId, int facing, RoboBoardState boardState,
+                                                 byte[] templateSketch) {
+        if (world == null || world.isRemote || ownerId == null || boardState == null)
+            throw new IllegalArgumentException("robot assembly");
+        EntityMobileRobot robot = new EntityMobileRobot(world);
+        robot.state = MobileRobotState.assembled(UUID.randomUUID(), ownerId, facing, boardState, templateSketch);
         robot.syncVisualState();
         return robot;
     }
@@ -154,6 +165,15 @@ public final class EntityMobileRobot extends Entity {
     public void startBoard() { state.getBoardState().start(state.getBoardState().getRevision()); }
     public void stopBoard() { runtimeHost.cancel(); state.getBoardState().stop(state.getBoardState().getRevision()); stopDrive(); }
 
+    boolean isParkedForDisassembly() {
+        return state.getStatus() == MobileRobotState.Status.STOPPED && !state.getBoardState().isRunning()
+                && StrictMath.abs(leftWheelSpeed) < 1.0e-6
+                && StrictMath.abs(rightWheelSpeed) < 1.0e-6
+                && StrictMath.abs(motionX) < 1.0e-6 && StrictMath.abs(motionZ) < 1.0e-6;
+    }
+
+    void prepareForDisassembly() { runtimeHost.cancel(); pendingInputs = null; stopDrive(); }
+
     private void updateRuntime() {
         final RoboBoardState board = state.getBoardState();
         if (!board.isRunning()) {
@@ -217,8 +237,13 @@ public final class EntityMobileRobot extends Entity {
     @Override public boolean canBeCollidedWith() { return !isDead; }
     @Override public boolean canBePushed() { return false; }
     @Override public boolean interactFirst(EntityPlayer player) {
-        if (!worldObj.isRemote) player.addChatMessage(new ChatComponentTranslation(
-                "message.craftonica.robot.state", state.getRobotId().toString(), state.getStatus().name()));
+        if (!worldObj.isRemote) {
+            if (player.getCurrentEquippedItem() != null
+                    && player.getCurrentEquippedItem().getItem() == ModItems.WRENCH) {
+                RobotAssemblyService.disassemble(this, player);
+            } else player.addChatMessage(new ChatComponentTranslation(
+                    "message.craftonica.robot.state", state.getRobotId().toString(), state.getStatus().name()));
+        }
         return true;
     }
 
