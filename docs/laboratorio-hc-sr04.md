@@ -1,5 +1,9 @@
 # Laboratório de caracterização do HC-SR04
 
+Operadores podem criar uma bancada completa com quatro estações usando
+`/craftonica sonar create`. Cada RoboBoard recebe o sketch do material correspondente;
+basta abrir a placa, compilar com `Ctrl+S`, executar com `F5` e abrir o Serial com `F6`.
+
 O laboratório permite estudar o sensor, em vez de retornar uma distância ideal. O
 resultado depende da distância, da incidência e do perfil acústico do obstáculo.
 MDF e plástico rígido tendem a produzir ecos repetíveis; isopor e espuma adicionam
