@@ -6,7 +6,7 @@ public final class RobotArenaBlueprint {
     public static final int CLEAR_HEIGHT = 6;
 
     public enum Voxel {
-        AIR, FLOOR, START_FLOOR, RECOVERY_FLOOR,
+        AIR, FLOOR, START_FLOOR, RECOVERY_FLOOR, EXIT_FLOOR,
         BOUNDARY_WALL, MDF_WALL, PLASTIC_WALL, ABSORBENT_WALL,
         SMALL_MDF, SMALL_FOAM
     }
@@ -21,6 +21,7 @@ public final class RobotArenaBlueprint {
         if (y == -1) {
             if (cell == RobotArenaLayout.Cell.START) return Voxel.START_FLOOR;
             if (cell == RobotArenaLayout.Cell.RECOVERY) return Voxel.RECOVERY_FLOOR;
+            if (cell == RobotArenaLayout.Cell.EXIT) return Voxel.EXIT_FLOOR;
             return Voxel.FLOOR;
         }
         if (cell == RobotArenaLayout.Cell.WALL && y < WALL_HEIGHT) {

@@ -11,7 +11,7 @@ public final class RobotArenaLayout {
     public static final int WIDTH = LOGICAL_SIZE * SCALE;
     public static final int DEPTH = LOGICAL_SIZE * SCALE;
 
-    public enum Cell { WALL, PASSAGE, START, RECOVERY, SMALL_MDF, SMALL_FOAM }
+    public enum Cell { WALL, PASSAGE, START, RECOVERY, EXIT, SMALL_MDF, SMALL_FOAM }
     public enum WallMaterial { BOUNDARY, MDF, RIGID_PLASTIC, ABSORBENT }
 
     private final Cell[][] cells = new Cell[LOGICAL_SIZE][LOGICAL_SIZE];
@@ -22,7 +22,9 @@ public final class RobotArenaLayout {
         carveMaze();
         carveBay(1, 1); carveBay(LOGICAL_SIZE - 4, LOGICAL_SIZE - 4);
         cells[1][1] = Cell.START;
+        cells[LOGICAL_SIZE - 4][LOGICAL_SIZE - 4] = Cell.EXIT;
         cells[LOGICAL_SIZE - 2][LOGICAL_SIZE - 2] = Cell.RECOVERY;
+        cells[LOGICAL_SIZE - 1][LOGICAL_SIZE - 2] = Cell.EXIT;
         placeSmallTargets();
     }
 
