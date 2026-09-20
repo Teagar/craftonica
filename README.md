@@ -24,6 +24,8 @@ A arquitetura normativa da RoboBoard e do pipeline de sketches está em
 [`docs/rfc/0002-runtime-arduino-compatible-seguro.md`](docs/rfc/0002-runtime-arduino-compatible-seguro.md).
 O contrato da futura plataforma robótica móvel está em
 [`docs/rfc/0003-plataforma-robotica-movel.md`](docs/rfc/0003-plataforma-robotica-movel.md).
+O estado atual e o comando temporário do chassi estão em
+[`docs/chassi-robotico.md`](docs/chassi-robotico.md).
 
 ## Requisitos
 
@@ -117,6 +119,8 @@ reiniciar. Se o serviço legado de assets estiver indisponível, use:
   trilhos de calibração de 5-50 cm.
 - Buzzer de 220 ohms e motor CC de 100 ohms como cargas educacionais com
   indicação visual de atividade.
+- Chassi robótico servidor-autoritativo com identidade, proprietário, manifesto
+  versionado, persistência e sincronização visual; movimento ainda não implementado.
 
 Todos aparecem na aba criativa `Craftônica` e possuem texturas autorais 16×16.
 Ao passar o cursor sobre um componente, o inventário explica sua função, valor e
@@ -165,6 +169,7 @@ significam:
 | Trilhos acústicos (4 materiais) | Protótipo | Protótipo | Alvos configuráveis de 5-50 cm e incidência de 0-60°. |
 | Servo | Ausente | Ausente | Planejado no roadmap; ainda não registrado. |
 | Ponte H | Ausente | Ausente | Planejada no roadmap; ainda não registrada. |
+| Chassi robótico móvel | Protótipo | **Ausente** | Entidade persistente com geometria provisória sem textura própria. |
 
 Ao adicionar um componente, inclua-o nesta tabela no mesmo commit. Um asset novo
 começa como **Protótipo**; somente uma aprovação explícita pode promovê-lo a

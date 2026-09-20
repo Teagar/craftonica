@@ -4,6 +4,8 @@ import br.com.craftonica.client.ClientEventHandler;
 import br.com.craftonica.client.automation.AutomationBridge;
 import br.com.craftonica.client.render.ElectricalBlockRenderer;
 import br.com.craftonica.client.render.HandheldToolRenderer;
+import br.com.craftonica.client.render.RenderMobileRobot;
+import br.com.craftonica.robot.EntityMobileRobot;
 import br.com.craftonica.client.sketch.SketchClientController;
 import br.com.craftonica.client.tool.ToolClientController;
 import br.com.craftonica.render.CraftonicaRenderIds;
@@ -29,6 +31,7 @@ public final class ClientProxy extends CommonProxy {
         CraftonicaRenderIds.ELECTRICAL_COMPONENT = RenderingRegistry.getNextAvailableRenderId();
         ElectricalBlockRenderer renderer = new ElectricalBlockRenderer();
         RenderingRegistry.registerBlockHandler(renderer);
+        RenderingRegistry.registerEntityRenderingHandler(EntityMobileRobot.class, new RenderMobileRobot());
         HandheldToolRenderer toolRenderer = new HandheldToolRenderer();
         MinecraftForgeClient.registerItemRenderer(br.com.craftonica.registry.ModItems.MULTIMETER, toolRenderer);
         MinecraftForgeClient.registerItemRenderer(

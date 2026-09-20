@@ -2,6 +2,8 @@ package br.com.craftonica.proxy;
 
 import br.com.craftonica.registry.ModBlocks;
 import br.com.craftonica.registry.ModItems;
+import br.com.craftonica.registry.ModEntities;
+import br.com.craftonica.robot.RobotEntityEvents;
 import br.com.craftonica.registry.ModRecipes;
 import br.com.craftonica.network.ElectricalNetworkEvents;
 import cpw.mods.fml.common.FMLCommonHandler;
@@ -27,6 +29,7 @@ public class CommonProxy {
         SketchNetwork.initialize();
         ToolNetwork.initialize();
         ModBlocks.register();
+        ModEntities.register();
         ModItems.register();
         ModRecipes.register();
     }
@@ -36,6 +39,7 @@ public class CommonProxy {
         MinecraftForge.EVENT_BUS.register(events);
         FMLCommonHandler.instance().bus().register(events);
         MinecraftForge.EVENT_BUS.register(this);
+        MinecraftForge.EVENT_BUS.register(new RobotEntityEvents());
         MinecraftForge.EVENT_BUS.register(SketchServer.EVENTS);
         FMLCommonHandler.instance().bus().register(SketchServer.EVENTS);
         FMLCommonHandler.instance().bus().register(ToolServer.EVENTS);
