@@ -214,6 +214,13 @@ Na aba Serial, `Ctrl+C` copia o histórico sanitizado, permitindo exportar as li
 CSV produzidas pelo sketch. O roteiro completo do HC-SR04 está em
 [`docs/laboratorio-hc-sr04.md`](docs/laboratorio-hc-sr04.md).
 
+No laboratório, cada firmware coleta um lote único de dez leituras. Depois de cada
+distância use `/craftonica sonar export`: o save acumula sem duplicação as 400
+amostras do protocolo (quatro materiais, 5–50 cm) e gera CSV de média, erro
+absoluto, desvio-padrão, regressão e R². Exemplos Arduino adicionais demonstram
+média móvel, mediana e rejeição explícita de timeout sem transformar falta de eco
+em zero ou reutilizar silenciosamente uma leitura antiga.
+
 ## Lições verificáveis
 
 O motor de lições usa exclusivamente o snapshot elétrico publicado pelo servidor.

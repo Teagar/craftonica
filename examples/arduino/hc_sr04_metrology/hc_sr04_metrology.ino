@@ -21,9 +21,6 @@ void setup() {
   pinMode(ECHO_PIN, INPUT);
   Serial.begin(9600);
   Serial.println("material,nominal_cm,amostra,medida_cm,eco");
-}
-
-void loop() {
   float sum = 0.0;
   int valid = 0;
   for (int i = 0; i < SAMPLE_COUNT; i++) {
@@ -46,5 +43,7 @@ void loop() {
   Serial.print("# resumo,"); Serial.print(MATERIAL); Serial.print(',');
   Serial.print(NOMINAL_CM, 2); Serial.print(','); Serial.print(valid); Serial.print(',');
   Serial.print(mean, 3); Serial.print(','); Serial.println(deviation, 3);
-  delay(2000);
 }
+
+// Um firmware produz exatamente um lote. Exporte antes de alterar NOMINAL_CM.
+void loop() {}

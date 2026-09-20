@@ -14,6 +14,7 @@ import br.com.craftonica.showcase.UltrasonicLabGenerator;
 import br.com.craftonica.robot.EntityMobileRobot;
 import br.com.craftonica.robot.MobileRobotSpawner;
 import br.com.craftonica.tile.TileEntityRoboBoard;
+import br.com.craftonica.sensor.UltrasonicMetrologyExporter;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.command.WrongUsageException;
@@ -47,6 +48,8 @@ public final class CommandCraftonica extends CommandBase {
             uno(player);
         } else if (args.length == 2 && "sonar".equals(args[0]) && "create".equals(args[1])) {
             sonar(player);
+        } else if (args.length == 2 && "sonar".equals(args[0]) && "export".equals(args[1])) {
+            sonarExport(player);
         } else if (args.length == 2 && "robot".equals(args[0]) && "create".equals(args[1])) {
             robot(player);
         } else if (args.length == 3 && "robot".equals(args[0]) && "drive".equals(args[1])) {
@@ -106,6 +109,20 @@ public final class CommandCraftonica extends CommandBase {
         UltrasonicLabGenerator.generate((WorldServer) player.worldObj, player, x, y, z);
         player.setPositionAndUpdate(x + UltrasonicLabGenerator.WIDTH / 2 + 0.5D, y + 1.0D, z + 2.5D);
         player.addChatMessage(new ChatComponentTranslation("message.craftonica.sonar.created", x, y, z));
+    }
+
+    private void sonarExport(EntityPlayerMP player) {
+        try {
+            UltrasonicMetrologyExporter.Result result = UltrasonicMetrologyExporter.export(
+                    (WorldServer) player.worldObj, player);
+            player.addChatMessage(new ChatComponentTranslation("message.craftonica.sonar.exported",
+                    result.samples, result.missing, result.boardsMerged));
+            if (result.complete) player.addChatMessage(new ChatComponentTranslation(
+                    "message.craftonica.sonar.complete", result.metricsFile.getName()));
+        } catch (IOException failure) {
+            player.addChatMessage(new ChatComponentTranslation("message.craftonica.sonar.export_failed",
+                    failure.getMessage() == null ? "erro" : failure.getMessage()));
+        }
     }
 
     private void robot(EntityPlayerMP player) {

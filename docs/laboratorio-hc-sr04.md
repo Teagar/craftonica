@@ -35,9 +35,20 @@ prova: MDF, plástico rígido, isopor e espuma.
 - agache e clique: avança a incidência em 15°, retornando a 0° depois de 60°.
 
 Altere `MATERIAL` e `NOMINAL_CM` no sketch para identificar a condição ensaiada.
-Execute dez amostras por condição. A saída contém linhas CSV e um resumo com média
-e desvio-padrão amostral. Na aba Serial, `Ctrl+C` copia o histórico sanitizado para
-a área de transferência; cole-o numa planilha para calcular erro, regressão e R².
+Cada execução produz exatamente dez amostras e para, evitando que um lote sobrescreva
+o histórico limitado. Depois de cada distância, execute `/craftonica sonar export`.
+O comando incorpora os históricos das RoboBoards do jogador em até 64 blocos, usando
+`material + nominal + amostra` como chave: repetir uma condição substitui o lote, não
+o duplica. Os arquivos ficam em `craftonica/exports` dentro do save:
+
+- `hc-sr04-samples.csv`: dados brutos, incluindo `NA,0` para timeout;
+- `hc-sr04-metrics.csv`: total, válidos, timeouts, média, erro absoluto médio e
+  desvio-padrão por distância; inclinação, intercepto e R² da regressão
+  `medida = inclinação × nominal + intercepto` por material.
+
+O exportador só declara o protocolo completo com 400 chaves distintas. Histórico
+Serial truncado ou CSV inválido é recusado, sem modificar o arquivo já confirmado.
+`Ctrl+C` continua disponível para inspeção e análise externa.
 
 ## Modo robô
 
@@ -62,6 +73,16 @@ carregados e nunca gera terreno para procurar um obstáculo.
 4. Preserve timeouts como dados ausentes; não os transforme em zero centímetros.
 5. Calcule média, erro absoluto, desvio-padrão amostral, reta de calibração e R².
 6. Compare superfícies rígidas e porosas e repita com incidências diferentes.
+
+## Filtros para o robô
+
+Os exemplos `hc_sr04_moving_average`, `hc_sr04_median` e
+`hc_sr04_timeout_rejection` usam os mesmos pinos D7/D6 e compilam no runtime AVR.
+Média móvel reduz ruído aproximadamente gaussiano; mediana rejeita leituras válidas
+isoladas; a versão de timeout demonstra uma API booleana para a lógica de navegação.
+Nos três casos, uma leitura sem eco continua sendo impressa como `NA` e a saída
+filtrada daquele ciclo também é `NA`: nenhum filtro converte timeout em zero, repete
+uma distância antiga ou inventa eco.
 
 O ruído é pseudoaleatório e reprodutível a partir do mundo, posição e tempo. Os
 parâmetros representam classes educacionais e não certificam um lote real de
