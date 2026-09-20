@@ -276,6 +276,10 @@ public final class MobileRobotState {
         }
         return true;
     }
+    public boolean isTemporaryTestChassisRemovable() {
+        return !hasPhysicalAssemblyManifest() && status != Status.QUARANTINED
+                && status != Status.FAULT && !boardState.isRunning();
+    }
     public void replaceBoardState(RoboBoardState value) {
         if (value == null) throw new IllegalArgumentException("board state");
         boardState = value;
