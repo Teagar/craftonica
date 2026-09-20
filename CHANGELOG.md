@@ -8,6 +8,7 @@
 - LED apaga e reacende corretamente ao abrir e fechar o botao eletrico.
 - LEDs redesenhados como cubos de vidro translucido com emissor interno e polaridade nas faces.
 - Laboratorio HC-SR04 com pulsos TRIG/ECHO reais no runtime AVR, resposta por material, trilhos de 5-50 cm e CSV pelo Serial.
+- RFC da plataforma robotica movel, cobrindo montagem, entidade, runtime, tracao diferencial, persistencia e seguranca.
 
 ## 1.1.0 - 2026-09-19
 

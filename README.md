@@ -22,6 +22,8 @@ A0-A5, 5 V e GND vinculados à mesma RoboBoard. Consulte
 
 A arquitetura normativa da RoboBoard e do pipeline de sketches está em
 [`docs/rfc/0002-runtime-arduino-compatible-seguro.md`](docs/rfc/0002-runtime-arduino-compatible-seguro.md).
+O contrato da futura plataforma robótica móvel está em
+[`docs/rfc/0003-plataforma-robotica-movel.md`](docs/rfc/0003-plataforma-robotica-movel.md).
 
 ## Requisitos
 
