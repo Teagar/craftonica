@@ -165,6 +165,12 @@ public final class EntityMobileRobot extends Entity {
     public void startBoard() { state.getBoardState().start(state.getBoardState().getRevision()); }
     public void stopBoard() { runtimeHost.cancel(); state.getBoardState().stop(state.getBoardState().getRevision()); stopDrive(); }
 
+    public boolean removeTemporaryTestChassis() {
+        if (worldObj.isRemote || !state.isTemporaryTestChassisRemovable()) return false;
+        runtimeHost.cancel(); pendingInputs = null; stopDrive(); setDead();
+        return true;
+    }
+
     boolean isParkedForDisassembly() {
         return state.getStatus() == MobileRobotState.Status.STOPPED && !state.getBoardState().isRunning()
                 && StrictMath.abs(leftWheelSpeed) < 1.0e-6

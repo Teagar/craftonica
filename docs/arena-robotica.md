@@ -45,6 +45,9 @@ Robôs que já estejam em corredores permanecem no mundo durante uma regeneraç�
 Se a caixa de colisão de um robô cruzaria uma futura parede ou alvo, o comando é
 recusado. Para recuperação, pare o firmware, leve ou recrie o robô na
 área amarela e use a chave inglesa conforme o roteiro de desmontagem.
+O chassi provisório criado por `/craftonica robot create` não representa uma
+montagem física e pode ser limpo por um operador com `/craftonica robot remove-test`,
+desde que esteja parado. Esse comando nunca desmonta robôs físicos nem gera peças.
 
 A arena é formada por blocos persistentes normais e o robô conserva seu manifesto,
 pose, checkpoint AVR e Serial no NBT da entidade. Salvar e reiniciar no meio do

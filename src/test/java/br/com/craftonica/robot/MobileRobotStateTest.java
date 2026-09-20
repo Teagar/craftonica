@@ -111,4 +111,12 @@ public final class MobileRobotStateTest {
         assertEquals(board.getRevision(), restored.getBoardState().getRevision());
         assertEquals(board.getStatus(), restored.getBoardState().getStatus());
     }
+
+    @Test public void onlyStoppedNonPhysicalTestChassisIsRemovable() {
+        UUID robot = new UUID(31L, 32L), owner = new UUID(33L, 34L);
+        assertTrue(MobileRobotState.minimal(robot, owner).isTemporaryTestChassisRemovable());
+        assertFalse(MobileRobotState.assembled(robot, owner, 2,
+                new RoboBoardState(robot)).isTemporaryTestChassisRemovable());
+        assertFalse(MobileRobotState.quarantined().isTemporaryTestChassisRemovable());
+    }
 }

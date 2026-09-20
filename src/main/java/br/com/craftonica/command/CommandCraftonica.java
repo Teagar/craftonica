@@ -58,6 +58,8 @@ public final class CommandCraftonica extends CommandBase {
             arena(player);
         } else if (args.length == 2 && "robot".equals(args[0]) && "create".equals(args[1])) {
             robot(player);
+        } else if (args.length == 2 && "robot".equals(args[0]) && "remove-test".equals(args[1])) {
+            removeTestRobot(player);
         } else if (args.length == 3 && "robot".equals(args[0]) && "drive".equals(args[1])) {
             driveRobot(player, args[2]);
         } else if (args.length == 3 && "robot".equals(args[0]) && "firmware".equals(args[1])) {
@@ -164,6 +166,21 @@ public final class CommandCraftonica extends CommandBase {
         EntityMobileRobot robot = MobileRobotSpawner.spawnInFront((WorldServer) player.worldObj, player);
         player.addChatMessage(new ChatComponentTranslation(robot == null
                 ? "message.craftonica.robot.spawn_blocked" : "message.craftonica.robot.created"));
+    }
+
+    private void removeTestRobot(EntityPlayerMP player) {
+        if (!player.canCommandSenderUseCommand(2, getCommandName())) {
+            player.addChatMessage(new ChatComponentTranslation("message.craftonica.teacher.denied"));
+            return;
+        }
+        EntityMobileRobot robot = nearestRobot(player);
+        if (robot == null) {
+            player.addChatMessage(new ChatComponentTranslation("message.craftonica.robot.not_found"));
+        } else if (robot.removeTemporaryTestChassis()) {
+            player.addChatMessage(new ChatComponentTranslation("message.craftonica.robot.test_removed"));
+        } else {
+            player.addChatMessage(new ChatComponentTranslation("message.craftonica.robot.test_remove_rejected"));
+        }
     }
 
     @SuppressWarnings("unchecked")
