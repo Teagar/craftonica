@@ -4,6 +4,7 @@ import br.com.craftonica.firmware.CompilationRequest;
 import br.com.craftonica.firmware.CompilationResult;
 import br.com.craftonica.firmware.ProcessCompilerSupervisor;
 import br.com.craftonica.firmware.SourceBundle;
+import br.com.craftonica.showcase.UltrasonicLabGenerator;
 import org.junit.Assume;
 import org.junit.Rule;
 import org.junit.Test;
@@ -90,6 +91,21 @@ public final class AvrFirmwareIntegrationTest {
         String duration = new String(sonarTx.toByteArray(), StandardCharsets.US_ASCII).trim();
         assertTrue("pulseIn did not receive an ultrasonic ECHO: " + duration,
                 Long.parseLong(duration) >= 2800L && Long.parseLong(duration) <= 3000L);
+
+        byte[] laboratory = compile("SonarLab", UltrasonicLabGenerator.sketch("PLASTICO"));
+        AvrMachineState labState = new AvrMachineState();
+        AvrInterpreter labInterpreter = new AvrInterpreter(laboratory);
+        java.io.ByteArrayOutputStream labTx = new java.io.ByteArrayOutputStream();
+        for (int slice = 0; slice < 400; slice++) {
+            AvrExecutionResult result = labInterpreter.executeToAbsoluteTarget(labState,
+                    labState.getCycles() + AvrInterpreter.QUANTUM_CYCLES, sonarInputs);
+            labTx.write(result.getTransmittedBytes());
+            String text = new String(labTx.toByteArray(), StandardCharsets.US_ASCII);
+            if (text.contains("PLASTICO,5.00,10,")) break;
+        }
+        String laboratoryCsv = new String(labTx.toByteArray(), StandardCharsets.US_ASCII);
+        assertTrue(laboratoryCsv.startsWith("material,nominal_cm,amostra,medida_cm,eco\r\n"));
+        assertTrue(laboratoryCsv.contains("PLASTICO,5.00,10,"));
     }
 
     private byte[] compile(String name, String source) throws Exception {

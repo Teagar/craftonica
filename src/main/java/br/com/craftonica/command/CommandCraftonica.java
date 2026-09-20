@@ -10,6 +10,7 @@ import br.com.craftonica.lesson.TeacherProgressExporter;
 import br.com.craftonica.network.BlockPosition;
 import br.com.craftonica.showcase.ShowcaseGenerator;
 import br.com.craftonica.showcase.UnoR3Generator;
+import br.com.craftonica.showcase.UltrasonicLabGenerator;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.command.WrongUsageException;
@@ -41,6 +42,8 @@ public final class CommandCraftonica extends CommandBase {
             showcase(player);
         } else if (args.length == 2 && "uno".equals(args[0]) && "create".equals(args[1])) {
             uno(player);
+        } else if (args.length == 2 && "sonar".equals(args[0]) && "create".equals(args[1])) {
+            sonar(player);
         } else if (args.length == 2 && "lesson".equals(args[0]) && "list".equals(args[1])) {
             for (String id : LessonCatalog.ids()) player.addChatMessage(new ChatComponentText(id));
             String assigned = TeacherActivityData.get(player.worldObj).getAssignedId();
@@ -81,6 +84,19 @@ public final class CommandCraftonica extends CommandBase {
         UnoR3Generator.generate((WorldServer) player.worldObj, player, x, y, z);
         player.setPositionAndUpdate(x + 6.5D, y + 2.0D, z + UnoR3Generator.DEPTH + 1.5D);
         player.addChatMessage(new ChatComponentTranslation("message.craftonica.uno.created", x, y, z));
+    }
+
+    private void sonar(EntityPlayerMP player) {
+        if (!player.canCommandSenderUseCommand(2, getCommandName())) {
+            player.addChatMessage(new ChatComponentTranslation("message.craftonica.teacher.denied"));
+            return;
+        }
+        int x = ((int) Math.floor(player.posX) & ~15) + 32;
+        int z = (int) Math.floor(player.posZ) & ~15;
+        int y = Math.max(5, (int) Math.floor(player.posY));
+        UltrasonicLabGenerator.generate((WorldServer) player.worldObj, player, x, y, z);
+        player.setPositionAndUpdate(x + UltrasonicLabGenerator.WIDTH / 2 + 0.5D, y + 1.0D, z + 2.5D);
+        player.addChatMessage(new ChatComponentTranslation("message.craftonica.sonar.created", x, y, z));
     }
 
     private void check(EntityPlayerMP player, String[] args) {
