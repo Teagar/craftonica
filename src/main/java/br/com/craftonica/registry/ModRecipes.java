@@ -80,6 +80,12 @@ public final class ModRecipes {
         GameRegistry.addRecipe(new ItemStack(ModBlocks.ULTRASONIC_SENSOR),
                 "Q Q", "RCR", "III",
                 'Q', Items.quartz, 'R', Items.redstone, 'C', Items.comparator, 'I', Items.iron_ingot);
+        GameRegistry.addRecipe(new ItemStack(ModBlocks.ROBOT_CHASSIS),
+                "I I", "III", "I I",
+                'I', Items.iron_ingot);
+        GameRegistry.addRecipe(new ItemStack(ModBlocks.H_BRIDGE),
+                "RIR", "ICI", "RIR",
+                'R', Items.redstone, 'I', Items.iron_ingot, 'C', Items.comparator);
         GameRegistry.addShapelessRecipe(new ItemStack(ModBlocks.TARGET_MDF), Blocks.planks, Items.stick);
         GameRegistry.addShapelessRecipe(new ItemStack(ModBlocks.TARGET_PLASTIC), Blocks.glass, Items.stick);
         GameRegistry.addShapelessRecipe(new ItemStack(ModBlocks.TARGET_STYROFOAM), Blocks.snow, Items.stick);

@@ -54,6 +54,27 @@ D8/D10 com PWM D9. Firmware parado, em falha ou com pinos sem `OUTPUT` zera o
 esforço dos motores. O contador de amostras acústicas, o estado AVR e o histórico
 Serial permanecem no NBT da entidade.
 
+## Montagem física
+
+Coloque o núcleo do chassi e mantenha todos os módulos na orientação do núcleo.
+O sensor ocupa o centro frontal, a ponte H o centro traseiro, os motores ficam à
+esquerda e à direita do núcleo e a RoboBoard fica diretamente acima dele. Fonte
+5 V e GND ficam, respectivamente, à esquerda e à direita da ponte H, com seus
+terminais voltados para ela. Use a chave inglesa no núcleo para validar. O chat
+indica o primeiro módulo ausente ou mal orientado e suas coordenadas.
+
+A conversão remove os oito blocos somente depois de capturar metadados e NBT. Se
+qualquer remoção, colisão ou spawn falhar, o snapshot inteiro é restaurado. O
+manifesto da entidade contém exatamente: chassi, dois motores, RoboBoard,
+HC-SR04, ponte H, fonte e GND.
+
+Para desmontar, pare o firmware, espere as rodas pararem, centralize o robô em
+um bloco e alinhe-o a norte, sul, leste ou oeste. Clique na entidade com a chave
+inglesa. Todos os chunks e os oito espaços precisam estar carregados e livres.
+Os blocos são criados primeiro e a entidade só é removida depois que a RoboBoard
+recebe seu estado persistente; uma falha apaga a colocação parcial e mantém o
+robô intacto.
+
 ## Tração diferencial
 
 Cada canal da ponte H trata direção, PWM de 0–255, zona morta abaixo de 32,

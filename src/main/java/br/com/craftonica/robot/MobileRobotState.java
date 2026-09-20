@@ -4,6 +4,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import br.com.craftonica.tile.RoboBoardState;
 import br.com.craftonica.tile.RoboBoardStateNbtCodec;
+import br.com.craftonica.firmware.SourceBundle;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -32,6 +33,7 @@ public final class MobileRobotState {
     private final List<RobotModuleSnapshot> modules;
     private final byte[] manifestFingerprint;
     private RoboBoardState boardState;
+    private byte[] boardTemplateSketch = new byte[0];
     private long generation;
     private long simulationFrame;
     private Status status;
@@ -71,6 +73,19 @@ public final class MobileRobotState {
     public static MobileRobotState minimal(UUID robotId, UUID ownerId) {
         return new MobileRobotState(robotId, ownerId, Collections.singletonList(
                 new RobotModuleSnapshot(0, RobotModuleSnapshot.Type.CHASSIS_CORE, 0, 0, 0, 0)));
+    }
+
+    public static MobileRobotState assembled(UUID robotId, UUID ownerId, int facing, RoboBoardState boardState) {
+        return assembled(robotId, ownerId, facing, boardState, new byte[0]);
+    }
+
+    public static MobileRobotState assembled(UUID robotId, UUID ownerId, int facing, RoboBoardState boardState,
+                                              byte[] templateSketch) {
+        MobileRobotState state = new MobileRobotState(robotId, ownerId,
+                RobotAssemblyLayout.manifest(facing));
+        state.replaceBoardState(boardState);
+        state.setBoardTemplateSketch(templateSketch);
+        return state;
     }
 
     public static MobileRobotState quarantined() {
@@ -125,6 +140,7 @@ public final class MobileRobotState {
         tag.setTag("Modules", list); tag.setByteArray("ManifestFingerprint", manifestFingerprint);
         NBTTagCompound board = new NBTTagCompound(); RoboBoardStateNbtCodec.write(boardState, board);
         tag.setTag("BoardState", board);
+        tag.setByteArray("BoardTemplateSketch", boardTemplateSketch);
         return tag;
     }
 
@@ -157,6 +173,8 @@ public final class MobileRobotState {
             long measurementCounter = tag.getLong("MeasurementCounter");
             if (measurementCounter < 0) return quarantined();
             restored.measurementCounter = measurementCounter;
+            restored.setBoardTemplateSketch(tag.hasKey("BoardTemplateSketch")
+                    ? tag.getByteArray("BoardTemplateSketch") : new byte[0]);
             if (restored.boardState.isRunning()) {
                 restored.boardState.unloadAndIncrementGeneration();
                 restored.resumeRequested = true;
@@ -242,6 +260,22 @@ public final class MobileRobotState {
     public float getYaw() { return yaw; }
     public float getPitch() { return pitch; }
     public RoboBoardState getBoardState() { return boardState; }
+    public byte[] getBoardTemplateSketch() { return boardTemplateSketch.clone(); }
+    private void setBoardTemplateSketch(byte[] value) {
+        if (value == null || value.length > SourceBundle.MAX_FILE_BYTES)
+            throw new IllegalArgumentException("board template sketch");
+        boardTemplateSketch = value.clone();
+    }
+    public boolean hasPhysicalAssemblyManifest() {
+        List<RobotModuleSnapshot> expected = RobotAssemblyLayout.manifest(2);
+        if (modules.size() != expected.size()) return false;
+        for (int i = 0; i < modules.size(); i++) {
+            RobotModuleSnapshot actual = modules.get(i), template = expected.get(i);
+            if (actual.id != template.id || actual.type != template.type || actual.x != template.x
+                    || actual.y != template.y || actual.z != template.z) return false;
+        }
+        return true;
+    }
     public void replaceBoardState(RoboBoardState value) {
         if (value == null) throw new IllegalArgumentException("board state");
         boardState = value;

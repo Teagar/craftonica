@@ -16,6 +16,7 @@ import br.com.craftonica.block.BlockAnalogSensor;
 import br.com.craftonica.block.BlockEducationalActuator;
 import br.com.craftonica.block.BlockUltrasonicSensor;
 import br.com.craftonica.block.BlockCalibrationTarget;
+import br.com.craftonica.block.BlockRobotModule;
 import br.com.craftonica.sensor.AcousticMaterialProfile;
 import br.com.craftonica.item.ItemBlockElectricalWire;
 import br.com.craftonica.item.ItemBlockLed;
@@ -56,6 +57,10 @@ public final class ModBlocks {
     public static final BlockEducationalActuator DC_MOTOR = new BlockEducationalActuator(BlockEducationalActuator.Type.DC_MOTOR,
             "dc_motor", "dcMotor", "craftonica:dc_motor");
     public static final BlockUltrasonicSensor ULTRASONIC_SENSOR = new BlockUltrasonicSensor();
+    public static final BlockRobotModule ROBOT_CHASSIS = new BlockRobotModule(BlockRobotModule.Type.CHASSIS,
+            "robotChassis", "craftonica:roboboard");
+    public static final BlockRobotModule H_BRIDGE = new BlockRobotModule(BlockRobotModule.Type.H_BRIDGE,
+            "hBridge", "craftonica:dc_motor");
     public static final BlockCalibrationTarget TARGET_MDF = new BlockCalibrationTarget("targetMdf",
             "craftonica:target_mdf", AcousticMaterialProfile.MDF);
     public static final BlockCalibrationTarget TARGET_PLASTIC = new BlockCalibrationTarget("targetPlastic",
@@ -88,6 +93,8 @@ public final class ModBlocks {
         GameRegistry.registerBlock(BUZZER, "buzzer");
         GameRegistry.registerBlock(DC_MOTOR, "dc_motor");
         GameRegistry.registerBlock(ULTRASONIC_SENSOR, "ultrasonic_sensor");
+        GameRegistry.registerBlock(ROBOT_CHASSIS, "robot_chassis");
+        GameRegistry.registerBlock(H_BRIDGE, "h_bridge");
         GameRegistry.registerBlock(TARGET_MDF, "target_mdf");
         GameRegistry.registerBlock(TARGET_PLASTIC, "target_plastic");
         GameRegistry.registerBlock(TARGET_STYROFOAM, "target_styrofoam");
