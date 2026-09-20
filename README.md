@@ -221,6 +221,11 @@ absoluto, desvio-padrão, regressão e R². Exemplos Arduino adicionais demonstr
 média móvel, mediana e rejeição explícita de timeout sem transformar falta de eco
 em zero ou reutilizar silenciosamente uma leitura antiga.
 
+A arena reproduzível de navegação é criada por `/craftonica arena create`. Ela
+possui corredores de três blocos, curvas, becos, alvos pequenos, paredes rígidas e
+absorventes e áreas marcadas de partida/recuperação. O contrato idempotente e o
+roteiro estão em [`docs/arena-robotica.md`](docs/arena-robotica.md).
+
 ## Lições verificáveis
 
 O motor de lições usa exclusivamente o snapshot elétrico publicado pelo servidor.

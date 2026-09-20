@@ -5,6 +5,7 @@ import net.minecraft.block.material.Material;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.init.Blocks;
+import br.com.craftonica.block.BlockCalibrationTarget;
 
 /** Empirical response classes. Values describe tendencies, not prerecorded measurements. */
 public enum AcousticMaterialProfile {
@@ -38,6 +39,7 @@ public enum AcousticMaterialProfile {
 
     public static AcousticMaterialProfile forBlock(Block block) {
         if (block == null) return RIGID_WORLD;
+        if (block instanceof BlockCalibrationTarget) return ((BlockCalibrationTarget) block).getProfile();
         if (block == Blocks.wool || block == Blocks.sponge || block == Blocks.carpet
                 || block.getMaterial() == Material.cloth) return ABSORBENT_WORLD;
         if (block == Blocks.planks || block == Blocks.log || block == Blocks.log2

@@ -15,6 +15,9 @@ import br.com.craftonica.robot.EntityMobileRobot;
 import br.com.craftonica.robot.MobileRobotSpawner;
 import br.com.craftonica.tile.TileEntityRoboBoard;
 import br.com.craftonica.sensor.UltrasonicMetrologyExporter;
+import br.com.craftonica.showcase.RobotArenaGenerator;
+import br.com.craftonica.showcase.RobotArenaLayout;
+import br.com.craftonica.showcase.RobotArenaData;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.command.WrongUsageException;
@@ -50,6 +53,8 @@ public final class CommandCraftonica extends CommandBase {
             sonar(player);
         } else if (args.length == 2 && "sonar".equals(args[0]) && "export".equals(args[1])) {
             sonarExport(player);
+        } else if (args.length == 2 && "arena".equals(args[0]) && "create".equals(args[1])) {
+            arena(player);
         } else if (args.length == 2 && "robot".equals(args[0]) && "create".equals(args[1])) {
             robot(player);
         } else if (args.length == 3 && "robot".equals(args[0]) && "drive".equals(args[1])) {
@@ -122,6 +127,28 @@ public final class CommandCraftonica extends CommandBase {
         } catch (IOException failure) {
             player.addChatMessage(new ChatComponentTranslation("message.craftonica.sonar.export_failed",
                     failure.getMessage() == null ? "erro" : failure.getMessage()));
+        }
+    }
+
+    private void arena(EntityPlayerMP player) {
+        if (!player.canCommandSenderUseCommand(2, getCommandName())) {
+            player.addChatMessage(new ChatComponentTranslation("message.craftonica.teacher.denied"));
+            return;
+        }
+        RobotArenaData data = RobotArenaData.get(player.worldObj);
+        int dimension = player.worldObj.provider.dimensionId;
+        RobotArenaData.Origin origin = data.getOrigin(dimension);
+        int x = origin == null ? (int) StrictMath.floor(player.posX) - RobotArenaLayout.WIDTH / 2 : origin.x;
+        int y = origin == null ? Math.max(4, (int) StrictMath.floor(player.posY)) : origin.y;
+        int z = origin == null ? (int) StrictMath.floor(player.posZ) - RobotArenaLayout.DEPTH / 2 : origin.z;
+        RobotArenaGenerator.Result result = RobotArenaGenerator.generate(
+                (WorldServer) player.worldObj, player, x, y, z);
+        if (!result.success) player.addChatMessage(new ChatComponentTranslation(
+                "message.craftonica.arena.failed", result.failure));
+        else {
+            data.setOrigin(dimension, result.x, result.y, result.z);
+            player.addChatMessage(new ChatComponentTranslation("message.craftonica.arena.created",
+                    result.x, result.y, result.z, result.mdfWalls, result.plasticWalls, result.absorbentWalls));
         }
     }
 
