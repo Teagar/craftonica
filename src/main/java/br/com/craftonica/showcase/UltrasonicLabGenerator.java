@@ -47,13 +47,15 @@ public final class UltrasonicLabGenerator {
     public static String sketch(String material) {
         return "const byte TRIG_PIN=7,ECHO_PIN=6;\n"
                 + "const char MATERIAL[]=\"" + material + "\";\n"
+                + "const float NOMINAL_CM=5.0;\n"
                 + "void setup(){pinMode(TRIG_PIN,OUTPUT);pinMode(ECHO_PIN,INPUT);Serial.begin(9600);"
-                + "Serial.println(\"material,nominal_cm,amostra,medida_cm,eco\");}\n"
-                + "void loop(){for(byte i=1;i<=10;i++){digitalWrite(TRIG_PIN,LOW);delayMicroseconds(2);"
+                + "Serial.println(\"material,nominal_cm,amostra,medida_cm,eco\");"
+                + "for(byte i=1;i<=10;i++){digitalWrite(TRIG_PIN,LOW);delayMicroseconds(2);"
                 + "digitalWrite(TRIG_PIN,HIGH);delayMicroseconds(10);digitalWrite(TRIG_PIN,LOW);"
                 + "unsigned long t=pulseIn(ECHO_PIN,HIGH,30000UL);Serial.print(MATERIAL);"
-                + "Serial.print(\",5.00,\");Serial.print(i);Serial.print(',');if(t==0)Serial.println(\"NA,0\");"
-                + "else{Serial.print(t/58UL);Serial.println(\",1\");}delay(100);}delay(2000);}\n";
+                + "Serial.print(',');Serial.print(NOMINAL_CM,2);Serial.print(\",\");Serial.print(i);Serial.print(',');"
+                + "if(t==0)Serial.println(\"NA,0\");else{Serial.print(t/58.0,3);Serial.println(\",1\");}delay(100);}}\n"
+                + "void loop(){}\n";
     }
 
     private static void station(WorldServer world, EntityPlayerMP owner, int x, int y, int z, Station station) {
@@ -136,8 +138,8 @@ public final class UltrasonicLabGenerator {
         NBTTagList pages = new NBTTagList();
         pages.appendTag(new NBTTagString("Quatro estacoes independentes: MDF, plastico, isopor e espuma. Cada RoboBoard possui seu sketch carregado."));
         pages.appendTag(new NBTTagString("Abra a RoboBoard, use Ctrl+S para compilar, F5 para executar e F6 para abrir o monitor Serial."));
-        pages.appendTag(new NBTTagString("Clique no alvo para variar 5-50 cm. Agache e clique para variar o angulo. Ajuste NOMINAL_CM no sketch ao trocar a distancia."));
-        pages.appendTag(new NBTTagString("Na aba Serial, Ctrl+C copia o CSV. Compare media, erro, desvio-padrao, perdas de eco e R2."));
+        pages.appendTag(new NBTTagString("Clique no alvo para variar 5-50 cm. Ajuste NOMINAL_CM, compile e rode: cada firmware coleta exatamente 10 leituras."));
+        pages.appendTag(new NBTTagString("Apos cada lote use /craftonica sonar export. Ao completar 400 linhas, o save recebe metricas, regressao e R2."));
         tag.setTag("pages", pages); book.setTagCompound(tag);
         return book;
     }

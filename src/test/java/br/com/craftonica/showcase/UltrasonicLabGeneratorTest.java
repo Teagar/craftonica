@@ -15,5 +15,7 @@ public final class UltrasonicLabGeneratorTest {
         assertTrue(sketch.contains("material,nominal_cm,amostra,medida_cm,eco"));
         assertTrue(sketch.contains("const char MATERIAL[]=\"ESPUMA\""));
         assertTrue(sketch.contains("for(byte i=1;i<=10;i++)"));
+        assertTrue(sketch.contains("const float NOMINAL_CM=5.0"));
+        assertTrue(sketch.contains("void loop(){}"));
     }
 }

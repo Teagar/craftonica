@@ -12,6 +12,8 @@ import org.junit.rules.TemporaryFolder;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.UUID;
 
@@ -106,6 +108,54 @@ public final class AvrFirmwareIntegrationTest {
         String laboratoryCsv = new String(labTx.toByteArray(), StandardCharsets.US_ASCII);
         assertTrue(laboratoryCsv.startsWith("material,nominal_cm,amostra,medida_cm,eco\r\n"));
         assertTrue(laboratoryCsv.contains("PLASTICO,5.00,10,"));
+
+        Path metrologySource = Paths.get("examples/arduino/hc_sr04_metrology/hc_sr04_metrology.ino");
+        byte[] metrologyFirmware = compile("MetrologyExample", new String(
+                Files.readAllBytes(metrologySource), StandardCharsets.UTF_8));
+        assertTrue(executeSerialUntil(metrologyFirmware, sonarInputs, 500,
+                "MDF,5.00,10,").contains("MDF,5.00,10,"));
+
+        String moving = executeSerial(compileExample("MovingAverage", "hc_sr04_moving_average"), sonarInputs, 250);
+        assertTrue(moving.startsWith("raw_cm,moving_mean_cm,echo\r\n"));
+        assertTrue(moving.contains(",1\r\n"));
+        String median = executeSerial(compileExample("Median", "hc_sr04_median"), sonarInputs, 250);
+        assertTrue(median.startsWith("raw_cm,median_cm,echo\r\n"));
+        assertTrue(median.contains(",1\r\n"));
+        byte[] timeoutFirmware = compileExample("TimeoutRejection", "hc_sr04_timeout_rejection");
+        assertTrue(executeSerial(timeoutFirmware, sonarInputs, 250).contains(",FORWARD,1\r\n"));
+        assertTrue(executeSerial(timeoutFirmware, AvrInputs.allLow(), 700).contains("NA,STOP_NO_ECHO,0\r\n"));
+    }
+
+    private byte[] compileExample(String name, String directory) throws Exception {
+        Path source = Paths.get("examples/arduino", directory, directory + ".ino");
+        return compile(name, new String(Files.readAllBytes(source), StandardCharsets.UTF_8));
+    }
+
+    private String executeSerial(byte[] firmware, AvrInputs inputs, int slices) throws Exception {
+        AvrMachineState state = new AvrMachineState();
+        AvrInterpreter interpreter = new AvrInterpreter(firmware);
+        java.io.ByteArrayOutputStream tx = new java.io.ByteArrayOutputStream();
+        for (int slice = 0; slice < slices; slice++) {
+            AvrExecutionResult result = interpreter.executeToAbsoluteTarget(state,
+                    state.getCycles() + AvrInterpreter.QUANTUM_CYCLES, inputs);
+            tx.write(result.getTransmittedBytes());
+            if (new String(tx.toByteArray(), StandardCharsets.US_ASCII).split("\\r\\n").length >= 2) break;
+        }
+        return new String(tx.toByteArray(), StandardCharsets.US_ASCII);
+    }
+
+    private String executeSerialUntil(byte[] firmware, AvrInputs inputs, int slices,
+                                      String expected) throws Exception {
+        AvrMachineState state = new AvrMachineState();
+        AvrInterpreter interpreter = new AvrInterpreter(firmware);
+        java.io.ByteArrayOutputStream tx = new java.io.ByteArrayOutputStream();
+        for (int slice = 0; slice < slices; slice++) {
+            AvrExecutionResult result = interpreter.executeToAbsoluteTarget(state,
+                    state.getCycles() + AvrInterpreter.QUANTUM_CYCLES, inputs);
+            tx.write(result.getTransmittedBytes());
+            if (new String(tx.toByteArray(), StandardCharsets.US_ASCII).contains(expected)) break;
+        }
+        return new String(tx.toByteArray(), StandardCharsets.US_ASCII);
     }
 
     private byte[] compile(String name, String source) throws Exception {

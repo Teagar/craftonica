@@ -167,6 +167,30 @@ public final class AvrInterpreterTest {
     }
 
     @Test
+    public void bsetAndBclrAddressEveryStatusFlag() throws Exception {
+        for (int bit = 0; bit < 8; bit++) {
+            AvrMachineState state = new AvrMachineState();
+            int set = 0x9408 | bit << 4;
+            int clear = 0x9488 | bit << 4;
+            new AvrInterpreter(words(set, clear, 0xcfff))
+                    .executeToAbsoluteTarget(state, 2, AvrInputs.allLow());
+            assertEquals(0, state.getSreg() & (1 << bit));
+            assertEquals(2, state.getWordPc());
+        }
+    }
+
+    @Test
+    public void bstAndBldTransferThroughTWithoutChangingOtherFlags() throws Exception {
+        AvrMachineState state = new AvrMachineState();
+        state.setRegister(11, 0x80);
+        state.setSreg(0x15);
+        new AvrInterpreter(words(0xfab7, 0xf8b0, 0xcfff))
+                .executeToAbsoluteTarget(state, 2, AvrInputs.allLow());
+        assertEquals(0x81, state.getRegister(11));
+        assertEquals(0x55, state.getSreg());
+    }
+
+    @Test
     public void compiledLikePortWritesPublishD13() throws Exception {
         byte[] flash = words(ldi(24, 0x20), out(4, 24), out(5, 24), 0xcfff);
         AvrMachineState state = new AvrMachineState();

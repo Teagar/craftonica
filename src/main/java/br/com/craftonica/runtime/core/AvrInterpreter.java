@@ -24,6 +24,7 @@ public final class AvrInterpreter {
     private static final int V = 3;
     private static final int S = 4;
     private static final int H = 5;
+    private static final int T = 6;
     private static final int I = 7;
 
     private final byte[] flash;
@@ -236,8 +237,17 @@ public final class AvrInterpreter {
                 if (words == 2) fetchWord(state, pc + 2);
                 next += words; cycles = 1 + words;
             }
-        } else if (op == 0x9478) { // SEI
-            setFlag(state, I, true);
+        } else if ((op & 0xfc08) == 0xf800) { // BLD / BST
+            int register = (op >>> 4) & 31, bit = op & 7;
+            if ((op & 0x0200) != 0) setFlag(state, T, (u(state, register) & (1 << bit)) != 0);
+            else {
+                int value = u(state, register);
+                state.registers[register] = (byte) (flag(state, T)
+                        ? value | (1 << bit) : value & ~(1 << bit));
+            }
+        } else if ((op & 0xff0f) == 0x9408) { // BSET / BCLR (SEC..SEI / CLC..CLI)
+            int bit = (op >>> 4) & 7;
+            setFlag(state, bit, (op & 0x0080) == 0);
         } else if ((op & 0xfe0f) == 0x920c || (op & 0xfe0f) == 0x920d || (op & 0xfe0f) == 0x920e) {
             int r = rdSingle(op), address = wordReg(state, 26), mode = op & 15;
             if (mode == 14) address = (address - 1) & 0xffff;
