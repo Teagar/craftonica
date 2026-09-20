@@ -59,7 +59,7 @@ public final class RoboBoardState {
         this(UUID.randomUUID());
     }
 
-    RoboBoardState(UUID boardId) {
+    public RoboBoardState(UUID boardId) {
         if (boardId == null) throw new IllegalArgumentException("Board UUID is required");
         this.boardId = boardId;
     }

@@ -28,6 +28,32 @@ um chassi de sua propriedade:
 Esses comandos alimentam o mesmo modelo de ponte H que receberá GPIO e PWM na
 próxima etapa. Eles não implementam navegação ou desvio de obstáculos ocultos.
 
+Uma RoboBoard fixa já compilada pode fornecer firmware real ao chassi durante a
+validação do host móvel:
+
+```text
+/craftonica robot firmware copy
+/craftonica robot firmware start
+/craftonica robot firmware status
+/craftonica robot firmware stop
+```
+
+`copy` procura a RoboBoard acessível e o chassi do jogador em até 16 blocos. O
+chassi recebe uma cópia limitada de firmware, checkpoint, sketch e histórico
+Serial; a placa fixa não é alterada. O editor direto da entidade será conectado
+junto da conversão física da montagem.
+
+O host executa quadros de 800.000 ciclos AVR (50 ms) em worker isolado. Cada
+quadro captura primeiro a pose confirmada e o cone do HC-SR04, executa o firmware
+sem referências a `World` ou `Entity`, confirma checkpoint/identidade e só então
+aplica GPIO/PWM à ponte H. O estado aplicado controla o quadro mecânico seguinte,
+produzindo atraso fixo e determinístico de um quadro.
+
+Pinagem de referência: ECHO D6, TRIG D7, esquerda D2/D4 com PWM D5 e direita
+D8/D10 com PWM D9. Firmware parado, em falha ou com pinos sem `OUTPUT` zera o
+esforço dos motores. O contador de amostras acústicas, o estado AVR e o histórico
+Serial permanecem no NBT da entidade.
+
 ## Tração diferencial
 
 Cada canal da ponte H trata direção, PWM de 0–255, zona morta abaixo de 32,

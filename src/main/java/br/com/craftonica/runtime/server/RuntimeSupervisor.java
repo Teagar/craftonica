@@ -228,8 +228,10 @@ public final class RuntimeSupervisor implements Closeable {
         boolean isAlive() { return process.isAlive(); }
 
         private static boolean sameIdentity(RuntimeProtocol.Identity left, RuntimeProtocol.Identity right) {
-            return left.dimension == right.dimension && left.x == right.x && left.y == right.y
-                    && left.z == right.z && left.generation == right.generation;
+            return left.kind == right.kind && left.dimension == right.dimension
+                    && left.hostId.equals(right.hostId) && left.generation == right.generation
+                    && (left.kind != RuntimeProtocol.Identity.STATIC_BOARD
+                    || left.x == right.x && left.y == right.y && left.z == right.z);
         }
 
         public void close() {

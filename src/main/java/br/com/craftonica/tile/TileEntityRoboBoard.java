@@ -9,6 +9,7 @@ import br.com.craftonica.runtime.protocol.RuntimeProtocol;
 import br.com.craftonica.runtime.server.RuntimeServer;
 import br.com.craftonica.runtime.server.RuntimeSupervisor;
 import br.com.craftonica.runtime.server.RoboBoardIoBridge;
+import br.com.craftonica.runtime.server.RuntimeResultValidator;
 import br.com.craftonica.persistence.NbtMigrations;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.nbt.NBTTagCompound;
@@ -203,41 +204,14 @@ public final class TileEntityRoboBoard extends TileEntity {
             NbtMigrations.copyInto(preservedInvalidState, tag);
             return;
         }
-        RoboBoardState.Persisted persisted = state.snapshot();
         tag.setInteger("AccessSchema", 1);
         if (ownerId != null) {
             tag.setLong("OwnerMost", ownerId.getMostSignificantBits());
             tag.setLong("OwnerLeast", ownerId.getLeastSignificantBits());
         }
         if (templateSketchSource.length > 0) tag.setByteArray("TemplateSketch", templateSketchSource);
-        tag.setInteger("Schema", persisted.schema);
-        tag.setLong("BoardMost", persisted.boardId.getMostSignificantBits());
-        tag.setLong("BoardLeast", persisted.boardId.getLeastSignificantBits());
-        tag.setLong("Generation", persisted.generation);
-        tag.setLong("Revision", persisted.revision);
-        tag.setByteArray("Firmware", persisted.firmware);
-        tag.setByteArray("FirmwareHash", persisted.firmwareHash);
-        tag.setByteArray("Checkpoint", persisted.checkpoint);
-        tag.setByteArray("CheckpointHash", persisted.checkpointHash);
-        tag.setByte("Status", (byte) persisted.statusOrdinal);
-        tag.setString("Fault", persisted.fault);
-        tag.setBoolean("Running", persisted.running);
-        tag.setBoolean("D13", persisted.d13High);
-        tag.setInteger("OutputMask", persisted.outputMask);
-        tag.setInteger("HighMask", persisted.highMask);
-        tag.setInteger("PwmMask", persisted.pwmMask);
-        tag.setIntArray("PwmMode", persisted.pwmMode);
-        tag.setIntArray("PwmPrescaler", persisted.pwmPrescaler);
-        tag.setIntArray("PwmCompare", persisted.pwmCompare);
-        tag.setInteger("StableInputMask", persisted.stableInputMask);
-        tag.setInteger("IndeterminateInputMask", persisted.indeterminateInputMask);
-        tag.setByteArray("LastTx", persisted.serialHistory);
-        tag.setByteArray("SerialHistory", persisted.serialHistory);
-        tag.setLong("SerialStart", persisted.serialStartOffset);
-        tag.setLong("SerialEnd", persisted.serialEndOffset);
-        tag.setBoolean("SerialTruncated", persisted.serialTruncated);
-        tag.setByteArray("SketchSource", persisted.installedSketchSource);
-        tag.setBoolean("HasSketchSource", persisted.installedSketchSourcePresent);
+        RoboBoardStateNbtCodec.write(state, tag);
+        tag.setByteArray("LastTx", state.getSerialHistorySnapshot().getBytes());
     }
 
     @Override
@@ -249,36 +223,13 @@ public final class TileEntityRoboBoard extends TileEntity {
                 ? new UUID(persisted.getLong("OwnerMost"), persisted.getLong("OwnerLeast")) : null;
         byte[] template = persisted.hasKey("TemplateSketch") ? persisted.getByteArray("TemplateSketch") : new byte[0];
         templateSketchSource = template.length <= SourceBundle.MAX_FILE_BYTES ? template : new byte[0];
-        UUID boardId = persisted.hasKey("BoardMost") && persisted.hasKey("BoardLeast")
-                ? new UUID(persisted.getLong("BoardMost"), persisted.getLong("BoardLeast")) : null;
         boolean hasSerialHistory = persisted.hasKey("SerialHistory");
         byte[] serialHistory = hasSerialHistory ? persisted.getByteArray("SerialHistory") : persisted.getByteArray("LastTx");
-        state = RoboBoardState.restore(new RoboBoardState.Persisted(
-                persisted.hasKey("Schema") ? persisted.getInteger("Schema") : -1,
-                boardId,
-                persisted.getLong("Generation"),
-                persisted.getLong("Revision"),
-                persisted.getByteArray("Firmware"),
-                persisted.getByteArray("FirmwareHash"),
-                persisted.getByteArray("Checkpoint"),
-                persisted.getByteArray("CheckpointHash"),
-                persisted.hasKey("Status") ? persisted.getByte("Status") : -1,
-                persisted.getString("Fault"),
-                persisted.getBoolean("Running"),
-                persisted.getBoolean("D13"),
-                persisted.getInteger("OutputMask"),
-                persisted.getInteger("HighMask"),
-                persisted.getInteger("PwmMask"),
-                intArray(persisted, "PwmMode"),
-                intArray(persisted, "PwmPrescaler"),
-                intArray(persisted, "PwmCompare"),
-                persisted.getInteger("StableInputMask"),
-                persisted.getInteger("IndeterminateInputMask"), serialHistory,
-                hasSerialHistory ? persisted.getLong("SerialStart") : 0,
-                hasSerialHistory ? persisted.getLong("SerialEnd") : serialHistory.length,
-                hasSerialHistory && persisted.getBoolean("SerialTruncated"),
-                persisted.hasKey("SketchSource") ? persisted.getByteArray("SketchSource") : new byte[0],
-                persisted.hasKey("HasSketchSource") && persisted.getBoolean("HasSketchSource")));
+        if (!hasSerialHistory) {
+            persisted.setByteArray("SerialHistory", serialHistory); persisted.setLong("SerialStart", 0);
+            persisted.setLong("SerialEnd", serialHistory.length); persisted.setBoolean("SerialTruncated", false);
+        }
+        state = RoboBoardStateNbtCodec.read(persisted);
         boolean invalid = "UNKNOWN_SCHEMA".equals(state.getFault()) || "INVALID_IDENTITY".equals(state.getFault())
                 || "INVALID_PERSISTED_STATE".equals(state.getFault());
         preservedInvalidState = !migration.isSupported() || invalid ? NbtMigrations.copy(tag) : null;
@@ -337,7 +288,7 @@ public final class TileEntityRoboBoard extends TileEntity {
             if (machine.getWordPc() >= firmware.getFlash().length / 2
                     || result.completedAtCycle < AvrCheckpointCodec.decode(metadata.checkpoint).getCycles()
                     || result.completedAtCycle > metadata.absoluteTarget + 7L
-                    || !validOutputs(result, machine, metadata)) {
+                    || !RuntimeResultValidator.valid(result, machine, metadata.checkpoint)) {
                 commitRuntimeFault(metadata, "RUNTIME_PROTOCOL");
                 return;
             }
@@ -392,7 +343,8 @@ public final class TileEntityRoboBoard extends TileEntity {
     private int dimension() { return worldObj.provider.dimensionId; }
 
     private static boolean sameIdentity(RequestMetadata metadata, RuntimeProtocol.Identity identity) {
-        return identity != null && metadata.dimension == identity.dimension && metadata.x == identity.x
+        return identity != null && identity.kind == RuntimeProtocol.Identity.STATIC_BOARD
+                && metadata.dimension == identity.dimension && metadata.x == identity.x
                 && metadata.y == identity.y && metadata.z == identity.z && metadata.generation == identity.generation;
     }
 
@@ -402,46 +354,6 @@ public final class TileEntityRoboBoard extends TileEntity {
             if (current instanceof RuntimeProtocol.ProtocolException) return "RUNTIME_PROTOCOL";
         }
         return "RUNTIME_WORKER_FAILED";
-    }
-
-    private static boolean validOutputs(RuntimeProtocol.Result result, AvrMachineState machine,
-                                        RequestMetadata metadata) {
-        long firstCycle;
-        try {
-            firstCycle = AvrCheckpointCodec.decode(metadata.checkpoint).getCycles();
-        } catch (AvrFault invalid) {
-            return false;
-        }
-        if (result.gpio.size() + result.pwm.size() > 1024) return false;
-        for (RuntimeProtocol.Gpio value : result.gpio) {
-            if (value.pin < 0 || value.pin >= RoboBoardState.OUTPUT_PIN_COUNT
-                    || value.cycle < firstCycle || value.cycle > result.completedAtCycle) return false;
-        }
-        for (RuntimeProtocol.Pwm value : result.pwm) {
-            int expectedTimer = timerForPwmPin(value.pin);
-            if (value.pin < 0 || value.pin >= RoboBoardState.OUTPUT_PIN_COUNT
-                    || value.timer != expectedTimer || value.mode < 0 || value.mode > 15
-                    || value.compare < 0 || value.compare > (value.timer == 1 ? 65535 : 255)
-                    || !validPrescaler(value.timer, value.prescaler)
-                    || value.phaseCorrect != (value.mode == 1 || value.mode == 5)
-                    || value.cycle < firstCycle || value.cycle > result.completedAtCycle) return false;
-        }
-        boolean checkpointD13 = (machine.getMmio(0x24) & 0x20) != 0 && (machine.getMmio(0x25) & 0x20) != 0;
-        return result.d13High == checkpointD13;
-    }
-
-    private static boolean validPrescaler(int timer, int value) {
-        if (value == 0) return true;
-        if (timer == 2) return value == 1 || value == 8 || value == 32 || value == 64
-                || value == 128 || value == 256 || value == 1024;
-        return value == 1 || value == 8 || value == 64 || value == 256 || value == 1024;
-    }
-
-    private static int timerForPwmPin(int pin) {
-        if (pin == 5 || pin == 6) return 0;
-        if (pin == 9 || pin == 10) return 1;
-        if (pin == 3 || pin == 11) return 2;
-        return -1;
     }
 
     private void cancelInFlight() {
@@ -471,10 +383,6 @@ public final class TileEntityRoboBoard extends TileEntity {
             bounded.append(character >= 0x20 && character <= 0x7e ? character : '_');
         }
         return bounded.toString();
-    }
-
-    private static int[] intArray(NBTTagCompound tag, String key) {
-        return tag.hasKey(key) ? tag.getIntArray(key) : new int[0];
     }
 
     private static final class RequestMetadata {
@@ -549,6 +457,11 @@ public final class TileEntityRoboBoard extends TileEntity {
     public boolean hasInstalledSketchSource() { return state.hasInstalledSketchSource(); }
     public RoboBoardState.SerialHistorySnapshot getSerialHistorySnapshot() {
         return state.getSerialHistorySnapshot();
+    }
+    public RoboBoardState copyBoardState() {
+        NBTTagCompound tag = new NBTTagCompound();
+        RoboBoardStateNbtCodec.write(state, tag);
+        return RoboBoardStateNbtCodec.read(tag);
     }
 
     private static void requirePin(int pin) {
