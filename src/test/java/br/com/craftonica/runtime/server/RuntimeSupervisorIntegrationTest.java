@@ -11,6 +11,7 @@ import org.junit.Test;
 import java.io.File;
 import java.io.FileWriter;
 import java.util.concurrent.TimeoutException;
+import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -46,6 +47,13 @@ public final class RuntimeSupervisorIntegrationTest {
             result = await(submission);
             assertTrue(result.completedAtCycle >= 1599936 && result.completedAtCycle <= 1599938);
             assertEquals(2, result.identity.generation);
+
+            RuntimeProtocol.Identity mobileIdentity = RuntimeProtocol.Identity.mobile(0, new UUID(55L, 89L), 3L);
+            RuntimeProtocol.Request mobile = new RuntimeProtocol.Request(mobileIdentity, 49998,
+                    firmware.getBytes(), checkpoint, AvrInputs.allLow());
+            result = await(supervisor.submit(mobile));
+            assertEquals(RuntimeProtocol.Identity.MOBILE_ROBOT, result.identity.kind);
+            assertEquals(mobileIdentity.hostId, result.identity.hostId);
         } finally {
             supervisor.close();
         }

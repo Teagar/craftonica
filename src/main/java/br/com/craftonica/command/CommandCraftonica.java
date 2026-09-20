@@ -13,6 +13,7 @@ import br.com.craftonica.showcase.UnoR3Generator;
 import br.com.craftonica.showcase.UltrasonicLabGenerator;
 import br.com.craftonica.robot.EntityMobileRobot;
 import br.com.craftonica.robot.MobileRobotSpawner;
+import br.com.craftonica.tile.TileEntityRoboBoard;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.command.WrongUsageException;
@@ -50,6 +51,8 @@ public final class CommandCraftonica extends CommandBase {
             robot(player);
         } else if (args.length == 3 && "robot".equals(args[0]) && "drive".equals(args[1])) {
             driveRobot(player, args[2]);
+        } else if (args.length == 3 && "robot".equals(args[0]) && "firmware".equals(args[1])) {
+            robotFirmware(player, args[2]);
         } else if (args.length == 2 && "lesson".equals(args[0]) && "list".equals(args[1])) {
             for (String id : LessonCatalog.ids()) player.addChatMessage(new ChatComponentText(id));
             String assigned = TeacherActivityData.get(player.worldObj).getAssignedId();
@@ -129,6 +132,51 @@ public final class CommandCraftonica extends CommandBase {
         }
         if (nearest == null) player.addChatMessage(new ChatComponentTranslation("message.craftonica.robot.not_found"));
         else { nearest.commandTestDrive(action); player.addChatMessage(new ChatComponentTranslation("message.craftonica.robot.drive", action)); }
+    }
+
+    private void robotFirmware(EntityPlayerMP player, String action) {
+        EntityMobileRobot robot = nearestRobot(player);
+        if (robot == null) { player.addChatMessage(new ChatComponentTranslation("message.craftonica.robot.not_found")); return; }
+        try {
+            if ("status".equals(action)) {
+                br.com.craftonica.tile.RoboBoardState board = robot.getRobotState().getBoardState();
+                player.addChatMessage(new ChatComponentTranslation("message.craftonica.robot.firmware_status",
+                        board.getStatus().name(), board.getRevision(), board.getSerialHistorySnapshot().getEndOffset()));
+                return;
+            } else if ("copy".equals(action)) {
+                TileEntityRoboBoard source = nearestBoard(player);
+                if (source == null || !source.canAccess(player)) {
+                    player.addChatMessage(new ChatComponentTranslation("message.craftonica.robot.board_not_found")); return;
+                }
+                robot.installBoardCopy(source.copyBoardState());
+            } else if ("start".equals(action)) robot.startBoard();
+            else if ("stop".equals(action)) robot.stopBoard();
+            else throw new WrongUsageException(getCommandUsage(player));
+            player.addChatMessage(new ChatComponentTranslation("message.craftonica.robot.firmware", action));
+        } catch (RuntimeException rejected) {
+            player.addChatMessage(new ChatComponentTranslation("message.craftonica.robot.firmware_rejected"));
+        }
+    }
+
+    private EntityMobileRobot nearestRobot(EntityPlayerMP player) {
+        EntityMobileRobot nearest = null; double distance = 256.0;
+        for (Object value : player.worldObj.loadedEntityList) if (value instanceof EntityMobileRobot) {
+            EntityMobileRobot candidate = (EntityMobileRobot) value;
+            if (!candidate.getRobotState().getOwnerId().equals(player.getUniqueID())) continue;
+            double next = candidate.getDistanceSqToEntity(player);
+            if (next < distance) { distance = next; nearest = candidate; }
+        }
+        return nearest;
+    }
+
+    private TileEntityRoboBoard nearestBoard(EntityPlayerMP player) {
+        TileEntityRoboBoard nearest = null; double distance = 256.0;
+        for (Object value : player.worldObj.loadedTileEntityList) if (value instanceof TileEntityRoboBoard) {
+            TileEntityRoboBoard candidate = (TileEntityRoboBoard) value;
+            double next = player.getDistanceSq(candidate.xCoord + 0.5, candidate.yCoord + 0.5, candidate.zCoord + 0.5);
+            if (next < distance) { distance = next; nearest = candidate; }
+        }
+        return nearest;
     }
 
     private void check(EntityPlayerMP player, String[] args) {

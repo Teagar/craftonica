@@ -9,6 +9,7 @@ import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -23,6 +24,7 @@ public final class RuntimeProtocolTest {
         RuntimeProtocol.Request decoded = RuntimeProtocol.readRequest(new ByteArrayInputStream(encoded.toByteArray()));
         assertEquals(3, decoded.absoluteTarget);
         assertEquals(9, decoded.identity.generation);
+        assertEquals(RuntimeProtocol.Identity.STATIC_BOARD, decoded.identity.kind);
         assertEquals(7, decoded.inputs.getUltrasonic().getTriggerPin());
         assertEquals(6, decoded.inputs.getUltrasonic().getEchoPin());
         assertEquals(46400L, decoded.inputs.getUltrasonic().getEchoDurationCycles());
@@ -37,6 +39,21 @@ public final class RuntimeProtocolTest {
         } catch (RuntimeProtocol.ProtocolException expected) {
             assertTrue(expected.getMessage().startsWith("invalid frame header"));
         }
+    }
+
+    @Test public void mobileIdentityRoundTripsWithoutWorldCoordinates() throws Exception {
+        RuntimeProtocol.Request base = request(100L);
+        UUID robot = new UUID(17L, 29L);
+        RuntimeProtocol.Request original = new RuntimeProtocol.Request(
+                RuntimeProtocol.Identity.mobile(-1, robot, 4L), base.absoluteTarget,
+                base.firmware, base.checkpoint, base.inputs);
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        RuntimeProtocol.writeRequest(bytes, original);
+        RuntimeProtocol.Request decoded = RuntimeProtocol.readRequest(new ByteArrayInputStream(bytes.toByteArray()));
+        assertEquals(RuntimeProtocol.Identity.MOBILE_ROBOT, decoded.identity.kind);
+        assertEquals(robot, decoded.identity.hostId);
+        assertEquals(-1, decoded.identity.dimension);
+        assertEquals(4L, decoded.identity.generation);
     }
 
     @Test

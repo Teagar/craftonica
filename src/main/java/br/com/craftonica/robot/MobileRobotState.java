@@ -2,6 +2,8 @@ package br.com.craftonica.robot;
 
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
+import br.com.craftonica.tile.RoboBoardState;
+import br.com.craftonica.tile.RoboBoardStateNbtCodec;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -29,23 +31,25 @@ public final class MobileRobotState {
     private final UUID ownerId;
     private final List<RobotModuleSnapshot> modules;
     private final byte[] manifestFingerprint;
+    private RoboBoardState boardState;
     private long generation;
     private long simulationFrame;
     private Status status;
     private String diagnostic;
     private boolean resumeRequested;
+    private long measurementCounter;
     private double x, y, z;
     private float yaw, pitch;
 
     public MobileRobotState(UUID robotId, UUID ownerId, List<RobotModuleSnapshot> modules) {
         this(robotId, ownerId, modules, 0L, 0L, Status.STOPPED, "", false,
-                0.0, 0.0, 0.0, 0.0F, 0.0F, null);
+                0.0, 0.0, 0.0, 0.0F, 0.0F, null, new RoboBoardState(robotId));
     }
 
     private MobileRobotState(UUID robotId, UUID ownerId, List<RobotModuleSnapshot> modules,
                              long generation, long simulationFrame, Status status, String diagnostic,
                              boolean resumeRequested, double x, double y, double z, float yaw, float pitch,
-                             byte[] expectedFingerprint) {
+                             byte[] expectedFingerprint, RoboBoardState boardState) {
         if (robotId == null || ownerId == null || generation < 0 || simulationFrame < 0 || status == null)
             throw new IllegalArgumentException("invalid robot identity");
         this.robotId = robotId;
@@ -55,6 +59,8 @@ public final class MobileRobotState {
         if (expectedFingerprint != null && !MessageDigest.isEqual(manifestFingerprint, expectedFingerprint))
             throw new IllegalArgumentException("manifest fingerprint");
         this.generation = generation;
+        if (boardState == null) throw new IllegalArgumentException("board state");
+        this.boardState = boardState;
         this.simulationFrame = simulationFrame;
         this.status = status;
         setDiagnostic(diagnostic);
@@ -85,7 +91,8 @@ public final class MobileRobotState {
 
     public void suspendForUnload() {
         if (status == Status.SUSPENDED) return;
-        resumeRequested = status == Status.RUNNING;
+        resumeRequested = status == Status.RUNNING || boardState.isRunning();
+        if (boardState.isRunning()) boardState.unloadAndIncrementGeneration();
         if (status != Status.QUARANTINED && status != Status.FAULT) status = Status.SUSPENDED;
         if (generation == Long.MAX_VALUE) {
             status = Status.QUARANTINED;
@@ -97,6 +104,10 @@ public final class MobileRobotState {
 
     public void resumeAfterLoad() {
         if (status == Status.SUSPENDED) status = Status.STOPPED;
+        if (resumeRequested && boardState.hasFirmware() && !boardState.isRunning()) {
+            boardState.start(boardState.getRevision());
+            resumeRequested = false;
+        }
     }
 
     public NBTTagCompound write() {
@@ -106,11 +117,14 @@ public final class MobileRobotState {
         tag.setLong("Generation", generation); tag.setLong("SimulationFrame", simulationFrame);
         tag.setByte("Status", (byte) status.ordinal()); tag.setString("Diagnostic", diagnostic);
         tag.setBoolean("ResumeRequested", resumeRequested);
+        tag.setLong("MeasurementCounter", measurementCounter);
         tag.setDouble("X", x); tag.setDouble("Y", y); tag.setDouble("Z", z);
         tag.setFloat("Yaw", yaw); tag.setFloat("Pitch", pitch);
         NBTTagList list = new NBTTagList();
         for (RobotModuleSnapshot module : modules) list.appendTag(module.write());
         tag.setTag("Modules", list); tag.setByteArray("ManifestFingerprint", manifestFingerprint);
+        NBTTagCompound board = new NBTTagCompound(); RoboBoardStateNbtCodec.write(boardState, board);
+        tag.setTag("BoardState", board);
         return tag;
     }
 
@@ -132,11 +146,23 @@ public final class MobileRobotState {
                 restoredStatus = Status.SUSPENDED;
                 resumeRequested = true;
             }
-            return new MobileRobotState(getUuid(tag, "Robot"), getUuid(tag, "Owner"), modules,
+            UUID robotId = getUuid(tag, "Robot");
+            RoboBoardState boardState = tag.hasKey("BoardState")
+                    ? RoboBoardStateNbtCodec.read(tag.getCompoundTag("BoardState")) : new RoboBoardState(robotId);
+            MobileRobotState restored = new MobileRobotState(robotId, getUuid(tag, "Owner"), modules,
                     generation, tag.getLong("SimulationFrame"), restoredStatus,
                     tag.getString("Diagnostic"), resumeRequested,
                     tag.getDouble("X"), tag.getDouble("Y"), tag.getDouble("Z"),
-                    tag.getFloat("Yaw"), tag.getFloat("Pitch"), tag.getByteArray("ManifestFingerprint"));
+                    tag.getFloat("Yaw"), tag.getFloat("Pitch"), tag.getByteArray("ManifestFingerprint"), boardState);
+            long measurementCounter = tag.getLong("MeasurementCounter");
+            if (measurementCounter < 0) return quarantined();
+            restored.measurementCounter = measurementCounter;
+            if (restored.boardState.isRunning()) {
+                restored.boardState.unloadAndIncrementGeneration();
+                restored.resumeRequested = true;
+                restored.status = Status.SUSPENDED;
+            }
+            return restored;
         } catch (RuntimeException invalid) {
             return quarantined();
         }
@@ -215,4 +241,17 @@ public final class MobileRobotState {
     public double getZ() { return z; }
     public float getYaw() { return yaw; }
     public float getPitch() { return pitch; }
+    public RoboBoardState getBoardState() { return boardState; }
+    public void replaceBoardState(RoboBoardState value) {
+        if (value == null) throw new IllegalArgumentException("board state");
+        boardState = value;
+    }
+    public long consumeMeasurementCounter() {
+        if (measurementCounter == Long.MAX_VALUE) throw new IllegalStateException("measurement counter exhausted");
+        return measurementCounter++;
+    }
+    public void commitSimulationFrame() {
+        if (simulationFrame == Long.MAX_VALUE) throw new IllegalStateException("simulation frame exhausted");
+        simulationFrame++;
+    }
 }

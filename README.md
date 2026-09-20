@@ -121,6 +121,8 @@ reiniciar. Se o serviço legado de assets estiver indisponível, use:
   indicação visual de atividade.
 - Chassi robótico servidor-autoritativo com identidade, proprietário, manifesto
   versionado, persistência, sincronização visual e tração diferencial de teste.
+- Host AVR móvel com firmware real, checkpoint, Serial TX, HC-SR04 frontal e
+  ponte H controlada pelos pinos D2/D4/D5 e D8/D10/D9.
 
 Todos aparecem na aba criativa `Craftônica` e possuem texturas autorais 16×16.
 Ao passar o cursor sobre um componente, o inventário explica sua função, valor e

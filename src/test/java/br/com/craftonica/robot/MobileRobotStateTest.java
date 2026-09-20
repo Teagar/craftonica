@@ -11,6 +11,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import br.com.craftonica.tile.RoboBoardState;
 
 public final class MobileRobotStateTest {
     @Test public void identityPoseOwnerAndCanonicalManifestRoundTrip() {
@@ -100,5 +101,14 @@ public final class MobileRobotStateTest {
         entity.writeEntityToNBT(output);
         assertEquals(new UUID(13L, 14L), MobileRobotState.read(
                 output.getCompoundTag("CraftonicaRobot")).getOwnerId());
+    }
+
+    @Test public void embeddedBoardIdentityRoundTrips() {
+        MobileRobotState original = MobileRobotState.minimal(new UUID(21L, 22L), new UUID(23L, 24L));
+        RoboBoardState board = original.getBoardState();
+        MobileRobotState restored = MobileRobotState.read(original.write());
+        assertEquals(board.getBoardId(), restored.getBoardState().getBoardId());
+        assertEquals(board.getRevision(), restored.getBoardState().getRevision());
+        assertEquals(board.getStatus(), restored.getBoardState().getStatus());
     }
 }

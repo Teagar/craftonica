@@ -8,6 +8,10 @@ import net.minecraft.world.World;
 
 import java.util.UUID;
 import net.minecraft.util.MathHelper;
+import br.com.craftonica.runtime.core.AvrInputs;
+import br.com.craftonica.runtime.protocol.RuntimeProtocol;
+import br.com.craftonica.runtime.server.RoboBoardRuntimeHost;
+import br.com.craftonica.tile.RoboBoardState;
 
 /** Server-authoritative persistent shell for the differential chassis. */
 public final class EntityMobileRobot extends Entity {
@@ -23,6 +27,8 @@ public final class EntityMobileRobot extends Entity {
     private HBridgeModel.Output leftDrive = HBridgeModel.evaluate(false, true, false, false, 0);
     private HBridgeModel.Output rightDrive = HBridgeModel.evaluate(false, true, false, false, 0);
     private double leftWheelSpeed, rightWheelSpeed;
+    private final RoboBoardRuntimeHost runtimeHost = new RoboBoardRuntimeHost();
+    private AvrInputs pendingInputs;
 
     public EntityMobileRobot(World world) {
         super(world);
@@ -54,7 +60,11 @@ public final class EntityMobileRobot extends Entity {
         if (loadGuardTicks > 0) {
             loadGuardTicks--;
             if (loadGuardTicks == 0) state.resumeAfterLoad();
+            state.setPose(posX, posY, posZ, rotationYaw, rotationPitch);
+            syncVisualState();
+            return;
         }
+        updateRuntime();
         integrateDrive();
         state.setPose(posX, posY, posZ, rotationYaw, rotationPitch);
         syncVisualState();
@@ -64,6 +74,7 @@ public final class EntityMobileRobot extends Entity {
         if (!worldObj.isRemote) {
             state.setPose(posX, posY, posZ, rotationYaw, rotationPitch);
             state.suspendForUnload();
+            runtimeHost.cancel();
             stopDrive();
             syncVisualState();
         }
@@ -127,11 +138,43 @@ public final class EntityMobileRobot extends Entity {
 
     public void commandTestDrive(String command) {
         if (worldObj.isRemote) return;
+        if (state.getBoardState().hasFirmware()) return;
         if ("forward".equals(command)) setDrive(true, false, true, false, 255);
         else if ("reverse".equals(command)) setDrive(false, true, false, true, 255);
         else if ("left".equals(command)) setDrive(false, true, true, false, 220);
         else if ("right".equals(command)) setDrive(true, false, false, true, 220);
         else stopDrive();
+    }
+
+    public void installBoardCopy(RoboBoardState board) {
+        if (worldObj.isRemote || board == null) return;
+        runtimeHost.cancel(); stopDrive(); state.replaceBoardState(board);
+    }
+
+    public void startBoard() { state.getBoardState().start(state.getBoardState().getRevision()); }
+    public void stopBoard() { runtimeHost.cancel(); state.getBoardState().stop(state.getBoardState().getRevision()); stopDrive(); }
+
+    private void updateRuntime() {
+        final RoboBoardState board = state.getBoardState();
+        if (!board.isRunning()) {
+            if (board.hasFirmware()) stopDrive();
+            return;
+        }
+        if (runtimeHost.needsInput()) {
+            pendingInputs = MobileRobotIoBridge.sample(this, state.consumeMeasurementCounter());
+        }
+        if (pendingInputs == null) return;
+        RuntimeProtocol.Identity identity = RuntimeProtocol.Identity.mobile(worldObj.provider.dimensionId,
+                state.getRobotId(), board.getGeneration());
+        runtimeHost.tick(identity, worldObj.getTotalWorldTime(), board, pendingInputs,
+                new RoboBoardRuntimeHost.OutputListener() {
+                    @Override public void committed(RoboBoardState committed, RuntimeProtocol.Result result) {
+                        MobileRobotIoBridge.DriveCommand command = MobileRobotIoBridge.drive(committed);
+                        leftDrive = command.left; rightDrive = command.right;
+                        state.commitSimulationFrame();
+                        pendingInputs = null;
+                    }
+                });
     }
 
     private void setDrive(boolean l1, boolean l2, boolean r1, boolean r2, int pwm) {

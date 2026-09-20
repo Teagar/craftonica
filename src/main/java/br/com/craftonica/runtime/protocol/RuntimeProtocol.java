@@ -23,13 +23,14 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /** Length-delimited worker protocol. Every frame is authenticated before its payload is decoded. */
 public final class RuntimeProtocol {
     public static final int MAX_FRAME_BYTES = 131072;
     public static final int MAX_FAULT_BYTES = 512;
     private static final int MAGIC = 0x43524c52; // CRLR
-    private static final int VERSION = 2;
+    private static final int VERSION = 3;
     private static final int REQUEST = 1;
     private static final int RESULT = 2;
     private static final int HASH_BYTES = 32;
@@ -202,10 +203,16 @@ public final class RuntimeProtocol {
         byte[] value = new byte[length]; in.readFully(value); return value;
     }
     private static void writeIdentity(DataOutputStream out, Identity value) throws IOException {
-        out.writeInt(value.dimension); out.writeInt(value.x); out.writeInt(value.y); out.writeInt(value.z); out.writeLong(value.generation);
+        out.writeByte(value.kind);
+        out.writeInt(value.dimension);
+        out.writeLong(value.hostId.getMostSignificantBits()); out.writeLong(value.hostId.getLeastSignificantBits());
+        out.writeInt(value.x); out.writeInt(value.y); out.writeInt(value.z); out.writeLong(value.generation);
     }
     private static Identity readIdentity(DataInputStream in) throws IOException {
-        return new Identity(in.readInt(), in.readInt(), in.readInt(), in.readInt(), in.readLong());
+        int kind = in.readUnsignedByte();
+        int dimension = in.readInt();
+        UUID hostId = new UUID(in.readLong(), in.readLong());
+        return new Identity(kind, dimension, hostId, in.readInt(), in.readInt(), in.readInt(), in.readLong());
     }
     private static String bounded(String value) {
         if (value == null) return "";
@@ -218,12 +225,30 @@ public final class RuntimeProtocol {
     public static final class EndOfStreamException extends EOFException { private EndOfStreamException() { super("clean protocol EOF"); } }
 
     public static final class Identity {
+        public static final int STATIC_BOARD = 0;
+        public static final int MOBILE_ROBOT = 1;
+        public final int kind;
         public final int dimension, x, y, z;
+        public final UUID hostId;
         public final long generation;
         public Identity(int dimension, int x, int y, int z, long generation) {
-            this.dimension = dimension; this.x = x; this.y = y; this.z = z; this.generation = generation;
+            this(STATIC_BOARD, dimension, staticHostId(dimension, x, y, z), x, y, z, generation);
         }
-        public String key() { return dimension + ":" + x + ":" + y + ":" + z; }
+        public static Identity mobile(int dimension, UUID hostId, long generation) {
+            return new Identity(MOBILE_ROBOT, dimension, hostId, 0, 0, 0, generation);
+        }
+        private Identity(int kind, int dimension, UUID hostId, int x, int y, int z, long generation) {
+            if ((kind != STATIC_BOARD && kind != MOBILE_ROBOT) || hostId == null || generation < 0)
+                throw new IllegalArgumentException("invalid runtime identity");
+            this.kind = kind; this.dimension = dimension; this.hostId = hostId;
+            this.x = x; this.y = y; this.z = z; this.generation = generation;
+        }
+        public String key() { return kind + ":" + dimension + ":" + hostId; }
+        private static UUID staticHostId(int dimension, int x, int y, int z) {
+            long most = ((long) dimension << 32) ^ (x & 0xffffffffL);
+            long least = ((long) y << 32) ^ (z & 0xffffffffL);
+            return new UUID(most, least);
+        }
     }
 
     public static final class Request {

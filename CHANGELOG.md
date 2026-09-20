@@ -12,6 +12,7 @@
 - HC-SR04 com pose continua, cone acustico, tamanho aparente e deteccao de blocos e entidades em chunks carregados.
 - Chassi robotico como entidade persistente, com proprietario, manifesto versionado, spawn seguro e tracking multiplayer.
 - Ponte H educacional e tracao diferencial com PWM, zona morta, frenagem, consumo, colisao e parada segura.
+- Host AVR movel com firmware/checkpoint/Serial persistentes, identidade por UUID, HC-SR04 por pose e GPIO/PWM ligado aos motores.
 
 ## 1.1.0 - 2026-09-19
 
