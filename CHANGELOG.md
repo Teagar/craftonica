@@ -17,6 +17,7 @@
 - Metrologia HC-SR04 acumulativa de 400 amostras com métricas, regressão, R² e sketches de filtros que preservam timeouts.
 - Arena idempotente de 51 x 51 blocos com labirinto, materiais acústicos, alvos pequenos e áreas de partida/recuperação.
 - Sketch Arduino autônomo de um HC-SR04 com mediana, varredura pelo chassi, telemetria Serial e parada segura em timeout.
+- Gates de runtime móvel para 32 trajetórias determinísticas, 68 hosts limitados, unload/reload, NBT inválido e linkage de servidor dedicado.
 
 ## 1.1.0 - 2026-09-19
 

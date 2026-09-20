@@ -112,6 +112,10 @@ public final class RuntimeSupervisor implements Closeable {
         idleWorkers.clear();
     }
 
+    int workerCountForTest() { return workerCount.get(); }
+    int inFlightCountForTest() { return inFlight.size(); }
+    int queuedCountForTest() { return executor.getQueue().size(); }
+
     private WorkerProcess acquireWorker() throws IOException, InterruptedException {
         if (closed) throw new IOException("runtime supervisor is closed");
         WorkerProcess idle = idleWorkers.poll();

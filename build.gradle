@@ -134,10 +134,38 @@ task verifyRuntimeGates(type: Test, dependsOn: [testClasses, runtimeWorkerJar]) 
     include "**/runtime/server/*Test.class"
     include "**/tile/RoboBoardStateTest.class"
     include "**/tile/TileEntityRoboBoardBudgetTest.class"
+    include "**/robot/*StressGateTest.class"
     systemProperty "craftonica.runtime.firmware.integration", "true"
     systemProperty "craftonica.runtime.workerJar", runtimeWorkerJar.archivePath
     systemProperty "craftonica.runtime.launcher", file("scripts/runtime/launch-worker.sh")
     systemProperty "craftonica.runtime.javaHome", System.getProperty("java.home")
+}
+
+task runtimeProfile(dependsOn: verifyRuntimeGates) << {
+    def report = file("${buildDir}/reports/runtime/crl-66-profile.txt")
+    report.parentFile.mkdirs()
+    report.text = """Craftonica mobile runtime deterministic profile v1
+maxWorkers=4
+workerHeapMiB=64
+workerScopeMemoryMaxMiB=256
+workerSwapMaxMiB=0
+maxQueued=64
+maxConcurrentHosts=68
+avrCyclesPerFrame=800000
+serverFrameMillis=50
+workerQuantumCycles=50000
+maxBatchAdditionalCycles=750000
+maxWorkerFrameBytes=131072
+maxWorkerTxPerQuantum=256
+maxWorkerTxPerBatch=4096
+maxSerialHistoryBytes=8192
+mobileCollisionWidth=1.8
+mobileCollisionHeight=1.2
+driveSubstepsPerTick=2
+driveSubstepSeconds=0.025
+unloadedChunkPolicy=stop_without_load
+clientSimulation=false
+"""
 }
 
 task electricalProfile(dependsOn: verifyElectricalGates) << {
@@ -165,4 +193,5 @@ build.dependsOn verifyReleaseMetadata
 build.dependsOn verifyElectricalGates
 build.dependsOn verifyFirmwareGates
 build.dependsOn verifyRuntimeGates
+build.dependsOn runtimeProfile
 build.dependsOn verifyMigrationGates
