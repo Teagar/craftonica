@@ -5,6 +5,7 @@ import br.com.craftonica.electrical.nodal.*;
 import br.com.craftonica.network.BlockPosition;
 import br.com.craftonica.tile.TileEntityLed;
 import br.com.craftonica.tile.TileEntityAnalogSensor;
+import br.com.craftonica.tile.TileEntityUltrasonicSensor;
 import net.minecraft.block.Block;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
@@ -89,6 +90,22 @@ public class ForgeNodalSnapshotExtractorTest {
         assertFalse(result.isComplete());
         assertEquals(DiagnosticCode.INCOMPLETE_NETWORK, result.getDiagnostics().get(0).getCode());
         assertEquals(0, world.readsAtUnloadedChunk);
+    }
+
+    @Test public void mapsFourIndependentUltrasonicTerminalsAndBranches() {
+        FakeWorld world = new FakeWorld();
+        BlockPosition position = new BlockPosition(0, 0, 0);
+        world.put(0, 0, 0, new BlockUltrasonicSensor(), 3);
+        world.tiles.put(position, new TileEntityUltrasonicSensor());
+        NodalExtractionResult extraction = new ForgeNodalSnapshotExtractor(world).extract(position);
+        ComponentSnapshot sensor = find(extraction, "ultrasonic_sensor");
+        assertEquals(4, sensor.getTerminals().size());
+        assertEquals(Face.UP, sensor.getTerminals().get(0).getId().getFace());
+        assertEquals(Face.DOWN, sensor.getTerminals().get(1).getId().getFace());
+        assertEquals(Face.EAST, sensor.getTerminals().get(2).getId().getFace());
+        assertEquals(Face.WEST, sensor.getTerminals().get(3).getId().getFace());
+        NodalCircuitBuilder builder = new NodalCircuitBuilder().add(sensor);
+        assertEquals(3, builder.build().getBranches().size());
     }
 
     @Test public void rejectsInvalidMetadataAndComponentParameters() {

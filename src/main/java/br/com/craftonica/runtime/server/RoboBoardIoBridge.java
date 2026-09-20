@@ -3,10 +3,15 @@ package br.com.craftonica.runtime.server;
 import br.com.craftonica.network.BlockPosition;
 import br.com.craftonica.network.ElectricalNetworkManager;
 import br.com.craftonica.runtime.core.AvrInputs;
+import br.com.craftonica.runtime.core.UltrasonicPeripheral;
+import br.com.craftonica.sensor.UltrasonicMeasurementModel;
 import br.com.craftonica.tile.RoboBoardState;
 import br.com.craftonica.tile.RoboPortRegistry;
 import br.com.craftonica.tile.TileEntityRoboBoard;
 import br.com.craftonica.tile.TileEntityRoboPort;
+import br.com.craftonica.tile.TileEntityUltrasonicSensor;
+import br.com.craftonica.tile.UltrasonicSensorRegistry;
+import br.com.craftonica.block.BlockUltrasonicSensor;
 import net.minecraft.world.World;
 
 /** Loaded-chunk-only adapter between physical RoboPorts and one runtime input snapshot. */
@@ -60,7 +65,8 @@ public final class RoboBoardIoBridge {
             digital[pin] = transfer.high;
             if (pin >= 14 && pin <= 19) analog[pin - 14] = clampMicrovolts(voltage.doubleValue());
         }
-        return new Snapshot(new AvrInputs(digital, analog), nextStable, indeterminate, available, duplicateMask);
+        UltrasonicPeripheral ultrasonic = sampleUltrasonic(board, manager);
+        return new Snapshot(new AvrInputs(digital, analog, ultrasonic), nextStable, indeterminate, available, duplicateMask);
     }
 
     public static void invalidateAdjacentPorts(TileEntityRoboBoard board) {
@@ -90,6 +96,48 @@ public final class RoboBoardIoBridge {
         return manager.getTerminalVoltage(new BlockPosition(port.xCoord, port.yCoord, port.zCoord), outward);
     }
 
+    private static UltrasonicPeripheral sampleUltrasonic(TileEntityRoboBoard board,
+                                                         ElectricalNetworkManager manager) {
+        UltrasonicPeripheral found = null;
+        for (TileEntityUltrasonicSensor sensor : UltrasonicSensorRegistry.loaded(board.getWorldObj())) {
+            double dx = sensor.xCoord - board.xCoord, dy = sensor.yCoord - board.yCoord,
+                    dz = sensor.zCoord - board.zCoord;
+            if (dx * dx + dy * dy + dz * dz > TileEntityRoboPort.MAX_LINK_DISTANCE
+                    * TileEntityRoboPort.MAX_LINK_DISTANCE) continue;
+            BlockPosition sensorPosition = new BlockPosition(sensor.xCoord, sensor.yCoord, sensor.zCoord);
+            Double vcc = manager.getTerminalVoltage(sensorPosition, 1);
+            Double ground = manager.getTerminalVoltage(sensorPosition, 0);
+            if (vcc == null || ground == null || vcc < 4.5 || Math.abs(ground) > 0.25) continue;
+            int front = BlockUltrasonicSensor.normalizeFront(
+                    board.getWorldObj().getBlockMetadata(sensor.xCoord, sensor.yCoord, sensor.zCoord) & 7);
+            int triggerSide = BlockUltrasonicSensor.leftOf(front);
+            int echoSide = BlockUltrasonicSensor.rightOf(front);
+            TileEntityRoboPort trigger = null, echo = null;
+            int triggerMatches = 0, echoMatches = 0;
+            for (TileEntityRoboPort port : RoboPortRegistry.loadedPorts(board)) {
+                if (!port.getRole().isDigital()) continue;
+                BlockPosition portPosition = new BlockPosition(port.xCoord, port.yCoord, port.zCoord);
+                int outward = port.getOutwardSide();
+                if (outward < 0) continue;
+                if (manager.shareTerminalNode(sensorPosition, triggerSide, portPosition, outward)) {
+                    triggerMatches++;
+                    trigger = port;
+                }
+                if (manager.shareTerminalNode(sensorPosition, echoSide, portPosition, outward)) {
+                    echoMatches++;
+                    echo = port;
+                }
+            }
+            if (triggerMatches != 1 || echoMatches != 1 || trigger == echo) continue;
+            UltrasonicMeasurementModel.Measurement measurement = sensor.sample();
+            UltrasonicPeripheral candidate = new UltrasonicPeripheral(true, trigger.getLogicalPin(),
+                    echo.getLogicalPin(), measurement.echo ? measurement.echoCycles : 0L);
+            if (found != null) return null;
+            found = candidate;
+        }
+        return found;
+    }
+
     static final class Transfer {
         final boolean high;
         final boolean indeterminate;
@@ -114,7 +162,7 @@ public final class RoboBoardIoBridge {
         static Snapshot empty(int stableMask) {
             boolean[] digital = new boolean[AvrInputs.DIGITAL_PIN_COUNT];
             for (int pin = 0; pin < digital.length; pin++) digital[pin] = (stableMask & (1 << pin)) != 0;
-            return new Snapshot(new AvrInputs(digital, new int[AvrInputs.ANALOG_CHANNEL_COUNT]),
+            return new Snapshot(new AvrInputs(digital, new int[AvrInputs.ANALOG_CHANNEL_COUNT], null),
                     stableMask, 0, 0, 0);
         }
     }

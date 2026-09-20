@@ -22,6 +22,12 @@ public final class AvrMachineState {
     boolean adcRunning;
     long adcCompleteCycle;
     int adcSample;
+    int ultrasonicTriggerPin = -1;
+    int ultrasonicEchoPin = -1;
+    boolean ultrasonicTriggerHigh;
+    long ultrasonicTriggerRiseCycle = -1L;
+    long ultrasonicEchoStartCycle = -1L;
+    long ultrasonicEchoEndCycle = -1L;
 
     public AvrMachineState() {
         mmio[0xc0 - 0x20] = 0x20; // UCSR0A: transmitter data register is empty.
@@ -118,6 +124,12 @@ public final class AvrMachineState {
         target.adcRunning = source.adcRunning;
         target.adcCompleteCycle = source.adcCompleteCycle;
         target.adcSample = source.adcSample;
+        target.ultrasonicTriggerPin = source.ultrasonicTriggerPin;
+        target.ultrasonicEchoPin = source.ultrasonicEchoPin;
+        target.ultrasonicTriggerHigh = source.ultrasonicTriggerHigh;
+        target.ultrasonicTriggerRiseCycle = source.ultrasonicTriggerRiseCycle;
+        target.ultrasonicEchoStartCycle = source.ultrasonicEchoStartCycle;
+        target.ultrasonicEchoEndCycle = source.ultrasonicEchoEndCycle;
     }
 
     @Override
@@ -132,6 +144,12 @@ public final class AvrMachineState {
                 && timer2PrescaleCycles == that.timer2PrescaleCycles
                 && adcRunning == that.adcRunning && adcCompleteCycle == that.adcCompleteCycle
                 && adcSample == that.adcSample && Arrays.equals(registers, that.registers)
+                && ultrasonicTriggerPin == that.ultrasonicTriggerPin
+                && ultrasonicEchoPin == that.ultrasonicEchoPin
+                && ultrasonicTriggerHigh == that.ultrasonicTriggerHigh
+                && ultrasonicTriggerRiseCycle == that.ultrasonicTriggerRiseCycle
+                && ultrasonicEchoStartCycle == that.ultrasonicEchoStartCycle
+                && ultrasonicEchoEndCycle == that.ultrasonicEchoEndCycle
                 && Arrays.equals(sram, that.sram) && Arrays.equals(eeprom, that.eeprom)
                 && Arrays.equals(mmio, that.mmio);
     }

@@ -159,6 +159,14 @@ public final class ElectricalNetworkManager {
         return cache != null && cache.members.contains(second);
     }
 
+    public boolean shareTerminalNode(BlockPosition first, int firstSide, BlockPosition second, int secondSide) {
+        NetworkCache cache = published.get(first);
+        if (cache == null || cache != published.get(second)) return false;
+        NodeId a = terminalNode(cache, first, firstSide);
+        NodeId b = terminalNode(cache, second, secondSide);
+        return a != null && a.equals(b);
+    }
+
     public long getSolveCount() { return solveCount; }
 
     public NodalCircuitResult getNodalResult(BlockPosition position) {
@@ -285,6 +293,16 @@ public final class ElectricalNetworkManager {
                     system.resistor(id, a, cursor, snapshot.getParameters().get("resistanceA"));
                     system.resistor(new BranchId(snapshot.getPosition(), snapshot.getKind(), 1), cursor, terminalB,
                             snapshot.getParameters().get("resistanceB"));
+                }
+                else if ("ultrasonic_sensor".equals(snapshot.getKind())) {
+                    NodeId ground = circuit.getNode(terminals.get(1).getId());
+                    NodeId trigger = circuit.getNode(terminals.get(2).getId());
+                    NodeId echo = circuit.getNode(terminals.get(3).getId());
+                    system.resistor(id, a, ground, snapshot.getParameters().get("supplyResistance"));
+                    system.resistor(new BranchId(snapshot.getPosition(), snapshot.getKind(), 1), trigger, ground,
+                            snapshot.getParameters().get("signalResistance"));
+                    system.resistor(new BranchId(snapshot.getPosition(), snapshot.getKind(), 2), echo, ground,
+                            snapshot.getParameters().get("signalResistance"));
                 }
                 else if ("switch".equals(snapshot.getKind())) system.switchBranch(id, a, b, Boolean.parseBoolean(snapshot.getState().get("closed")));
                 else if ("breaker".equals(snapshot.getKind())) system.breaker(id, a, b, Boolean.parseBoolean(snapshot.getState().get("closed")));

@@ -388,7 +388,7 @@ public final class RoboBoardState {
     }
 
     private static void validateCheckpoint(byte[] value, CRLFirmware firmware) {
-        if (value == null || value.length != AvrCheckpointCodec.ENCODED_SIZE || value.length > MAX_CHECKPOINT_BYTES)
+        if (value == null || !AvrCheckpointCodec.isSupportedLength(value.length) || value.length > MAX_CHECKPOINT_BYTES)
             throw new IllegalArgumentException("Checkpoint is not canonical");
         try {
             AvrMachineState machine = AvrCheckpointCodec.decode(value);

@@ -5,6 +5,7 @@ import cpw.mods.fml.common.gameevent.TickEvent;
 import net.minecraftforge.event.world.BlockEvent;
 import net.minecraftforge.event.world.ChunkEvent;
 import net.minecraftforge.event.world.WorldEvent;
+import br.com.craftonica.tile.UltrasonicSensorRegistry;
 
 public final class ElectricalNetworkEvents {
     @SubscribeEvent
@@ -48,5 +49,6 @@ public final class ElectricalNetworkEvents {
     @SubscribeEvent
     public void onWorldUnload(WorldEvent.Unload event) {
         ElectricalNetworkManager.unload(event.world);
+        UltrasonicSensorRegistry.unload(event.world);
     }
 }

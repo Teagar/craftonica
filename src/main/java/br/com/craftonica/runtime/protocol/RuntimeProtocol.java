@@ -8,6 +8,7 @@ import br.com.craftonica.runtime.core.AvrInputs;
 import br.com.craftonica.runtime.core.AvrMachineState;
 import br.com.craftonica.runtime.core.GpioChange;
 import br.com.craftonica.runtime.core.PwmDescriptor;
+import br.com.craftonica.runtime.core.UltrasonicPeripheral;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -28,7 +29,7 @@ public final class RuntimeProtocol {
     public static final int MAX_FRAME_BYTES = 131072;
     public static final int MAX_FAULT_BYTES = 512;
     private static final int MAGIC = 0x43524c52; // CRLR
-    private static final int VERSION = 1;
+    private static final int VERSION = 2;
     private static final int REQUEST = 1;
     private static final int RESULT = 2;
     private static final int HASH_BYTES = 32;
@@ -46,6 +47,14 @@ public final class RuntimeProtocol {
         int[] analog = request.inputs.getAnalogMicrovolts();
         for (boolean value : digital) out.writeBoolean(value);
         for (int value : analog) out.writeInt(value);
+        UltrasonicPeripheral ultrasonic = request.inputs.getUltrasonic();
+        out.writeBoolean(ultrasonic != null);
+        if (ultrasonic != null) {
+            out.writeBoolean(ultrasonic.isEnabled());
+            out.writeByte(ultrasonic.getTriggerPin());
+            out.writeByte(ultrasonic.getEchoPin());
+            out.writeLong(ultrasonic.getEchoDurationCycles());
+        }
         writeFrame(output, REQUEST, bytes.toByteArray());
     }
 
@@ -55,17 +64,20 @@ public final class RuntimeProtocol {
         long target = in.readLong();
         byte[] firmwareBytes = readBytes(in, CRLFirmware.HEADER_LENGTH + CRLFirmware.SEGMENT_ENTRY_LENGTH + 32256);
         byte[] checkpoint = readBytes(in, AvrCheckpointCodec.ENCODED_SIZE);
-        if (checkpoint.length != AvrCheckpointCodec.ENCODED_SIZE) throw new ProtocolException("non-canonical checkpoint length");
+        if (!AvrCheckpointCodec.isSupportedLength(checkpoint.length)) throw new ProtocolException("non-canonical checkpoint length");
         boolean[] digital = new boolean[AvrInputs.DIGITAL_PIN_COUNT];
         int[] analog = new int[AvrInputs.ANALOG_CHANNEL_COUNT];
         for (int i = 0; i < digital.length; i++) digital[i] = in.readBoolean();
         for (int i = 0; i < analog.length; i++) analog[i] = in.readInt();
+        UltrasonicPeripheral ultrasonic = null;
+        if (in.readBoolean()) ultrasonic = new UltrasonicPeripheral(in.readBoolean(), in.readUnsignedByte(),
+                in.readUnsignedByte(), in.readLong());
         requireEnd(in);
         CRLFirmware firmware = CRLFirmware.decode(firmwareBytes);
         AvrMachineState state = AvrCheckpointCodec.decode(checkpoint);
         long delta = target - state.getCycles();
         if (delta < 0 || delta > 50000) throw new ProtocolException("target exceeds one absolute cycle quantum");
-        return new Request(identity, target, firmware.getBytes(), checkpoint, new AvrInputs(digital, analog));
+        return new Request(identity, target, firmware.getBytes(), checkpoint, new AvrInputs(digital, analog, ultrasonic));
     }
 
     public static void writeResult(OutputStream output, Result result) throws IOException {
@@ -101,7 +113,7 @@ public final class RuntimeProtocol {
         long completedAt = in.readLong();
         boolean d13 = in.readBoolean();
         byte[] checkpoint = readBytes(in, AvrCheckpointCodec.ENCODED_SIZE);
-        if (checkpoint.length != AvrCheckpointCodec.ENCODED_SIZE) throw new ProtocolException("non-canonical result checkpoint");
+        if (!AvrCheckpointCodec.isSupportedLength(checkpoint.length)) throw new ProtocolException("non-canonical result checkpoint");
         try {
             AvrMachineState decoded = AvrCheckpointCodec.decode(checkpoint);
             if (decoded.getCycles() != completedAt) throw new ProtocolException("result cycle does not match checkpoint");

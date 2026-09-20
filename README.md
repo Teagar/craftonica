@@ -110,6 +110,8 @@ reiniciar. Se o serviço legado de assets estiver indisponível, use:
 - RoboPort físico, limitado a uma porta por face da RoboBoard, configurável como
   D0-D13, A0-A5, alimentação de 5 V ou GND.
 - Sensores analógicos de luz e temperatura com saída determinística de 0-5 V.
+- Sensor ultrassônico HC-SR04 com TRIG/ECHO temporizados em ciclos AVR, resposta
+  acústica por material e trilhos de calibração de 5-50 cm.
 - Buzzer de 220 ohms e motor CC de 100 ohms como cargas educacionais com
   indicação visual de atividade.
 
@@ -156,7 +158,8 @@ significam:
 | Chave inglesa | Ausente | Protótipo | Possui sprite, mas ainda não possui modelo próprio. |
 | Roteador de fios | Ausente | Protótipo | Possui sprite, mas ainda não possui modelo próprio. |
 | Manual do Craftônica | Ausente | Protótipo | Possui sprite e interface de livro vanilla. |
-| Sensor de distância | Ausente | Ausente | Planejado no roadmap; ainda não registrado. |
+| Sensor de distância HC-SR04 | Protótipo | Protótipo | Quatro terminais, transdutores, pulsos e resposta acústica implementados. |
+| Trilhos acústicos (4 materiais) | Protótipo | Protótipo | Alvos configuráveis de 5-50 cm e incidência de 0-60°. |
 | Servo | Ausente | Ausente | Planejado no roadmap; ainda não registrado. |
 | Ponte H | Ausente | Ausente | Planejada no roadmap; ainda não registrada. |
 
@@ -177,7 +180,8 @@ placa; assim `setup()` ainda pode configurar saídas e pull-ups.
 
 Os exemplos Arduino estão em [`examples/arduino`](examples/arduino). O PWM
 reconhecido usa a média CC de `0..255`; buzzer e motor não simulam áudio ou
-  mecânica. Servo, ponte H, `tone()` e `pulseIn()` permanecem fora desta versão.
+  mecânica. `pulseIn()` é suportado para o ECHO temporizado do HC-SR04; servo,
+  ponte H e `tone()` permanecem fora desta versão.
 
 ### Editor de sketch e Serial
 
@@ -193,6 +197,10 @@ local e `Esc` fecha. A aba Serial é
 explicitamente apenas TX, sem entrada RX. Ela exibe bytes transmitidos de forma
 segura, com offsets; o histórico do servidor é limitado aos 8 KiB mais recentes e
 avisa quando dados antigos foram truncados.
+
+Na aba Serial, `Ctrl+C` copia o histórico sanitizado, permitindo exportar as linhas
+CSV produzidas pelo sketch. O roteiro completo do HC-SR04 está em
+[`docs/laboratorio-hc-sr04.md`](docs/laboratorio-hc-sr04.md).
 
 ## Lições verificáveis
 

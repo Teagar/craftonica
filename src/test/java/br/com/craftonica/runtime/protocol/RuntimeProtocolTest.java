@@ -4,6 +4,7 @@ import br.com.craftonica.firmware.CRLFirmware;
 import br.com.craftonica.runtime.core.AvrCheckpointCodec;
 import br.com.craftonica.runtime.core.AvrInputs;
 import br.com.craftonica.runtime.core.AvrMachineState;
+import br.com.craftonica.runtime.core.UltrasonicPeripheral;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
@@ -22,6 +23,9 @@ public final class RuntimeProtocolTest {
         RuntimeProtocol.Request decoded = RuntimeProtocol.readRequest(new ByteArrayInputStream(encoded.toByteArray()));
         assertEquals(3, decoded.absoluteTarget);
         assertEquals(9, decoded.identity.generation);
+        assertEquals(7, decoded.inputs.getUltrasonic().getTriggerPin());
+        assertEquals(6, decoded.inputs.getUltrasonic().getEchoPin());
+        assertEquals(46400L, decoded.inputs.getUltrasonic().getEchoDurationCycles());
     }
 
     @Test
@@ -51,6 +55,9 @@ public final class RuntimeProtocolTest {
         byte[] flash = { 0x0c, (byte) 0x94, 0, 0 }; // JMP 0
         CRLFirmware firmware = CRLFirmware.create(new byte[32], flash);
         return new RuntimeProtocol.Request(new RuntimeProtocol.Identity(0, 1, 2, 3, 9), target,
-                firmware.getBytes(), AvrCheckpointCodec.encode(new AvrMachineState()), AvrInputs.allLow());
+                firmware.getBytes(), AvrCheckpointCodec.encode(new AvrMachineState()),
+                new AvrInputs(new boolean[AvrInputs.DIGITAL_PIN_COUNT],
+                        new int[AvrInputs.ANALOG_CHANNEL_COUNT],
+                        new UltrasonicPeripheral(true, 7, 6, 46400L)));
     }
 }

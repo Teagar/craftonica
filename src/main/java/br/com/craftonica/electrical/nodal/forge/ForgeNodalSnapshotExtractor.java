@@ -9,6 +9,7 @@ import br.com.craftonica.tile.TileEntityElectricalLever;
 import br.com.craftonica.tile.TileEntityPotentiometer;
 import br.com.craftonica.tile.TileEntityAnalogSensor;
 import br.com.craftonica.tile.TileEntityRoboPort;
+import br.com.craftonica.tile.TileEntityUltrasonicSensor;
 import net.minecraft.block.Block;
 import net.minecraft.tileentity.TileEntity;
 import java.util.*;
@@ -119,6 +120,12 @@ public final class ForgeNodalSnapshotExtractor {
                 }
                 state.put("role", port.getRole().name());
             }
+        } else if (block instanceof BlockUltrasonicSensor) {
+            TileEntity tile = world.getTileEntity(p);
+            if (!(tile instanceof TileEntityUltrasonicSensor)) throw new IllegalArgumentException("HC-SR04 sem estado");
+            kind = "ultrasonic_sensor";
+            parameters.put("supplyResistance", BlockUltrasonicSensor.SUPPLY_RESISTANCE_OHMS);
+            parameters.put("signalResistance", BlockUltrasonicSensor.SIGNAL_RESISTANCE_OHMS);
         } else if (block instanceof BlockAnalogSensor) {
             TileEntity tile = world.getTileEntity(p);
             if (!(tile instanceof TileEntityAnalogSensor)) throw new IllegalArgumentException("Sensor sem estado");
@@ -188,6 +195,12 @@ public final class ForgeNodalSnapshotExtractor {
             int outward = ((TileEntityRoboPort) tile).getOutwardSide();
             if (outward < 0) throw new IllegalArgumentException("RoboPort sem placa valida");
             terminals.add(new TerminalSnapshot(p, face(outward), 0));
+        } else if (block instanceof BlockUltrasonicSensor) {
+            int front = BlockUltrasonicSensor.normalizeFront(metadata & 7);
+            terminals.add(new TerminalSnapshot(p, Face.UP, 0));
+            terminals.add(new TerminalSnapshot(p, Face.DOWN, 1));
+            terminals.add(new TerminalSnapshot(p, face(BlockUltrasonicSensor.leftOf(front)), 2));
+            terminals.add(new TerminalSnapshot(p, face(BlockUltrasonicSensor.rightOf(front)), 3));
         } else if (block instanceof BlockElectricalWire) {
             for (int side = 0; side < 6; side++) terminals.add(new TerminalSnapshot(p, face(side), side));
         } else if (block instanceof BlockSingleTerminal) {
