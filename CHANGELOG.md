@@ -11,6 +11,7 @@
 - RFC da plataforma robotica movel, cobrindo montagem, entidade, runtime, tracao diferencial, persistencia e seguranca.
 - HC-SR04 com pose continua, cone acustico, tamanho aparente e deteccao de blocos e entidades em chunks carregados.
 - Chassi robotico como entidade persistente, com proprietario, manifesto versionado, spawn seguro e tracking multiplayer.
+- Ponte H educacional e tracao diferencial com PWM, zona morta, frenagem, consumo, colisao e parada segura.
 
 ## 1.1.0 - 2026-09-19
 

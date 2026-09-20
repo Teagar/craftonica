@@ -48,6 +48,8 @@ public final class CommandCraftonica extends CommandBase {
             sonar(player);
         } else if (args.length == 2 && "robot".equals(args[0]) && "create".equals(args[1])) {
             robot(player);
+        } else if (args.length == 3 && "robot".equals(args[0]) && "drive".equals(args[1])) {
+            driveRobot(player, args[2]);
         } else if (args.length == 2 && "lesson".equals(args[0]) && "list".equals(args[1])) {
             for (String id : LessonCatalog.ids()) player.addChatMessage(new ChatComponentText(id));
             String assigned = TeacherActivityData.get(player.worldObj).getAssignedId();
@@ -111,6 +113,22 @@ public final class CommandCraftonica extends CommandBase {
         EntityMobileRobot robot = MobileRobotSpawner.spawnInFront((WorldServer) player.worldObj, player);
         player.addChatMessage(new ChatComponentTranslation(robot == null
                 ? "message.craftonica.robot.spawn_blocked" : "message.craftonica.robot.created"));
+    }
+
+    @SuppressWarnings("unchecked")
+    private void driveRobot(EntityPlayerMP player, String action) {
+        if (!("forward".equals(action) || "reverse".equals(action) || "left".equals(action)
+                || "right".equals(action) || "stop".equals(action))) throw new WrongUsageException(getCommandUsage(player));
+        EntityMobileRobot nearest = null;
+        double distance = 256.0;
+        for (Object value : player.worldObj.loadedEntityList) if (value instanceof EntityMobileRobot) {
+            EntityMobileRobot candidate = (EntityMobileRobot) value;
+            if (!candidate.getRobotState().getOwnerId().equals(player.getUniqueID())) continue;
+            double next = candidate.getDistanceSqToEntity(player);
+            if (next < distance) { distance = next; nearest = candidate; }
+        }
+        if (nearest == null) player.addChatMessage(new ChatComponentTranslation("message.craftonica.robot.not_found"));
+        else { nearest.commandTestDrive(action); player.addChatMessage(new ChatComponentTranslation("message.craftonica.robot.drive", action)); }
     }
 
     private void check(EntityPlayerMP player, String[] args) {

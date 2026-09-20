@@ -120,7 +120,7 @@ reiniciar. Se o serviço legado de assets estiver indisponível, use:
 - Buzzer de 220 ohms e motor CC de 100 ohms como cargas educacionais com
   indicação visual de atividade.
 - Chassi robótico servidor-autoritativo com identidade, proprietário, manifesto
-  versionado, persistência e sincronização visual; movimento ainda não implementado.
+  versionado, persistência, sincronização visual e tração diferencial de teste.
 
 Todos aparecem na aba criativa `Craftônica` e possuem texturas autorais 16×16.
 Ao passar o cursor sobre um componente, o inventário explica sua função, valor e
