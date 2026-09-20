@@ -6,6 +6,7 @@
 - Configurador de RoboPort com tela para selecionar explicitamente D0-D13, A0-A5, 5 V e GND.
 - Resistores com corpo e aneis fisicos consistentes no topo, base e faces laterais.
 - LED apaga e reacende corretamente ao abrir e fechar o botao eletrico.
+- LEDs redesenhados como cubos de vidro translucido com emissor interno e polaridade nas faces.
 
 ## 1.1.0 - 2026-09-19
 

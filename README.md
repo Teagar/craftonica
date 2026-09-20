@@ -140,7 +140,7 @@ significam:
 | Resistor de 1 kohm | **Final** | **Final** | Corpo axial e anéis físicos contínuos aprovados. |
 | Resistor de 10 kohms | **Final** | **Final** | Corpo axial e anéis físicos contínuos aprovados. |
 | Botão elétrico | Protótipo | Protótipo | Estados aberto e fechado já distinguíveis. |
-| LED (16 cores) | Protótipo | Protótipo | Corpo, terminais e estados elétricos implementados. |
+| LED de vidro (16 cores) | Protótipo | Protótipo | Cubo translúcido, emissor interno, polaridade e estados elétricos implementados. |
 | Disjuntor | Protótipo | Protótipo | Visual funcional sujeito a acabamento. |
 | Diodo | Protótipo | Protótipo | Polaridade já indicada no mundo. |
 | Chave de alavanca | Protótipo | Protótipo | Estados funcionais já modelados. |

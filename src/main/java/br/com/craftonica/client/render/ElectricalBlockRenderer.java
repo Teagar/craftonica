@@ -308,16 +308,36 @@ public final class ElectricalBlockRenderer implements ISimpleBlockRenderingHandl
 
     private void renderLed(BlockLed block, int metadata, IBlockAccess world, int x, int y, int z,
                            PartRenderer parts) {
-        IIcon body = world == null ? block.getBodyIcon() : block.getBodyIcon(world, x, y, z);
-        int bodyColor = world == null ? WireColor.rgb(metadata)
+        IIcon glass = world == null ? block.getBodyIcon() : block.getBodyIcon(world, x, y, z);
+        IIcon core = block.getCoreIcon(world, x, y, z);
+        int glassColor = world == null ? BlockLed.inactiveColor(WireColor.rgb(metadata))
                 : block.getVisualColor(world, x, y, z);
-        parts.renderTinted(5 * P, 5 * P, 5 * P, 11 * P, 8 * P, 11 * P, body, bodyColor);
-        parts.renderTinted(6 * P, 8 * P, 6 * P, 10 * P, 13 * P, 10 * P, body, bodyColor);
-        parts.renderTinted(7 * P, 13 * P, 7 * P, 9 * P, 15 * P, 9 * P, body, bodyColor);
+        int coreColor = world == null ? BlockLed.inactiveCoreColor(WireColor.rgb(metadata))
+                : block.getCoreColor(world, x, y, z);
+
+        parts.renderTinted(7 * P, 2 * P, 7 * P, 9 * P, 9 * P, 9 * P, core, coreColor);
+        parts.renderTinted(6 * P, 8 * P, 6 * P, 10 * P, 12 * P, 10 * P, core, coreColor);
+        parts.renderTinted(6.75 * P, 12 * P, 6.75 * P, 9.25 * P, 14.5 * P, 9.25 * P,
+                core, coreColor);
+
         int anode = world == null ? 3 : normalizeHorizontal(metadata & 7);
-        renderLead(parts, anode, block.getAnodeIcon(), 6 * P, 10 * P);
-        renderLead(parts, opposite(anode), block.getCathodeIcon(), 7 * P, 9 * P);
+        renderLedPolarity(parts, anode, block.getAnodeIcon());
+        renderLedPolarity(parts, opposite(anode), block.getCathodeIcon());
+        parts.renderTinted(0, 0, 0, 1, 1, 1, glass, glassColor);
     }
+
+    private void renderLedPolarity(PartRenderer parts, int side, IIcon icon) {
+        if (side == 2) {
+            parts.render(5 * P, 5 * P, 0.6 * P, 11 * P, 11 * P, 1.2 * P, icon);
+        } else if (side == 3) {
+            parts.render(5 * P, 5 * P, 14.8 * P, 11 * P, 11 * P, 15.4 * P, icon);
+        } else if (side == 4) {
+            parts.render(0.6 * P, 5 * P, 5 * P, 1.2 * P, 11 * P, 11 * P, icon);
+        } else {
+            parts.render(14.8 * P, 5 * P, 5 * P, 15.4 * P, 11 * P, 11 * P, icon);
+        }
+    }
+
 
     private void renderLead(PartRenderer parts, int side, IIcon icon, double minCross, double maxCross) {
         if (side == 2) {
