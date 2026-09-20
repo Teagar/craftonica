@@ -11,12 +11,22 @@ public strictfp final class UltrasonicMeasurementModel {
 
     public static Measurement measure(double trueCm, double incidenceDegrees,
                                       AcousticMaterialProfile material, long seed) {
+        return measure(trueCm, incidenceDegrees, material, 1.0, seed);
+    }
+
+    public static Measurement measure(double trueCm, double incidenceDegrees,
+                                      AcousticMaterialProfile material, double apparentCoverage,
+                                      long seed) {
         if (material == null || Double.isNaN(trueCm) || Double.isInfinite(trueCm)
-                || trueCm < MIN_CM || trueCm > MAX_CM) return Measurement.noEcho();
+                || Double.isNaN(apparentCoverage) || Double.isInfinite(apparentCoverage)
+                || trueCm < MIN_CM || trueCm > MAX_CM || apparentCoverage <= 0.0) {
+            return Measurement.noEcho();
+        }
         double angle = Math.max(0.0, Math.min(80.0, Math.abs(incidenceDegrees)));
         double angularResponse = Math.max(0.05, StrictMath.cos(StrictMath.toRadians(angle)));
         double distanceLoss = 1.0 / (1.0 + trueCm * trueCm / 90000.0);
-        double confidence = material.getReflectivity() * angularResponse * distanceLoss;
+        double targetResponse = clamp(apparentCoverage, 0.0, 1.0);
+        double confidence = material.getReflectivity() * angularResponse * distanceLoss * targetResponse;
         double dropout = clamp((0.72 - confidence) * 0.70, 0.0, 0.65);
         double uniform = unit(mix(seed));
         if (uniform < dropout) return Measurement.noEcho();
@@ -24,7 +34,7 @@ public strictfp final class UltrasonicMeasurementModel {
         double scale = trueCm / 50.0;
         double bias = material.getBiasAt50Cm() * scale * scale;
         double sigma = material.getSigmaAt50Cm() * Math.max(0.35, scale)
-                / Math.max(0.35, angularResponse);
+                / Math.max(0.35, angularResponse * Math.max(0.45, StrictMath.sqrt(targetResponse)));
         double measured = clamp(trueCm + bias + gaussian(seed ^ 0x9e3779b97f4a7c15L) * sigma,
                 MIN_CM, MAX_CM);
         long echoCycles = Math.max(1L, Math.round(measured * MICROSECONDS_PER_CM

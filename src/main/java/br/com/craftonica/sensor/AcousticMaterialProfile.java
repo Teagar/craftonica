@@ -2,6 +2,8 @@ package br.com.craftonica.sensor;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.init.Blocks;
 
 /** Empirical response classes. Values describe tendencies, not prerecorded measurements. */
@@ -42,5 +44,9 @@ public enum AcousticMaterialProfile {
                 || block.getMaterial() == Material.wood) return MDF;
         if (block == Blocks.glass || block == Blocks.stained_glass) return RIGID_PLASTIC;
         return RIGID_WORLD;
+    }
+
+    public static AcousticMaterialProfile forEntity(Entity entity) {
+        return entity instanceof EntityLivingBase ? ABSORBENT_WORLD : RIGID_WORLD;
     }
 }
