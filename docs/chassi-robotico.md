@@ -14,6 +14,31 @@ O comando só cria a entidade quando todo o volume de colisão está em chunks j
 carregados, sem blocos, entidades ou líquidos. A montagem física substituirá esse
 caminho temporário quando o sistema de conversão for implementado.
 
+Para validar provisoriamente a mecânica antes da ligação do firmware, use perto de
+um chassi de sua propriedade:
+
+```text
+/craftonica robot drive forward
+/craftonica robot drive reverse
+/craftonica robot drive left
+/craftonica robot drive right
+/craftonica robot drive stop
+```
+
+Esses comandos alimentam o mesmo modelo de ponte H que receberá GPIO e PWM na
+próxima etapa. Eles não implementam navegação ou desvio de obstáculos ocultos.
+
+## Tração diferencial
+
+Cada canal da ponte H trata direção, PWM de 0–255, zona morta abaixo de 32,
+roda livre, frenagem, ausência de alimentação, ligação inválida e consumo
+simplificado. As rodas são limitadas a 1,5 m/s, com aceleração de 3 m/s². Rodas no
+mesmo sentido movem o chassi em linha reta; sentidos opostos giram no próprio eixo.
+
+A entidade só integra física no servidor, em passos de 50 ms. Colisões usam o
+Minecraft, terreno sem apoio e chunks descarregados causam parada segura, e o
+chassi não tenta carregar terreno para continuar andando.
+
 ## Estado persistente
 
 Cada entidade guarda:

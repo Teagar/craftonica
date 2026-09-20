@@ -7,6 +7,7 @@ import net.minecraft.util.ChatComponentTranslation;
 import net.minecraft.world.World;
 
 import java.util.UUID;
+import net.minecraft.util.MathHelper;
 
 /** Server-authoritative persistent shell for the differential chassis. */
 public final class EntityMobileRobot extends Entity {
@@ -19,6 +20,9 @@ public final class EntityMobileRobot extends Entity {
     private double targetX, targetY, targetZ;
     private float targetYaw, targetPitch;
     private int interpolationTicks;
+    private HBridgeModel.Output leftDrive = HBridgeModel.evaluate(false, true, false, false, 0);
+    private HBridgeModel.Output rightDrive = HBridgeModel.evaluate(false, true, false, false, 0);
+    private double leftWheelSpeed, rightWheelSpeed;
 
     public EntityMobileRobot(World world) {
         super(world);
@@ -51,6 +55,7 @@ public final class EntityMobileRobot extends Entity {
             loadGuardTicks--;
             if (loadGuardTicks == 0) state.resumeAfterLoad();
         }
+        integrateDrive();
         state.setPose(posX, posY, posZ, rotationYaw, rotationPitch);
         syncVisualState();
     }
@@ -59,6 +64,7 @@ public final class EntityMobileRobot extends Entity {
         if (!worldObj.isRemote) {
             state.setPose(posX, posY, posZ, rotationYaw, rotationPitch);
             state.suspendForUnload();
+            stopDrive();
             syncVisualState();
         }
     }
@@ -118,6 +124,52 @@ public final class EntityMobileRobot extends Entity {
     public int getVisualStatus() { return dataWatcher.getWatchableObjectInt(WATCH_STATUS); }
     public int getVisualManifestHash() { return dataWatcher.getWatchableObjectInt(WATCH_MANIFEST); }
     public MobileRobotState getRobotState() { return state; }
+
+    public void commandTestDrive(String command) {
+        if (worldObj.isRemote) return;
+        if ("forward".equals(command)) setDrive(true, false, true, false, 255);
+        else if ("reverse".equals(command)) setDrive(false, true, false, true, 255);
+        else if ("left".equals(command)) setDrive(false, true, true, false, 220);
+        else if ("right".equals(command)) setDrive(true, false, false, true, 220);
+        else stopDrive();
+    }
+
+    private void setDrive(boolean l1, boolean l2, boolean r1, boolean r2, int pwm) {
+        leftDrive = HBridgeModel.evaluate(true, true, l1, l2, pwm);
+        rightDrive = HBridgeModel.evaluate(true, true, r1, r2, pwm);
+    }
+
+    private void stopDrive() {
+        leftDrive = HBridgeModel.evaluate(false, true, false, false, 0);
+        rightDrive = HBridgeModel.evaluate(false, true, false, false, 0);
+        leftWheelSpeed = rightWheelSpeed = 0.0;
+    }
+
+    private void integrateDrive() {
+        integrateDriveSubstep(0.025);
+        integrateDriveSubstep(0.025);
+    }
+
+    private void integrateDriveSubstep(double dt) {
+        DifferentialDriveModel.Step step = DifferentialDriveModel.step(leftWheelSpeed, rightWheelSpeed,
+                leftDrive, rightDrive, rotationYaw, dt);
+        leftWheelSpeed = step.leftSpeed; rightWheelSpeed = step.rightSpeed;
+        if (StrictMath.abs(step.deltaX) < 1.0e-12 && StrictMath.abs(step.deltaZ) < 1.0e-12) return;
+        double nextX = posX + step.deltaX, nextZ = posZ + step.deltaZ;
+        int minChunkX = MathHelper.floor_double(nextX - width * 0.5) >> 4;
+        int maxChunkX = MathHelper.floor_double(nextX + width * 0.5) >> 4;
+        int minChunkZ = MathHelper.floor_double(nextZ - width * 0.5) >> 4;
+        int maxChunkZ = MathHelper.floor_double(nextZ + width * 0.5) >> 4;
+        for (int cx = minChunkX; cx <= maxChunkX; cx++) for (int cz = minChunkZ; cz <= maxChunkZ; cz++) {
+            if (!worldObj.getChunkProvider().chunkExists(cx, cz)) { stopDrive(); return; }
+        }
+        if (worldObj.getCollidingBoundingBoxes(this, boundingBox.offset(0.0, -0.11, 0.0)).isEmpty()) {
+            stopDrive(); return;
+        }
+        moveEntity(step.deltaX, 0.0, step.deltaZ);
+        rotationYaw = wrapAngle(rotationYaw + (float) step.deltaYawDegrees);
+        if (isCollidedHorizontally) stopDrive();
+    }
 
     @Override public boolean canBeCollidedWith() { return !isDead; }
     @Override public boolean canBePushed() { return false; }
