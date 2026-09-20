@@ -41,6 +41,10 @@ public final class NodalCircuitBuilder {
             branches.add(new NodalBranch(new BranchId(c.getPosition(),c.getKind(),0),ts.get(0).getId(),ts.get(1).getId()));
             if ("potentiometer".equalsIgnoreCase(c.getKind()) && ts.size() >= 3)
                 branches.add(new NodalBranch(new BranchId(c.getPosition(),c.getKind(),1),ts.get(1).getId(),ts.get(2).getId()));
+            else if ("ultrasonic_sensor".equalsIgnoreCase(c.getKind()) && ts.size() >= 4) {
+                branches.add(new NodalBranch(new BranchId(c.getPosition(),c.getKind(),1),ts.get(2).getId(),ts.get(1).getId()));
+                branches.add(new NodalBranch(new BranchId(c.getPosition(),c.getKind(),2),ts.get(3).getId(),ts.get(1).getId()));
+            }
         }
         Collections.sort(branches,new Comparator<NodalBranch>(){public int compare(NodalBranch a,NodalBranch b){return a.getId().compareTo(b.getId());}});
         if(branches.size()>NodalLimits.MAX_BRANCHES)errors.add(diag(DiagnosticCode.BRANCH_LIMIT,components)); Collections.sort(errors);

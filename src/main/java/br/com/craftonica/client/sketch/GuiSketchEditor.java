@@ -160,6 +160,8 @@ public final class GuiSketchEditor extends GuiScreen {
         }
         if (serialTab) {
             if (ctrl && key == Keyboard.KEY_L) serialHiddenThrough = state.serialEnd;
+            else if (ctrl && key == Keyboard.KEY_C)
+                setClipboardString(SerialSanitizer.sanitize(state.serialBytes()));
             return;
         }
         if (ctrl) {
@@ -297,7 +299,8 @@ public final class GuiSketchEditor extends GuiScreen {
         int capacity = Math.max(1, visibleRows() - 2);
         int begin = Math.max(0, rows.size() - capacity);
         int y = paneTop + 4;
-        String range = "TX ONLY  [" + Math.max(serialHiddenThrough, state.serialStart) + ".." + state.serialEnd + ")";
+        String range = "TX ONLY  [" + Math.max(serialHiddenThrough, state.serialStart) + ".." + state.serialEnd
+                + ")  //  " + tr("craftonica.editor.serial.copy_csv");
         fontRendererObj.drawString(range, paneLeft + 6, y, AMBER);
         y += fontRendererObj.FONT_HEIGHT + 2;
         if (state.serialTruncated) {

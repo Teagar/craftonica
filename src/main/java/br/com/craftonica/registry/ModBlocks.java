@@ -14,6 +14,9 @@ import br.com.craftonica.block.BlockRoboBoard;
 import br.com.craftonica.block.BlockRoboPort;
 import br.com.craftonica.block.BlockAnalogSensor;
 import br.com.craftonica.block.BlockEducationalActuator;
+import br.com.craftonica.block.BlockUltrasonicSensor;
+import br.com.craftonica.block.BlockCalibrationTarget;
+import br.com.craftonica.sensor.AcousticMaterialProfile;
 import br.com.craftonica.item.ItemBlockElectricalWire;
 import br.com.craftonica.item.ItemBlockLed;
 import br.com.craftonica.tile.TileEntityLed;
@@ -25,6 +28,8 @@ import br.com.craftonica.tile.TileEntityRoboPort;
 import br.com.craftonica.tile.TileEntityAnalogSensor;
 import br.com.craftonica.tile.TileEntityEducationalActuator;
 import br.com.craftonica.tile.TileEntityElectricalWire;
+import br.com.craftonica.tile.TileEntityUltrasonicSensor;
+import br.com.craftonica.tile.TileEntityCalibrationTarget;
 import cpw.mods.fml.common.registry.GameRegistry;
 
 public final class ModBlocks {
@@ -50,6 +55,15 @@ public final class ModBlocks {
             "buzzer", "buzzer", "craftonica:buzzer");
     public static final BlockEducationalActuator DC_MOTOR = new BlockEducationalActuator(BlockEducationalActuator.Type.DC_MOTOR,
             "dc_motor", "dcMotor", "craftonica:dc_motor");
+    public static final BlockUltrasonicSensor ULTRASONIC_SENSOR = new BlockUltrasonicSensor();
+    public static final BlockCalibrationTarget TARGET_MDF = new BlockCalibrationTarget("targetMdf",
+            "craftonica:target_mdf", AcousticMaterialProfile.MDF);
+    public static final BlockCalibrationTarget TARGET_PLASTIC = new BlockCalibrationTarget("targetPlastic",
+            "craftonica:target_plastic", AcousticMaterialProfile.RIGID_PLASTIC);
+    public static final BlockCalibrationTarget TARGET_STYROFOAM = new BlockCalibrationTarget("targetStyrofoam",
+            "craftonica:target_styrofoam", AcousticMaterialProfile.STYROFOAM);
+    public static final BlockCalibrationTarget TARGET_FOAM = new BlockCalibrationTarget("targetFoam",
+            "craftonica:target_foam", AcousticMaterialProfile.FOAM);
 
     private ModBlocks() {
     }
@@ -73,6 +87,11 @@ public final class ModBlocks {
         GameRegistry.registerBlock(TEMPERATURE_SENSOR, "temperature_sensor");
         GameRegistry.registerBlock(BUZZER, "buzzer");
         GameRegistry.registerBlock(DC_MOTOR, "dc_motor");
+        GameRegistry.registerBlock(ULTRASONIC_SENSOR, "ultrasonic_sensor");
+        GameRegistry.registerBlock(TARGET_MDF, "target_mdf");
+        GameRegistry.registerBlock(TARGET_PLASTIC, "target_plastic");
+        GameRegistry.registerBlock(TARGET_STYROFOAM, "target_styrofoam");
+        GameRegistry.registerBlock(TARGET_FOAM, "target_foam");
         GameRegistry.registerTileEntity(TileEntityLed.class, "craftonica_led");
         GameRegistry.registerTileEntity(TileEntityCircuitBreaker.class, "craftonica_circuit_breaker");
         GameRegistry.registerTileEntity(TileEntityElectricalLever.class, "craftonica_electrical_lever");
@@ -82,5 +101,7 @@ public final class ModBlocks {
         GameRegistry.registerTileEntity(TileEntityAnalogSensor.class, "craftonica_analog_sensor");
         GameRegistry.registerTileEntity(TileEntityEducationalActuator.class, "craftonica_educational_actuator");
         GameRegistry.registerTileEntity(TileEntityElectricalWire.class, "craftonica_electrical_wire");
+        GameRegistry.registerTileEntity(TileEntityUltrasonicSensor.class, "craftonica_ultrasonic_sensor");
+        GameRegistry.registerTileEntity(TileEntityCalibrationTarget.class, "craftonica_calibration_target");
     }
 }

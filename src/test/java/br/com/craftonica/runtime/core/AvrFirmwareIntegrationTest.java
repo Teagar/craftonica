@@ -73,6 +73,23 @@ public final class AvrFirmwareIntegrationTest {
             transmitted.write(result.getTransmittedBytes());
         }
         assertArrayEquals(new byte[]{'o', 'k', '\r', '\n'}, transmitted.toByteArray());
+
+        byte[] sonar = compile("Sonar", "const byte T=7,E=6; void setup(){pinMode(T,OUTPUT);pinMode(E,INPUT);Serial.begin(9600);}\n"
+                + "void loop(){digitalWrite(T,LOW);delayMicroseconds(2);digitalWrite(T,HIGH);"
+                + "delayMicroseconds(10);digitalWrite(T,LOW);Serial.println(pulseIn(E,HIGH,30000UL));delay(100);}\n");
+        AvrMachineState sonarState = new AvrMachineState();
+        AvrInterpreter sonarInterpreter = new AvrInterpreter(sonar);
+        AvrInputs sonarInputs = new AvrInputs(new boolean[AvrInputs.DIGITAL_PIN_COUNT],
+                new int[AvrInputs.ANALOG_CHANNEL_COUNT], new UltrasonicPeripheral(true, 7, 6, 46400L));
+        java.io.ByteArrayOutputStream sonarTx = new java.io.ByteArrayOutputStream();
+        for (int slice = 0; slice < 200 && sonarTx.size() == 0; slice++) {
+            AvrExecutionResult result = sonarInterpreter.executeToAbsoluteTarget(sonarState,
+                    sonarState.getCycles() + AvrInterpreter.QUANTUM_CYCLES, sonarInputs);
+            sonarTx.write(result.getTransmittedBytes());
+        }
+        String duration = new String(sonarTx.toByteArray(), StandardCharsets.US_ASCII).trim();
+        assertTrue("pulseIn did not receive an ultrasonic ECHO: " + duration,
+                Long.parseLong(duration) >= 2800L && Long.parseLong(duration) <= 3000L);
     }
 
     private byte[] compile(String name, String source) throws Exception {

@@ -48,6 +48,7 @@ public final class AvrInterpreter {
             throw new IllegalArgumentException("absolute target exceeds one 50000-cycle quantum");
         }
         AvrMachineState working = state.copy();
+        configureUltrasonic(working, inputs.getUltrasonic());
         Output output = new Output();
         while (working.cycles < absoluteTarget) {
             step(working, inputs, output);
@@ -325,7 +326,7 @@ public final class AvrInterpreter {
         }
         if (address == 0x24 || address == 0x25 || address == 0x27 || address == 0x28
                 || address == 0x2a || address == 0x2b) {
-            emitGpioChanges(state, address, value, output);
+            emitGpioChanges(state, address, value, inputs, output);
         }
         if (isTimerRegister(address) && (state.mmio[address - 0x20] & 0xff) != value) {
             int oldControl = timerControl(state, address);
@@ -362,7 +363,8 @@ public final class AvrInterpreter {
         state.mmio[address - 0x20] = (byte) value;
     }
 
-    private void emitGpioChanges(AvrMachineState state, int address, int value, Output output) throws AvrFault {
+    private void emitGpioChanges(AvrMachineState state, int address, int value, AvrInputs inputs,
+                                 Output output) throws AvrFault {
         int old = state.mmio[address - 0x20] & 0xff;
         int changed = old ^ value;
         int count = Integer.bitCount(changed & portMask(address));
@@ -377,6 +379,7 @@ public final class AvrInterpreter {
                 boolean isOutput = (state.mmio[ddrAddress - 0x20] & (1 << bit)) != 0;
                 boolean high = (state.mmio[portAddress - 0x20] & (1 << bit)) != 0;
                 output.gpio.add(new GpioChange(state.cycles, pin, isOutput, high));
+                observeUltrasonicTrigger(state, inputs.getUltrasonic(), pin, isOutput, high);
             }
         }
     }
@@ -521,9 +524,57 @@ public final class AvrInterpreter {
             int pin = pinForPort(base, bit);
             if (pin >= 0 && (((ddr & (1 << bit)) != 0 && (port & (1 << bit)) != 0)
                     || ((ddr & (1 << bit)) == 0
-                    && (inputs.isDigitalHigh(pin) || (port & (1 << bit)) != 0)))) value |= 1 << bit;
+                    && (digitalInputHigh(s, inputs, pin) || (port & (1 << bit)) != 0)))) value |= 1 << bit;
         }
         return value;
+    }
+
+    private static boolean digitalInputHigh(AvrMachineState state, AvrInputs inputs, int pin) {
+        UltrasonicPeripheral ultrasonic = inputs.getUltrasonic();
+        if (ultrasonic != null && ultrasonic.isEnabled() && pin == ultrasonic.getEchoPin()
+                && state.ultrasonicEchoStartCycle >= 0L
+                && state.cycles >= state.ultrasonicEchoStartCycle
+                && state.cycles < state.ultrasonicEchoEndCycle) return true;
+        return inputs.isDigitalHigh(pin);
+    }
+
+    private static void configureUltrasonic(AvrMachineState state, UltrasonicPeripheral peripheral) {
+        int trigger = peripheral == null ? -1 : peripheral.getTriggerPin();
+        int echo = peripheral == null ? -1 : peripheral.getEchoPin();
+        if (state.ultrasonicTriggerPin != trigger || state.ultrasonicEchoPin != echo
+                || peripheral == null || !peripheral.isEnabled()) {
+            state.ultrasonicTriggerPin = trigger;
+            state.ultrasonicEchoPin = echo;
+            state.ultrasonicTriggerHigh = false;
+            state.ultrasonicTriggerRiseCycle = -1L;
+            state.ultrasonicEchoStartCycle = -1L;
+            state.ultrasonicEchoEndCycle = -1L;
+        }
+    }
+
+    private static void observeUltrasonicTrigger(AvrMachineState state, UltrasonicPeripheral peripheral,
+                                                 int pin, boolean output, boolean high) {
+        if (peripheral == null || !peripheral.isEnabled() || pin != peripheral.getTriggerPin()) return;
+        if (!output) {
+            state.ultrasonicTriggerHigh = false;
+            state.ultrasonicTriggerRiseCycle = -1L;
+            return;
+        }
+        if (high && !state.ultrasonicTriggerHigh) {
+            state.ultrasonicTriggerHigh = true;
+            state.ultrasonicTriggerRiseCycle = state.cycles;
+        } else if (!high && state.ultrasonicTriggerHigh) {
+            long width = state.ultrasonicTriggerRiseCycle < 0L ? 0L
+                    : state.cycles - state.ultrasonicTriggerRiseCycle;
+            state.ultrasonicTriggerHigh = false;
+            state.ultrasonicTriggerRiseCycle = -1L;
+            if (width >= UltrasonicPeripheral.MIN_TRIGGER_CYCLES
+                    && peripheral.getEchoDurationCycles() > 0L) {
+                state.ultrasonicEchoStartCycle = state.cycles + UltrasonicPeripheral.ECHO_DELAY_CYCLES;
+                state.ultrasonicEchoEndCycle = state.ultrasonicEchoStartCycle
+                        + peripheral.getEchoDurationCycles();
+            }
+        }
     }
 
     private static int pinForPort(int base, int bit) {
