@@ -41,10 +41,18 @@ a área de transferência; cole-o numa planilha para calcular erro, regressão e
 
 ## Modo robô
 
-Sem um trilho adjacente, o sensor mede o primeiro bloco encontrado à frente, entre
-2 e 400 cm. Um bloco do Minecraft corresponde a 100 cm neste modo. Madeira, vidro,
-lã, esponja e outros blocos são classificados em perfis acústicos; superfícies fora
-do alcance ou ecos excessivamente degradados retornam timeout em `pulseIn()`.
+Sem um trilho adjacente, o sensor emite um cone de 15° com 13 raios determinísticos
+e procura superfícies entre 2 e 400 cm. Sua pose aceita yaw e pitch contínuos, sem
+ficar restrita às quatro direções dos blocos; o bloco fixo apenas adapta sua face à
+mesma consulta que será usada pelo robô móvel. Um bloco do Minecraft corresponde a
+100 cm neste modo.
+
+Blocos e entidades com colisão podem refletir o eco. Os raios que atingem a mesma
+superfície são agrupados para estimar quanto do cone o alvo ocupa. Alvos menores,
+inclinados ou distantes têm menor confiança e maior chance de timeout. Madeira,
+vidro, lã, esponja e outros blocos continuam classificados em perfis acústicos;
+entidades vivas usam um perfil absorvente. A consulta considera somente chunks já
+carregados e nunca gera terreno para procurar um obstáculo.
 
 ## Protocolo sugerido
 

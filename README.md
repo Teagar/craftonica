@@ -113,7 +113,8 @@ reiniciar. Se o serviço legado de assets estiver indisponível, use:
   D0-D13, A0-A5, alimentação de 5 V ou GND.
 - Sensores analógicos de luz e temperatura com saída determinística de 0-5 V.
 - Sensor ultrassônico HC-SR04 com TRIG/ECHO temporizados em ciclos AVR, resposta
-  acústica por material e trilhos de calibração de 5-50 cm.
+  acústica por material, cone de 15° para blocos e entidades, pose contínua e
+  trilhos de calibração de 5-50 cm.
 - Buzzer de 220 ohms e motor CC de 100 ohms como cargas educacionais com
   indicação visual de atividade.
 

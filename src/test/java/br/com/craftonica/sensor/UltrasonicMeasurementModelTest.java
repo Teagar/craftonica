@@ -35,6 +35,14 @@ public final class UltrasonicMeasurementModelTest {
                 AcousticMaterialProfile.MDF, 1L).echo);
     }
 
+    @Test public void smallerApparentTargetsLoseMoreEchoes() {
+        int full = echoes(AcousticMaterialProfile.RIGID_WORLD, 200.0, 0.0, 1.0);
+        int medium = echoes(AcousticMaterialProfile.RIGID_WORLD, 200.0, 0.0, 0.50);
+        int small = echoes(AcousticMaterialProfile.RIGID_WORLD, 200.0, 0.0, 0.20);
+        assertTrue(full > medium);
+        assertTrue(medium > small);
+    }
+
     private List<Double> samples(AcousticMaterialProfile profile, double cm, double angle) {
         List<Double> values = new ArrayList<Double>();
         for (long seed = 0; seed < 100; seed++) {
@@ -46,6 +54,14 @@ public final class UltrasonicMeasurementModelTest {
 
     private int echoes(AcousticMaterialProfile profile, double cm, double angle) {
         return samples(profile, cm, angle).size();
+    }
+
+    private int echoes(AcousticMaterialProfile profile, double cm, double angle, double coverage) {
+        int count = 0;
+        for (long seed = 0; seed < 1000; seed++) {
+            if (UltrasonicMeasurementModel.measure(cm, angle, profile, coverage, seed).echo) count++;
+        }
+        return count;
     }
 
     private double mean(List<Double> values) {

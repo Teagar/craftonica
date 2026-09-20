@@ -30,7 +30,8 @@ public final class TileEntityUltrasonicSensor extends TileEntity {
                 ^ (yCoord * 42317861L) ^ (worldObj.getTotalWorldTime() / 2L);
         UltrasonicMeasurementModel.Measurement measurement = hit == null
                 ? UltrasonicMeasurementModel.Measurement.noEcho()
-                : UltrasonicMeasurementModel.measure(hit.centimeters, hit.incidenceDegrees, hit.material, seed);
+                : UltrasonicMeasurementModel.measure(hit.centimeters, hit.incidenceDegrees, hit.material,
+                        hit.apparentCoverage, seed);
         int nextDistance = measurement.echo ? (int) Math.round(measurement.measuredCentimeters) : 0;
         if (visualEcho != measurement.echo || visualDistanceCm != nextDistance) {
             visualEcho = measurement.echo;
