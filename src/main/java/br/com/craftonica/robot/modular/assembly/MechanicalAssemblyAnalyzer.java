@@ -5,12 +5,26 @@ import br.com.craftonica.robot.modular.Direction;
 import br.com.craftonica.robot.modular.GridVector;
 import br.com.craftonica.robot.modular.MechanicalPort;
 import br.com.craftonica.robot.modular.StandardComponentCatalog;
+import br.com.craftonica.robot.modular.ComponentCatalog;
+import br.com.craftonica.robot.modular.manifest.ModularBlockSnapshot;
+import br.com.craftonica.robot.modular.manifest.ModularRobotManifest;
 
 import java.util.*;
 
 /** Bounded graph traversal from motor shafts to conventional wheel hubs. */
 public final class MechanicalAssemblyAnalyzer {
     private MechanicalAssemblyAnalyzer() { }
+
+    public static MechanicalAssembly analyze(ModularRobotManifest manifest, ComponentCatalog catalog) {
+        if (manifest == null || catalog == null) throw new IllegalArgumentException("manifest or catalog");
+        List<DiscoveredComponent> components = new ArrayList<DiscoveredComponent>();
+        for (ModularBlockSnapshot module : manifest.getModules())
+            components.add(new DiscoveredComponent(module.localPosition, module.localPosition,
+                    module.localOrientation, catalog.require(module.componentTypeId)));
+        return analyze(new AssemblyGraph(GridVector.ZERO,
+                br.com.craftonica.robot.modular.ComponentOrientation.NORTH_UP,
+                components, manifest.getEdges()));
+    }
 
     public static MechanicalAssembly analyze(AssemblyGraph graph) {
         if (graph == null) throw new IllegalArgumentException("graph");
