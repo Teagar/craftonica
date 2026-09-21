@@ -111,6 +111,19 @@ public final class AssemblyDiscoveryTest {
         assertEquals(2, graph.edgeCount(AssemblyEdge.Kind.MECHANICAL));
     }
 
+    @Test public void physicalBridgeTerminalConnectsCoreToSupportedStructure() {
+        FakeWorld world = loadedWorld();
+        placeChassis(world, 0, 0, 0);
+        world.put(p(0, 1, 0), StandardComponentCatalog.H_BRIDGE_TERMINAL,
+                ComponentOrientation.NORTH_UP);
+        world.put(p(0, 1, 1), StandardComponentCatalog.H_BRIDGE,
+                ComponentOrientation.NORTH_UP);
+        AssemblyGraph graph = valid(new AssemblyDiscovery(catalog, AssemblyLimits.PROFILE_1)
+                .discover(world, p(0, 0, 0)));
+        assertEquals(3, graph.getComponents().size());
+        assertEquals(2, graph.edgeCount(AssemblyEdge.Kind.STRUCTURAL));
+    }
+
     @Test public void unknownAndWrongSchemaAreRejected() {
         FakeWorld unknown = loadedWorld();
         unknown.put(p(0, 0, 0), "other:part", ComponentOrientation.NORTH_UP);

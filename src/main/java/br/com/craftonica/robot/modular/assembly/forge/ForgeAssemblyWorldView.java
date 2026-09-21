@@ -9,6 +9,9 @@ import br.com.craftonica.robot.modular.assembly.AssemblyWorldView;
 import br.com.craftonica.robot.modular.assembly.PlacedComponent;
 import net.minecraft.block.Block;
 import net.minecraft.world.World;
+import net.minecraft.tileentity.TileEntity;
+import br.com.craftonica.tile.TileEntityRoboPort;
+import br.com.craftonica.block.BlockHBridgeTerminal;
 
 /** Forge boundary for discovery. blockExists is checked before every world read. */
 public final class ForgeAssemblyWorldView implements AssemblyWorldView {
@@ -30,7 +33,21 @@ public final class ForgeAssemblyWorldView implements AssemblyWorldView {
         int metadata = world.getBlockMetadata(position.x, position.y, position.z);
         String id = componentId(block);
         if (id == null) return null;
-        return new PlacedComponent(id, 1, orientation(block, metadata));
+        ComponentOrientation orientation = orientation(block, metadata);
+        if (block == ModBlocks.ROBO_PORT) {
+            TileEntity tile = world.getTileEntity(position.x, position.y, position.z);
+            if (!(tile instanceof TileEntityRoboPort) || ((TileEntityRoboPort) tile).getOutwardSide() < 0) return null;
+            Direction outward = direction(((TileEntityRoboPort) tile).getOutwardSide());
+            orientation = new ComponentOrientation(outward,
+                    outward == Direction.UP || outward == Direction.DOWN ? Direction.NORTH : Direction.UP);
+        } else if (block == ModBlocks.H_BRIDGE_TERMINAL) {
+            int side = BlockHBridgeTerminal.outwardSide(world, position.x, position.y, position.z);
+            if (side < 0) return null;
+            Direction outward = direction(side);
+            orientation = new ComponentOrientation(outward,
+                    outward == Direction.UP || outward == Direction.DOWN ? Direction.NORTH : Direction.UP);
+        }
+        return new PlacedComponent(id, 1, orientation);
     }
 
     private static String componentId(Block block) {
@@ -39,19 +56,19 @@ public final class ForgeAssemblyWorldView implements AssemblyWorldView {
         if (block == ModBlocks.POWER_SOURCE) return StandardComponentCatalog.POWER_SOURCE;
         if (block == ModBlocks.GROUND) return StandardComponentCatalog.GROUND;
         if (block == ModBlocks.ROBO_BOARD) return StandardComponentCatalog.ROBO_BOARD;
-        if (block == ModBlocks.H_BRIDGE) return StandardComponentCatalog.H_BRIDGE;
-        if (block == ModBlocks.DC_MOTOR) return StandardComponentCatalog.DC_MOTOR;
-        if (block == ModBlocks.ULTRASONIC_SENSOR) return StandardComponentCatalog.HC_SR04;
+        if (block == ModBlocks.ROBO_PORT) return StandardComponentCatalog.ROBO_PORT;
+        if (block == ModBlocks.H_BRIDGE_CHANNEL) return StandardComponentCatalog.H_BRIDGE;
+        if (block == ModBlocks.H_BRIDGE_TERMINAL) return StandardComponentCatalog.H_BRIDGE_TERMINAL;
+        if (block == ModBlocks.MODULAR_DC_MOTOR) return StandardComponentCatalog.DC_MOTOR;
+        if (block == ModBlocks.MODULAR_ULTRASONIC_SENSOR) return StandardComponentCatalog.HC_SR04;
         return null;
     }
 
     private static ComponentOrientation orientation(Block block, int metadata) {
-        if (block == ModBlocks.DC_MOTOR)
-            return new ComponentOrientation((metadata & 1) == 0 ? Direction.NORTH : Direction.EAST,
-                    Direction.UP);
-        if (block == ModBlocks.ROBOT_CHASSIS || block == ModBlocks.H_BRIDGE
+        if (block == ModBlocks.ROBOT_CHASSIS || block == ModBlocks.H_BRIDGE_CHANNEL
+                || block == ModBlocks.MODULAR_DC_MOTOR
                 || block == ModBlocks.POWER_SOURCE || block == ModBlocks.GROUND
-                || block == ModBlocks.ULTRASONIC_SENSOR)
+                || block == ModBlocks.MODULAR_ULTRASONIC_SENSOR)
             return new ComponentOrientation(horizontal(metadata & 7), Direction.UP);
         return ComponentOrientation.NORTH_UP;
     }
@@ -63,6 +80,14 @@ public final class ForgeAssemblyWorldView implements AssemblyWorldView {
             case 4: return Direction.WEST;
             case 5: return Direction.EAST;
             default: return Direction.NORTH;
+        }
+    }
+
+    private static Direction direction(int side) {
+        switch (side) {
+            case 0: return Direction.DOWN;
+            case 1: return Direction.UP;
+            default: return horizontal(side);
         }
     }
 }

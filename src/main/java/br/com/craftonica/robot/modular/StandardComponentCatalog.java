@@ -12,12 +12,14 @@ public final class StandardComponentCatalog {
     public static final String POWER_SOURCE = "craftonica:power_source";
     public static final String GROUND = "craftonica:ground";
     public static final String ROBO_BOARD = "craftonica:robo_board";
-    public static final String H_BRIDGE = "craftonica:h_bridge";
-    public static final String DC_MOTOR = "craftonica:dc_motor";
+    public static final String ROBO_PORT = "craftonica:robo_port";
+    public static final String H_BRIDGE = "craftonica:h_bridge_channel";
+    public static final String H_BRIDGE_TERMINAL = "craftonica:h_bridge_terminal";
+    public static final String DC_MOTOR = "craftonica:modular_dc_motor";
     public static final String AXLE = "craftonica:axle";
     public static final String WHEEL = "craftonica:wheel";
     public static final String CASTER = "craftonica:caster";
-    public static final String HC_SR04 = "craftonica:ultrasonic_sensor";
+    public static final String HC_SR04 = "craftonica:modular_ultrasonic_sensor";
 
     private static final String RIGID = "craftonica:rigid_mount";
     private static final BoxVolume FULL = BoxVolume.FULL_BLOCK;
@@ -31,7 +33,9 @@ public final class StandardComponentCatalog {
         values.add(powerSource());
         values.add(ground());
         values.add(roboBoard());
+        values.add(roboPort());
         values.add(hBridge());
+        values.add(hBridgeTerminal());
         values.add(motor());
         values.add(axle());
         values.add(wheel());
@@ -72,18 +76,18 @@ public final class StandardComponentCatalog {
 
     private static ComponentType roboBoard() {
         ComponentType.Builder value = base(ROBO_BOARD, 0.35, ComponentMaterial.ENGINEERING_PLASTIC,
-                new BoxVolume(0.05, 0.0, 0.05, 0.95, 0.18, 0.95))
-                .structural(structural("mount_down", Direction.DOWN))
-                .electrical(electrical("vcc", Direction.UP, ElectricalPort.Domain.POWER,
-                        ElectricalPort.Flow.INPUT, 5.5, 0.5))
-                .electrical(electrical("gnd", Direction.DOWN, ElectricalPort.Domain.POWER,
-                        ElectricalPort.Flow.PASSIVE, 5.5, 0.5));
-        for (int pin = 0; pin <= 13; pin++) value.electrical(electrical("d" + pin,
-                pin < 7 ? Direction.WEST : Direction.EAST, ElectricalPort.Domain.DIGITAL,
-                ElectricalPort.Flow.BIDIRECTIONAL, 5.5, 0.04));
-        for (int pin = 0; pin <= 5; pin++) value.electrical(electrical("a" + pin,
-                Direction.NORTH, ElectricalPort.Domain.ANALOG, ElectricalPort.Flow.INPUT, 5.5, 0.001));
+                new BoxVolume(0.05, 0.0, 0.05, 0.95, 0.18, 0.95));
+        for (Direction face : Direction.values()) value.structural(structural(
+                "mount_" + face.name().toLowerCase(), face));
         return value.build();
+    }
+
+    private static ComponentType roboPort() {
+        return base(ROBO_PORT, 0.08, ComponentMaterial.ENGINEERING_PLASTIC,
+                new BoxVolume(0.2, 0.2, 0.2, 0.8, 0.8, 0.8))
+                .structural(structural("mount_board", Direction.SOUTH))
+                .electrical(electrical("terminal", Direction.NORTH, ElectricalPort.Domain.DIGITAL,
+                        ElectricalPort.Flow.BIDIRECTIONAL, 5.5, 0.04)).build();
     }
 
     private static ComponentType hBridge() {
@@ -91,26 +95,31 @@ public final class StandardComponentCatalog {
                 "voltage_drop_volts", 0.8, "pwm_frequency_hz", 490.0);
         ComponentType.Builder value = base(H_BRIDGE, 0.45, ComponentMaterial.ENGINEERING_PLASTIC,
                 new BoxVolume(0.1, 0.0, 0.1, 0.9, 0.3, 0.9))
-                .structural(structural("mount_down", Direction.DOWN))
                 .actuator(new ActuatorProfile("craftonica:h_bridge_educational", 1,
                         ActuatorProfile.Kind.H_BRIDGE, parameters));
-        value.electrical(electrical("supply", Direction.UP, ElectricalPort.Domain.POWER,
+        for (Direction face : Direction.values()) value.structural(structural(
+                "terminal_" + face.name().toLowerCase(), face));
+        value.electrical(electricalExtended("vcc", Direction.UP, ElectricalPort.Domain.POWER,
                 ElectricalPort.Flow.INPUT, 12.0, 2.0));
-        value.electrical(electrical("gnd", Direction.DOWN, ElectricalPort.Domain.POWER,
+        value.electrical(electricalExtended("gnd", Direction.DOWN, ElectricalPort.Domain.POWER,
                 ElectricalPort.Flow.PASSIVE, 12.0, 2.0));
-        for (int channel = 0; channel < 2; channel++) {
-            value.electrical(electrical("in" + channel + "a", Direction.NORTH,
-                    ElectricalPort.Domain.DIGITAL, ElectricalPort.Flow.INPUT, 5.5, 0.001));
-            value.electrical(electrical("in" + channel + "b", Direction.NORTH,
-                    ElectricalPort.Domain.DIGITAL, ElectricalPort.Flow.INPUT, 5.5, 0.001));
-            value.electrical(electrical("pwm" + channel, Direction.NORTH,
-                    ElectricalPort.Domain.DIGITAL, ElectricalPort.Flow.INPUT, 5.5, 0.001));
-            value.electrical(electrical("out" + channel + "a", Direction.SOUTH,
-                    ElectricalPort.Domain.POWER, ElectricalPort.Flow.OUTPUT, 12.0, 1.0));
-            value.electrical(electrical("out" + channel + "b", Direction.SOUTH,
-                    ElectricalPort.Domain.POWER, ElectricalPort.Flow.OUTPUT, 12.0, 1.0));
-        }
+        value.electrical(electricalExtended("pwm", Direction.NORTH, ElectricalPort.Domain.DIGITAL,
+                ElectricalPort.Flow.INPUT, 5.5, 0.001));
+        value.electrical(electricalExtended("direction", Direction.SOUTH, ElectricalPort.Domain.DIGITAL,
+                ElectricalPort.Flow.INPUT, 5.5, 0.001));
+        value.electrical(electricalExtended("out_a", Direction.WEST, ElectricalPort.Domain.POWER,
+                ElectricalPort.Flow.OUTPUT, 12.0, 1.0));
+        value.electrical(electricalExtended("out_b", Direction.EAST, ElectricalPort.Domain.POWER,
+                ElectricalPort.Flow.OUTPUT, 12.0, 1.0));
         return value.build();
+    }
+
+    private static ComponentType hBridgeTerminal() {
+        return base(H_BRIDGE_TERMINAL, 0.06, ComponentMaterial.COPPER,
+                new BoxVolume(0.2, 0.2, 0.2, 0.8, 0.8, 0.8))
+                .structural(structural("mount_bridge", Direction.SOUTH))
+                .structural(structural("mount_support", Direction.DOWN))
+                .structural(structural("mount_outward", Direction.NORTH)).build();
     }
 
     private static ComponentType motor() {
@@ -123,7 +132,7 @@ public final class StandardComponentCatalog {
                 .structural(structural("mount_down", Direction.DOWN))
                 .electrical(electrical("motor_positive", Direction.NORTH, ElectricalPort.Domain.POWER,
                         ElectricalPort.Flow.PASSIVE, 12.0, 1.0))
-                .electrical(electrical("motor_negative", Direction.SOUTH, ElectricalPort.Domain.POWER,
+                .electrical(electrical("motor_negative", Direction.UP, ElectricalPort.Domain.POWER,
                         ElectricalPort.Flow.PASSIVE, 12.0, 1.0))
                 .mechanical(mechanical("shaft", Direction.SOUTH, MechanicalPort.Kind.ROTARY_SHAFT,
                         MechanicalPort.Coupling.PLUG, 0.25))
@@ -170,7 +179,7 @@ public final class StandardComponentCatalog {
                 .structural(structural("mount_down", Direction.DOWN))
                 .electrical(electrical("vcc", Direction.UP, ElectricalPort.Domain.POWER,
                         ElectricalPort.Flow.INPUT, 5.5, 0.05))
-                .electrical(electrical("gnd", Direction.DOWN, ElectricalPort.Domain.POWER,
+                .electrical(electrical("gnd", Direction.SOUTH, ElectricalPort.Domain.POWER,
                         ElectricalPort.Flow.PASSIVE, 5.5, 0.05))
                 .electrical(electrical("trig", Direction.WEST, ElectricalPort.Domain.DIGITAL,
                         ElectricalPort.Flow.INPUT, 5.5, 0.001))
@@ -199,6 +208,12 @@ public final class StandardComponentCatalog {
     private static ElectricalPort electrical(String id, Direction face, ElectricalPort.Domain domain,
                                              ElectricalPort.Flow flow, double volts, double amps) {
         return new ElectricalPort(id, domain, flow, PortPose.center(face), volts, amps);
+    }
+
+    private static ElectricalPort electricalExtended(String id, Direction face,
+            ElectricalPort.Domain domain, ElectricalPort.Flow flow, double volts, double amps) {
+        return new ElectricalPort(id, domain, flow,
+                new PortPose(face.vector, face, PortPose.center(face).offsetMetres), volts, amps);
     }
 
     private static MechanicalPort mechanical(String id, Direction face, MechanicalPort.Kind kind,

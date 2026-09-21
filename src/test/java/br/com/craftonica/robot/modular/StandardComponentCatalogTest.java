@@ -13,7 +13,9 @@ public final class StandardComponentCatalogTest {
         ComponentCatalog catalog = StandardComponentCatalog.create();
         String[] required = { StandardComponentCatalog.CHASSIS, StandardComponentCatalog.WIRE,
                 StandardComponentCatalog.POWER_SOURCE, StandardComponentCatalog.ROBO_BOARD,
+                StandardComponentCatalog.ROBO_PORT,
                 StandardComponentCatalog.H_BRIDGE, StandardComponentCatalog.DC_MOTOR,
+                StandardComponentCatalog.H_BRIDGE_TERMINAL,
                 StandardComponentCatalog.AXLE, StandardComponentCatalog.WHEEL,
                 StandardComponentCatalog.CASTER, StandardComponentCatalog.HC_SR04 };
         for (String id : required) {
@@ -34,12 +36,15 @@ public final class StandardComponentCatalogTest {
             assertFiniteProfile(type.getContact());
             assertFiniteProfile(type.getSensor());
         }
-        assertEquals(11, catalog.all().size());
+        assertEquals(13, catalog.all().size());
     }
 
     @Test public void profilesAndPortsDescribeRealPathsInsteadOfRobotSlots() {
         ComponentCatalog catalog = StandardComponentCatalog.create();
-        assertEquals(22, catalog.require(StandardComponentCatalog.ROBO_BOARD).getElectricalPorts().size());
+        assertEquals(0, catalog.require(StandardComponentCatalog.ROBO_BOARD).getElectricalPorts().size());
+        assertEquals(1, catalog.require(StandardComponentCatalog.ROBO_PORT).getElectricalPorts().size());
+        assertEquals(6, catalog.require(StandardComponentCatalog.H_BRIDGE).getElectricalPorts().size());
+        assertEquals(0, catalog.require(StandardComponentCatalog.H_BRIDGE_TERMINAL).getElectricalPorts().size());
         assertEquals(4, catalog.require(StandardComponentCatalog.HC_SR04).getElectricalPorts().size());
         assertEquals(ActuatorProfile.Kind.H_BRIDGE,
                 catalog.require(StandardComponentCatalog.H_BRIDGE).getActuator().kind);
