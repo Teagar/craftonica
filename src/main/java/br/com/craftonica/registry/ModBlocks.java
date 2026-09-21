@@ -21,6 +21,7 @@ import br.com.craftonica.block.BlockHBridgeTerminal;
 import br.com.craftonica.block.BlockHBridgeChannel;
 import br.com.craftonica.block.BlockModularDcMotor;
 import br.com.craftonica.block.BlockModularUltrasonicSensor;
+import br.com.craftonica.block.BlockMechanicalComponent;
 import br.com.craftonica.sensor.AcousticMaterialProfile;
 import br.com.craftonica.item.ItemBlockElectricalWire;
 import br.com.craftonica.item.ItemBlockLed;
@@ -69,6 +70,14 @@ public final class ModBlocks {
     public static final BlockHBridgeChannel H_BRIDGE_CHANNEL = new BlockHBridgeChannel();
     public static final BlockHBridgeTerminal H_BRIDGE_TERMINAL = new BlockHBridgeTerminal();
     public static final BlockModularDcMotor MODULAR_DC_MOTOR = new BlockModularDcMotor();
+    public static final BlockMechanicalComponent MECHANICAL_AXLE = new BlockMechanicalComponent(
+            BlockMechanicalComponent.Type.AXLE, "mechanicalAxle", "craftonica:h_bridge");
+    public static final BlockMechanicalComponent ROBOT_WHEEL = new BlockMechanicalComponent(
+            BlockMechanicalComponent.Type.WHEEL, "robotWheel", "craftonica:dc_motor_active");
+    public static final BlockMechanicalComponent ROBOT_WHEEL_150 = new BlockMechanicalComponent(
+            BlockMechanicalComponent.Type.WHEEL, "robotWheel150", "craftonica:dc_motor_active");
+    public static final BlockMechanicalComponent PASSIVE_CASTER = new BlockMechanicalComponent(
+            BlockMechanicalComponent.Type.CASTER, "passiveCaster", "craftonica:robot_chassis");
     public static final BlockCalibrationTarget TARGET_MDF = new BlockCalibrationTarget("targetMdf",
             "craftonica:target_mdf", AcousticMaterialProfile.MDF);
     public static final BlockCalibrationTarget TARGET_PLASTIC = new BlockCalibrationTarget("targetPlastic",
@@ -107,6 +116,10 @@ public final class ModBlocks {
         GameRegistry.registerBlock(H_BRIDGE_CHANNEL, "h_bridge_channel");
         GameRegistry.registerBlock(H_BRIDGE_TERMINAL, "h_bridge_terminal");
         GameRegistry.registerBlock(MODULAR_DC_MOTOR, "modular_dc_motor");
+        GameRegistry.registerBlock(MECHANICAL_AXLE, "mechanical_axle");
+        GameRegistry.registerBlock(ROBOT_WHEEL, "robot_wheel");
+        GameRegistry.registerBlock(ROBOT_WHEEL_150, "robot_wheel_150");
+        GameRegistry.registerBlock(PASSIVE_CASTER, "passive_caster");
         GameRegistry.registerBlock(TARGET_MDF, "target_mdf");
         GameRegistry.registerBlock(TARGET_PLASTIC, "target_plastic");
         GameRegistry.registerBlock(TARGET_STYROFOAM, "target_styrofoam");

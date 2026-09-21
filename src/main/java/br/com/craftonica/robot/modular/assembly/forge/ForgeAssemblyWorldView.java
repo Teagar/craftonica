@@ -60,6 +60,10 @@ public final class ForgeAssemblyWorldView implements AssemblyWorldView {
         if (block == ModBlocks.H_BRIDGE_CHANNEL) return StandardComponentCatalog.H_BRIDGE;
         if (block == ModBlocks.H_BRIDGE_TERMINAL) return StandardComponentCatalog.H_BRIDGE_TERMINAL;
         if (block == ModBlocks.MODULAR_DC_MOTOR) return StandardComponentCatalog.DC_MOTOR;
+        if (block == ModBlocks.MECHANICAL_AXLE) return StandardComponentCatalog.AXLE;
+        if (block == ModBlocks.ROBOT_WHEEL) return StandardComponentCatalog.WHEEL;
+        if (block == ModBlocks.ROBOT_WHEEL_150) return StandardComponentCatalog.WHEEL_150;
+        if (block == ModBlocks.PASSIVE_CASTER) return StandardComponentCatalog.CASTER;
         if (block == ModBlocks.MODULAR_ULTRASONIC_SENSOR) return StandardComponentCatalog.HC_SR04;
         return null;
     }
@@ -67,6 +71,8 @@ public final class ForgeAssemblyWorldView implements AssemblyWorldView {
     private static ComponentOrientation orientation(Block block, int metadata) {
         if (block == ModBlocks.ROBOT_CHASSIS || block == ModBlocks.H_BRIDGE_CHANNEL
                 || block == ModBlocks.MODULAR_DC_MOTOR
+                || block == ModBlocks.MECHANICAL_AXLE || block == ModBlocks.ROBOT_WHEEL
+                || block == ModBlocks.ROBOT_WHEEL_150
                 || block == ModBlocks.POWER_SOURCE || block == ModBlocks.GROUND
                 || block == ModBlocks.MODULAR_ULTRASONIC_SENSOR)
             return new ComponentOrientation(horizontal(metadata & 7), Direction.UP);

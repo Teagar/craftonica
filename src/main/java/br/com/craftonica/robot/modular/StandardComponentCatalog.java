@@ -18,6 +18,7 @@ public final class StandardComponentCatalog {
     public static final String DC_MOTOR = "craftonica:modular_dc_motor";
     public static final String AXLE = "craftonica:axle";
     public static final String WHEEL = "craftonica:wheel";
+    public static final String WHEEL_150 = "craftonica:wheel_150mm";
     public static final String CASTER = "craftonica:caster";
     public static final String HC_SR04 = "craftonica:modular_ultrasonic_sensor";
 
@@ -39,6 +40,7 @@ public final class StandardComponentCatalog {
         values.add(motor());
         values.add(axle());
         values.add(wheel());
+        values.add(wheel150());
         values.add(caster());
         values.add(ultrasonic());
         return new ComponentCatalog(values);
@@ -158,13 +160,21 @@ public final class StandardComponentCatalog {
     }
 
     private static ComponentType wheel() {
-        return base(WHEEL, 0.5, ComponentMaterial.RUBBER,
+        return wheel(WHEEL, 0.5, 0.05, 0.03);
+    }
+
+    private static ComponentType wheel150() {
+        return wheel(WHEEL_150, 0.8, 0.075, 0.04);
+    }
+
+    private static ComponentType wheel(String id, double mass, double radius, double width) {
+        return base(id, mass, ComponentMaterial.RUBBER,
                 new BoxVolume(0.35, 0.05, 0.05, 0.65, 0.95, 0.95))
                 .mechanical(mechanical("hub", Direction.WEST, MechanicalPort.Kind.WHEEL_HUB,
                         MechanicalPort.Coupling.SOCKET, 0.5))
-                .contact(new ContactProfile("craftonica:wheel_100mm", 1,
+                .contact(new ContactProfile(id, 1,
                         ContactProfile.Kind.DRIVEN_WHEEL,
-                        parameters("radius_metres", 0.05, "width_metres", 0.03,
+                        parameters("radius_metres", radius, "width_metres", width,
                                 "longitudinal_friction", 0.9, "lateral_friction", 0.7))).build();
     }
 

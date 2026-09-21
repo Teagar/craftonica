@@ -17,6 +17,7 @@ public final class StandardComponentCatalogTest {
                 StandardComponentCatalog.H_BRIDGE, StandardComponentCatalog.DC_MOTOR,
                 StandardComponentCatalog.H_BRIDGE_TERMINAL,
                 StandardComponentCatalog.AXLE, StandardComponentCatalog.WHEEL,
+                StandardComponentCatalog.WHEEL_150,
                 StandardComponentCatalog.CASTER, StandardComponentCatalog.HC_SR04 };
         for (String id : required) {
             ComponentType type = catalog.require(id);
@@ -36,7 +37,7 @@ public final class StandardComponentCatalogTest {
             assertFiniteProfile(type.getContact());
             assertFiniteProfile(type.getSensor());
         }
-        assertEquals(13, catalog.all().size());
+        assertEquals(14, catalog.all().size());
     }
 
     @Test public void profilesAndPortsDescribeRealPathsInsteadOfRobotSlots() {
