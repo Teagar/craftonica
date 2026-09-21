@@ -71,6 +71,9 @@ public final class ForgeModularAssemblyService {
                 || robot.getRobotState() == null) return false;
         recoverLoaded(robot.worldObj);
         ModularRobotState state = robot.getRobotState();
+        if (!state.canDisassemble()) {
+            message(player, "Robô em quarentena; os dados foram preservados para recuperação."); return false;
+        }
         if (!state.getOwnerId().equals(player.getUniqueID())) { message(player, "Somente o proprietário pode desmontar."); return false; }
         GridVector anchor = state.getAnchor();
         if (StrictMath.abs(robot.posX - (anchor.x + 0.5)) > 0.01 || StrictMath.abs(robot.posY - anchor.y) > 0.01

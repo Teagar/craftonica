@@ -18,6 +18,8 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagList;
 
 /** Closes voltage/current/torque/contact velocity feedback for one confirmed AVR frame. */
 public strictfp final class CoupledDriveLoop {
@@ -51,6 +53,49 @@ public strictfp final class CoupledDriveLoop {
                 DriveState.ambient(motor, bridge), 0.0, 0.0, DriveStep.Diagnostic.NONE));
         return new State(0L, values);
     }
+
+    public NBTTagCompound writeState(State state) {
+        if (state == null || state.nextSequence < 0 || state.channels.size() != channels.size())
+            throw new IllegalArgumentException("coupled state");
+        NBTTagCompound tag = new NBTTagCompound(); tag.setInteger("Schema", 1);
+        tag.setLong("NextSequence", state.nextSequence); NBTTagList values = new NBTTagList();
+        for (ChannelState channel : state.channels) {
+            NBTTagCompound value = new NBTTagCompound();
+            value.setDouble("AngularVelocity", channel.drive.angularVelocityRadPerSecond);
+            value.setDouble("MotorTemperature", channel.drive.motorTemperatureCelsius);
+            value.setDouble("BridgeTemperature", channel.drive.bridgeTemperatureCelsius);
+            value.setBoolean("ThermalShutdown", channel.drive.thermalShutdown);
+            value.setDouble("LoadTorque", channel.loadTorqueNm); value.setDouble("Current", channel.currentAmps);
+            value.setByte("Diagnostic", (byte) channel.diagnostic.ordinal()); values.appendTag(value);
+        }
+        tag.setTag("Channels", values); return tag;
+    }
+
+    public State readState(NBTTagCompound tag) {
+        if (tag == null || tag.getInteger("Schema") != 1 || tag.getLong("NextSequence") < 0)
+            throw new IllegalArgumentException("coupled state schema");
+        NBTTagList values = tag.getTagList("Channels", 10);
+        if (values.tagCount() != channels.size() || values.tagCount() > MAX_CHANNELS)
+            throw new IllegalArgumentException("coupled channel count");
+        List<ChannelState> restored = new ArrayList<ChannelState>();
+        for (int i = 0; i < values.tagCount(); i++) {
+            NBTTagCompound value = values.getCompoundTagAt(i); int diagnostic = value.getByte("Diagnostic");
+            double angular = value.getDouble("AngularVelocity"), motorTemperature = value.getDouble("MotorTemperature");
+            double bridgeTemperature = value.getDouble("BridgeTemperature"), load = value.getDouble("LoadTorque");
+            double current = value.getDouble("Current");
+            if (diagnostic < 0 || diagnostic >= DriveStep.Diagnostic.values().length
+                    || StrictMath.abs(angular) > 100000.0 || motorTemperature < -273.15 || motorTemperature > 10000.0
+                    || bridgeTemperature < -273.15 || bridgeTemperature > 10000.0
+                    || !finite(load) || StrictMath.abs(load) > 10000.0
+                    || !finite(current) || StrictMath.abs(current) > 10000.0)
+                throw new IllegalArgumentException("coupled channel state");
+            restored.add(new ChannelState(new DriveState(angular, motorTemperature, bridgeTemperature,
+                    value.getBoolean("ThermalShutdown")), load, current, DriveStep.Diagnostic.values()[diagnostic]));
+        }
+        return new State(tag.getLong("NextSequence"), restored);
+    }
+
+    private static boolean finite(double value) { return !Double.isNaN(value) && !Double.isInfinite(value); }
 
     /** Converts a confirmed board snapshot through the physical RoboPort roles, never fixed drive pins. */
     public ControlFrame controlFrame(long sequence, RoboBoardState boardState, double supplyVolts) {

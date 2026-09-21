@@ -3,6 +3,7 @@ package br.com.craftonica.robot;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import net.minecraft.entity.Entity;
 import net.minecraftforge.event.world.ChunkEvent;
+import br.com.craftonica.robot.modular.EntityModularRobot;
 
 import java.util.List;
 
@@ -14,6 +15,8 @@ public final class RobotEntityEvents {
             for (Object value : list) {
                 if (value instanceof EntityMobileRobot) {
                     ((EntityMobileRobot) value).prepareForChunkUnload();
+                } else if (value instanceof EntityModularRobot) {
+                    ((EntityModularRobot) value).prepareForChunkUnload();
                 }
             }
         }

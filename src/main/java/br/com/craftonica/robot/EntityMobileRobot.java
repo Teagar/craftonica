@@ -13,6 +13,7 @@ import br.com.craftonica.runtime.protocol.RuntimeProtocol;
 import br.com.craftonica.runtime.server.RoboBoardRuntimeHost;
 import br.com.craftonica.tile.RoboBoardState;
 import br.com.craftonica.registry.ModItems;
+import br.com.craftonica.persistence.NbtMigrations;
 
 /** Server-authoritative persistent shell for the differential chassis. */
 public final class EntityMobileRobot extends Entity {
@@ -30,6 +31,7 @@ public final class EntityMobileRobot extends Entity {
     private double leftWheelSpeed, rightWheelSpeed;
     private final RoboBoardRuntimeHost runtimeHost = new RoboBoardRuntimeHost();
     private AvrInputs pendingInputs;
+    private NBTTagCompound preservedInvalidState;
 
     public EntityMobileRobot(World world) {
         super(world);
@@ -68,6 +70,7 @@ public final class EntityMobileRobot extends Entity {
             return;
         }
         motionX = motionY = motionZ = 0.0;
+        if (state.isLegacyInert()) { stopDrive(); syncVisualState(); return; }
         if (loadGuardTicks > 0) {
             loadGuardTicks--;
             if (loadGuardTicks == 0) state.resumeAfterLoad();
@@ -92,6 +95,9 @@ public final class EntityMobileRobot extends Entity {
     }
 
     @Override protected void writeEntityToNBT(NBTTagCompound tag) {
+        if (preservedInvalidState != null) {
+            tag.setTag("CraftonicaRobot", NbtMigrations.copy(preservedInvalidState)); return;
+        }
         state.setPose(posX, posY, posZ, rotationYaw, rotationPitch);
         tag.setTag("CraftonicaRobot", state.write());
     }
@@ -100,6 +106,9 @@ public final class EntityMobileRobot extends Entity {
         state = tag.hasKey("CraftonicaRobot")
                 ? MobileRobotState.read(tag.getCompoundTag("CraftonicaRobot"))
                 : MobileRobotState.quarantined();
+        preservedInvalidState = state.getStatus() == MobileRobotState.Status.QUARANTINED
+                && tag.hasKey("CraftonicaRobot")
+                ? NbtMigrations.copy(tag.getCompoundTag("CraftonicaRobot")) : null;
         if (state.getStatus() == MobileRobotState.Status.QUARANTINED) {
             try { state.setPose(posX, posY, posZ, rotationYaw, rotationPitch); }
             catch (IllegalArgumentException ignored) { setPositionAndRotation(0.0, 0.0, 0.0, 0.0F, 0.0F); }
@@ -146,9 +155,12 @@ public final class EntityMobileRobot extends Entity {
     public int getVisualStatus() { return dataWatcher.getWatchableObjectInt(WATCH_STATUS); }
     public int getVisualManifestHash() { return dataWatcher.getWatchableObjectInt(WATCH_MANIFEST); }
     public MobileRobotState getRobotState() { return state; }
+    public NBTTagCompound getPreservedInvalidState() {
+        return preservedInvalidState == null ? null : NbtMigrations.copy(preservedInvalidState);
+    }
 
     public void commandTestDrive(String command) {
-        if (worldObj.isRemote) return;
+        if (worldObj.isRemote || state.isLegacyInert()) return;
         if (state.getBoardState().hasFirmware()) return;
         if ("forward".equals(command)) setDrive(true, false, true, false, 255);
         else if ("reverse".equals(command)) setDrive(false, true, false, true, 255);
@@ -162,7 +174,9 @@ public final class EntityMobileRobot extends Entity {
         runtimeHost.cancel(); stopDrive(); state.replaceBoardState(board);
     }
 
-    public void startBoard() { state.getBoardState().start(state.getBoardState().getRevision()); }
+    public void startBoard() {
+        if (!state.isLegacyInert()) state.getBoardState().start(state.getBoardState().getRevision());
+    }
     public void stopBoard() { runtimeHost.cancel(); state.getBoardState().stop(state.getBoardState().getRevision()); stopDrive(); }
 
     public boolean removeTemporaryTestChassis() {

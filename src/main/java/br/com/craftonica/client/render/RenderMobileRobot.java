@@ -26,7 +26,8 @@ public final class RenderMobileRobot extends Render {
         bindTexture(TEXTURE);
         int status = robot.getVisualStatus();
         if (status == MobileRobotState.Status.FAULT.ordinal()
-                || status == MobileRobotState.Status.QUARANTINED.ordinal()) GL11.glColor3f(1.0F, 0.58F, 0.52F);
+                || status == MobileRobotState.Status.QUARANTINED.ordinal()
+                || status == MobileRobotState.Status.LEGACY_INERT.ordinal()) GL11.glColor3f(1.0F, 0.58F, 0.52F);
         else if (status == MobileRobotState.Status.SUSPENDED.ordinal()) GL11.glColor3f(0.62F, 0.62F, 0.62F);
         else GL11.glColor3f(1.0F, 1.0F, 1.0F);
         model.render(0.1F);

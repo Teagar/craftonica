@@ -51,7 +51,7 @@ public final class MobileRobotStressGateTest {
         MobileRobotState valid = MobileRobotState.minimal(new UUID(201L, 202L), new UUID(203L, 204L));
         for (int index = 0; index < 256; index++) {
             NBTTagCompound tag = valid.write();
-            if ((index & 1) == 0) tag.setInteger("Schema", index + 2);
+            if ((index & 1) == 0) tag.setInteger("Schema", index + 100);
             else tag.setByteArray("ManifestFingerprint", new byte[] { (byte) index });
             MobileRobotState restored = MobileRobotState.read(tag);
             assertEquals("malformed case " + index,

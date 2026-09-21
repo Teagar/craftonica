@@ -48,6 +48,28 @@ public final class MobileRobotStateTest {
         assertEquals(MobileRobotState.Status.QUARANTINED, MobileRobotState.read(tampered).getStatus());
     }
 
+    @Test public void releasedOnePointTwoFixtureMigratesExactlyOnceToLegacyInert() {
+        MobileRobotState original = MobileRobotState.minimal(new UUID(41, 42), new UUID(43, 44));
+        NBTTagCompound released = original.write(); released.setInteger("Schema", 1);
+        MobileRobotState migrated = MobileRobotState.read(released);
+        assertEquals(MobileRobotState.Status.LEGACY_INERT, migrated.getStatus());
+        assertEquals("LEGACY_1_2_INERT", migrated.getDiagnostic());
+        NBTTagCompound current = migrated.write(); assertEquals(MobileRobotState.SCHEMA_VERSION,
+                current.getInteger("Schema"));
+        assertEquals(MobileRobotState.Status.LEGACY_INERT, MobileRobotState.read(current).getStatus());
+    }
+
+    @Test public void fixedRobotEntityPreservesCorruptLegacyPayloadForRecovery() {
+        NBTTagCompound invalid = MobileRobotState.minimal(new UUID(45, 46), new UUID(47, 48)).write();
+        invalid.setInteger("Schema", 999); NBTTagCompound root = new NBTTagCompound();
+        root.setTag("CraftonicaRobot", invalid); EntityMobileRobot entity = new EntityMobileRobot(null);
+        entity.readEntityFromNBT(root);
+        assertEquals(MobileRobotState.Status.QUARANTINED, entity.getRobotState().getStatus());
+        assertEquals(invalid.toString(), entity.getPreservedInvalidState().toString());
+        NBTTagCompound saved = new NBTTagCompound(); entity.writeEntityToNBT(saved);
+        assertEquals(invalid.toString(), saved.getCompoundTag("CraftonicaRobot").toString());
+    }
+
     @Test public void loadAndUnloadSuspendWithoutAdvancingFrame() {
         MobileRobotState state = MobileRobotState.minimal(new UUID(1L, 2L), new UUID(3L, 4L));
         NBTTagCompound running = state.write();

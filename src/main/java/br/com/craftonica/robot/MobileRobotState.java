@@ -21,12 +21,13 @@ import java.util.UUID;
 
 /** Bounded persistent state for the mobile chassis. World adaptation belongs to the entity. */
 public final class MobileRobotState {
-    public static final int SCHEMA_VERSION = 1;
+    public static final int SCHEMA_VERSION = 2;
     public static final int MAX_MODULES = 32;
     public static final int MAX_DIAGNOSTIC_BYTES = 64;
     private static final double WORLD_LIMIT = 30000000.0;
 
-    public enum Status { STOPPED, RUNNING, SUSPENDED, FAULT, QUARANTINED }
+    /** LEGACY_INERT is appended so every released 1.2 ordinal remains stable. */
+    public enum Status { STOPPED, RUNNING, SUSPENDED, FAULT, QUARANTINED, LEGACY_INERT }
 
     private final UUID robotId;
     private final UUID ownerId;
@@ -146,7 +147,9 @@ public final class MobileRobotState {
 
     public static MobileRobotState read(NBTTagCompound tag) {
         try {
-            if (tag == null || tag.getInteger("Schema") != SCHEMA_VERSION) return quarantined();
+            if (tag == null) return quarantined();
+            int schema = tag.getInteger("Schema");
+            if (schema != 1 && schema != SCHEMA_VERSION) return quarantined();
             NBTTagList list = tag.getTagList("Modules", 10);
             if (list.tagCount() < 1 || list.tagCount() > MAX_MODULES) return quarantined();
             List<RobotModuleSnapshot> modules = new ArrayList<RobotModuleSnapshot>(list.tagCount());
@@ -179,6 +182,12 @@ public final class MobileRobotState {
                 restored.boardState.unloadAndIncrementGeneration();
                 restored.resumeRequested = true;
                 restored.status = Status.SUSPENDED;
+            }
+            if (schema == 1) {
+                if (restored.boardState.isRunning()) restored.boardState.unloadAndIncrementGeneration();
+                restored.resumeRequested = false;
+                restored.status = Status.LEGACY_INERT;
+                restored.diagnostic = "LEGACY_1_2_INERT";
             }
             return restored;
         } catch (RuntimeException invalid) {
@@ -280,6 +289,7 @@ public final class MobileRobotState {
         return !hasPhysicalAssemblyManifest() && status != Status.QUARANTINED
                 && status != Status.FAULT && !boardState.isRunning();
     }
+    public boolean isLegacyInert() { return status == Status.LEGACY_INERT; }
     public void replaceBoardState(RoboBoardState value) {
         if (value == null) throw new IllegalArgumentException("board state");
         boardState = value;
