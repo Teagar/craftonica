@@ -92,7 +92,11 @@ public final class StandardComponentCatalog {
 
     private static ComponentType hBridge() {
         Map<String, Double> parameters = parameters("maximum_current_amps", 1.0,
-                "voltage_drop_volts", 0.8, "pwm_frequency_hz", 490.0);
+                "maximum_supply_volts", 12.0, "voltage_drop_volts", 0.8,
+                "on_resistance_ohms", 0.2, "brake_resistance_ohms", 0.35,
+                "pwm_frequency_hz", 490.0, "maximum_temperature_celsius", 110.0,
+                "thermal_capacity_joules_per_kelvin", 12.0,
+                "thermal_resistance_kelvin_per_watt", 10.0);
         ComponentType.Builder value = base(H_BRIDGE, 0.45, ComponentMaterial.ENGINEERING_PLASTIC,
                 new BoxVolume(0.1, 0.0, 0.1, 0.9, 0.3, 0.9))
                 .actuator(new ActuatorProfile("craftonica:h_bridge_educational", 1,
@@ -126,7 +130,10 @@ public final class StandardComponentCatalog {
         Map<String, Double> parameters = parameters("armature_resistance_ohms", 4.0,
                 "torque_constant_nm_per_amp", 0.04, "back_emf_volt_seconds_per_rad", 0.04,
                 "rotor_inertia_kg_m2", 0.0002, "viscous_friction_nm_seconds_per_rad", 0.0001,
-                "maximum_current_amps", 1.0);
+                "maximum_current_amps", 1.0, "maximum_angular_velocity_rad_per_second", 300.0,
+                "maximum_temperature_celsius", 120.0,
+                "thermal_capacity_joules_per_kelvin", 20.0,
+                "thermal_resistance_kelvin_per_watt", 8.0);
         return base(DC_MOTOR, 0.6, ComponentMaterial.STEEL,
                 new BoxVolume(0.15, 0.15, 0.05, 0.85, 0.85, 0.95))
                 .structural(structural("mount_down", Direction.DOWN))
