@@ -6,10 +6,11 @@ import net.minecraft.nbt.NBTTagCompound;
 
 import java.util.UUID;
 
-/** Persistent inert shell used until electrical runtime and mechanics are attached. */
+/** Persistent identity, manifest and safety status of a modular robot. */
 public final class ModularRobotState {
     public static final int SCHEMA_VERSION = 1;
-    public enum Status { INERT, RECOVERY_REQUIRED, QUARANTINED }
+    /** ACTIVE is appended so ordinals written by the pre-physics development format remain safe. */
+    public enum Status { INERT, RECOVERY_REQUIRED, QUARANTINED, ACTIVE }
 
     private final UUID robotId;
     private final UUID ownerId;
@@ -20,7 +21,7 @@ public final class ModularRobotState {
 
     public ModularRobotState(UUID robotId, UUID ownerId, GridVector anchor,
             ComponentOrientation anchorOrientation, ModularRobotManifest manifest) {
-        this(robotId, ownerId, anchor, anchorOrientation, manifest, Status.INERT);
+        this(robotId, ownerId, anchor, anchorOrientation, manifest, Status.ACTIVE);
     }
 
     private ModularRobotState(UUID robotId, UUID ownerId, GridVector anchor,
@@ -66,4 +67,5 @@ public final class ModularRobotState {
     public ComponentOrientation getAnchorOrientation() { return anchorOrientation; }
     public ModularRobotManifest getManifest() { return manifest; }
     public Status getStatus() { return status; }
+    public boolean canSimulate() { return status == Status.ACTIVE; }
 }
