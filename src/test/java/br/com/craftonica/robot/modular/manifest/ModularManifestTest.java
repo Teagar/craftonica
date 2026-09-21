@@ -63,6 +63,10 @@ public final class ModularManifestTest {
         assertEquals(state.getAnchor(), restored.getAnchor());
         assertEquals(Direction.EAST, restored.getAnchorOrientation().getForward());
         assertArrayEquals(manifest.getFingerprint(), restored.getManifest().getFingerprint());
+        assertTrue(restored.canSimulate());
+
+        NBTTagCompound legacy = state.write(); legacy.setByte("Status", (byte) 0);
+        assertFalse(ModularRobotState.read(legacy).canSimulate());
     }
 
     public static ModularRobotManifest manifest() {

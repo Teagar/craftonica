@@ -62,7 +62,7 @@ public final class ForgeModularAssemblyService {
         if (!result.committed()) {
             message(player, "Conversão cancelada com rollback: " + result.status.name()); return false;
         }
-        message(player, "Montagem convertida em robô modular inerte (" + manifest.getModules().size() + " blocos).");
+        message(player, "Montagem convertida em robô modular terrestre (" + manifest.getModules().size() + " blocos).");
         return true;
     }
 
