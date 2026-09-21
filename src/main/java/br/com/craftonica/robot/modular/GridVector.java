@@ -18,6 +18,11 @@ public final class GridVector {
         return new GridVector(x + other.x, y + other.y, z + other.z);
     }
 
+    public GridVector subtract(GridVector other) {
+        if (other == null) throw new IllegalArgumentException("other");
+        return new GridVector(x - other.x, y - other.y, z - other.z);
+    }
+
     public GridVector scale(int factor) { return new GridVector(x * factor, y * factor, z * factor); }
 
     @Override public boolean equals(Object value) {

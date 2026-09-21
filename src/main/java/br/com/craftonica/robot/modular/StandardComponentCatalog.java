@@ -58,17 +58,15 @@ public final class StandardComponentCatalog {
     private static ComponentType powerSource() {
         return base(POWER_SOURCE, 1.4, ComponentMaterial.ENGINEERING_PLASTIC)
                 .structural(structural("mount_down", Direction.DOWN))
-                .electrical(electrical("positive", Direction.UP, ElectricalPort.Domain.POWER,
-                        ElectricalPort.Flow.OUTPUT, 5.5, 2.0))
-                .electrical(electrical("return", Direction.DOWN, ElectricalPort.Domain.POWER,
-                        ElectricalPort.Flow.PASSIVE, 5.5, 2.0)).build();
+                .electrical(electrical("positive", Direction.NORTH, ElectricalPort.Domain.POWER,
+                        ElectricalPort.Flow.OUTPUT, 5.5, 2.0)).build();
     }
 
     private static ComponentType ground() {
         return base(GROUND, 0.2, ComponentMaterial.COPPER,
                 new BoxVolume(0.1, 0.0, 0.1, 0.9, 0.2, 0.9))
                 .structural(structural("mount_down", Direction.DOWN))
-                .electrical(electrical("ground", Direction.UP, ElectricalPort.Domain.POWER,
+                .electrical(electrical("ground", Direction.NORTH, ElectricalPort.Domain.POWER,
                         ElectricalPort.Flow.PASSIVE, 30.0, 5.0)).build();
     }
 
@@ -123,9 +121,9 @@ public final class StandardComponentCatalog {
         return base(DC_MOTOR, 0.6, ComponentMaterial.STEEL,
                 new BoxVolume(0.15, 0.15, 0.05, 0.85, 0.85, 0.95))
                 .structural(structural("mount_down", Direction.DOWN))
-                .electrical(electrical("motor_positive", Direction.WEST, ElectricalPort.Domain.POWER,
+                .electrical(electrical("motor_positive", Direction.NORTH, ElectricalPort.Domain.POWER,
                         ElectricalPort.Flow.PASSIVE, 12.0, 1.0))
-                .electrical(electrical("motor_negative", Direction.EAST, ElectricalPort.Domain.POWER,
+                .electrical(electrical("motor_negative", Direction.SOUTH, ElectricalPort.Domain.POWER,
                         ElectricalPort.Flow.PASSIVE, 12.0, 1.0))
                 .mechanical(mechanical("shaft", Direction.SOUTH, MechanicalPort.Kind.ROTARY_SHAFT,
                         MechanicalPort.Coupling.PLUG, 0.25))

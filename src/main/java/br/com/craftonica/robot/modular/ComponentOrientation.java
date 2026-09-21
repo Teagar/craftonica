@@ -22,10 +22,24 @@ public final class ComponentOrientation {
 
     public Direction toWorld(Direction local) {
         if (local == null) throw new IllegalArgumentException("local");
-        GridVector v = local.vector;
-        GridVector world = right.vector.scale(v.x).add(up.vector.scale(v.y))
-                .add(forward.vector.scale(-v.z));
-        return Direction.fromVector(world);
+        return Direction.fromVector(toWorld(local.vector));
+    }
+
+    public GridVector toWorld(GridVector local) {
+        if (local == null) throw new IllegalArgumentException("local");
+        return right.vector.scale(local.x).add(up.vector.scale(local.y))
+                .add(forward.vector.scale(-local.z));
+    }
+
+    public Direction toLocal(Direction world) {
+        if (world == null) throw new IllegalArgumentException("world");
+        return Direction.fromVector(toLocal(world.vector));
+    }
+
+    public GridVector toLocal(GridVector world) {
+        if (world == null) throw new IllegalArgumentException("world");
+        return new GridVector(dot(world, right.vector), dot(world, up.vector),
+                -dot(world, forward.vector));
     }
 
     private static int dot(GridVector a, GridVector b) { return a.x * b.x + a.y * b.y + a.z * b.z; }
