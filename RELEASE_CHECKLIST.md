@@ -1,9 +1,9 @@
-# Release checklist 1.1.0
+# Release checklist 1.2.0
 
 ## Fonte e metadados
 
 - [ ] Worktree limpo e commit de release identificado.
-- [ ] `build.gradle`, `Craftonica.VERSION`, `mcmod.info` e README resolvem para `1.1.0`.
+- [ ] `build.gradle`, `Craftonica.VERSION`, `mcmod.info` e README resolvem para `1.2.0`.
 - [ ] `CHANGELOG.md`, `LICENSE` e `THIRD_PARTY_NOTICES.md` presentes.
 - [ ] Schemas persistentes e manifestos permanecem compativeis/verificados.
 
@@ -15,13 +15,15 @@ scripts/firmware/bootstrap-avr-toolchain.sh --verify-only
 scripts/firmware/test-compiler.sh
 (cd tools/mcp && python3 -m unittest test_craftonica_mcp.py)
 git diff --check
+./scripts/package-release.sh
 ```
 
 ## Instalacao limpa
 
 - [ ] Instalar em cliente Prism vazio com `scripts/install-prism.sh`.
 - [ ] Instalar em servidor Forge vazio com `scripts/install-instance.sh <diretorio>`.
-- [ ] Confirmar mod `1.1.0`, mundo novo, mundo migrado e backup verificado.
+- [ ] Confirmar mod `1.2.0`, mundo novo, mundo migrado e backup verificado.
+- [ ] Seguir `docs/robo-movel-guiado.md` em mundo novo até o firmware `RUNNING`.
 - [ ] Executar circuito nominal, seis laboratorios, Blink, Serial e multiplayer.
 - [ ] Confirmar log sem excecao Craftonica e registrar SHA-256 do mod/worker/manifesto.
 

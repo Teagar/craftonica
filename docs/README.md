@@ -1,6 +1,8 @@
-# Documentacao Craftonica 1.1
+# Documentacao Craftonica 1.2
 
-- [Instalacao de cliente e servidor](installation-1.1.md)
+- [Instalacao de cliente e servidor](installation-1.2.md)
+- [Robo movel: montagem guiada](robo-movel-guiado.md)
+- [Compatibilidade e limitacoes 1.2](compatibilidade-1.2.md)
 - [Guia do aluno](student-guide.md)
 - [Guia do professor](teacher-guide.md)
 - [Mapa laboratório Arduino](showcase-map.md)
@@ -14,4 +16,4 @@
 - [Licencas de terceiros](../THIRD_PARTY_NOTICES.md)
 
 Os RFCs registram decisoes tecnicas; os guias acima sao a referencia operacional
-da versao `1.1.0`.
+da versao `1.2.0`.

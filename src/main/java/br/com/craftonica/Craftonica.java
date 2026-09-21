@@ -17,7 +17,7 @@ import cpw.mods.fml.common.event.FMLServerStartingEvent;
 public final class Craftonica {
     public static final String MOD_ID = "craftonica";
     public static final String MOD_NAME = "Craftonica: Robotics Lab";
-    public static final String VERSION = "1.1.0";
+    public static final String VERSION = "1.2.0";
 
     @Mod.Instance(MOD_ID)
     public static Craftonica instance;

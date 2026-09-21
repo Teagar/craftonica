@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.2.0 - 2026-09-20
+
 - Multimetro com tela vanilla configuravel, pontas visuais, cabos no mundo e modelo renovado.
 - Configurador de RoboPort com tela para selecionar explicitamente D0-D13, A0-A5, 5 V e GND.
 - Resistores com corpo e aneis fisicos consistentes no topo, base e faces laterais.
@@ -18,6 +20,8 @@
 - Arena idempotente de 51 x 51 blocos com labirinto, materiais acústicos, alvos pequenos e áreas de partida/recuperação.
 - Sketch Arduino autônomo de um HC-SR04 com mediana, varredura pelo chassi, telemetria Serial e parada segura em timeout.
 - Gates de runtime móvel para 32 trajetórias determinísticas, 68 hosts limitados, unload/reload, NBT inválido e linkage de servidor dedicado.
+- Modelos e texturas próprios para chassi, rodas, ponte H e HC-SR04 móvel, sem reutilizar assets provisórios.
+- Manual guiado do robô, matriz pública de compatibilidade e empacotamento reproduzível com SHA-256.
 
 ## 1.1.0 - 2026-09-19
 

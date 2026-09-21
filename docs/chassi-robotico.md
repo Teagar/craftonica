@@ -1,8 +1,7 @@
 # Chassi robótico móvel
 
-O primeiro chassi móvel do Craftônica já existe como uma entidade persistente e
-servidor-autoritativa. Nesta etapa ele permanece parado: ponte H, motores e tração
-diferencial serão conectados nas etapas seguintes da missão.
+O primeiro chassi móvel do Craftônica é uma entidade persistente,
+servidor-autoritativa e controlada por ponte H, motores e tração diferencial.
 
 Operadores podem criar temporariamente um chassi de validação com:
 
@@ -11,8 +10,8 @@ Operadores podem criar temporariamente um chassi de validação com:
 ```
 
 O comando só cria a entidade quando todo o volume de colisão está em chunks já
-carregados, sem blocos, entidades ou líquidos. A montagem física substituirá esse
-caminho temporário quando o sistema de conversão for implementado.
+carregados, sem blocos, entidades ou líquidos. Esse caminho é exclusivo para
+validação; a experiência normal usa a montagem física descrita abaixo.
 
 Para validar provisoriamente a mecânica antes da ligação do firmware, use perto de
 um chassi de sua propriedade:
@@ -25,8 +24,8 @@ um chassi de sua propriedade:
 /craftonica robot drive stop
 ```
 
-Esses comandos alimentam o mesmo modelo de ponte H que receberá GPIO e PWM na
-próxima etapa. Eles não implementam navegação ou desvio de obstáculos ocultos.
+Esses comandos alimentam o mesmo modelo de ponte H usado por GPIO e PWM. Eles não
+implementam navegação ou desvio de obstáculos ocultos.
 
 Uma RoboBoard fixa já compilada pode fornecer firmware real ao chassi durante a
 validação do host móvel:
@@ -40,8 +39,8 @@ validação do host móvel:
 
 `copy` procura a RoboBoard acessível e o chassi do jogador em até 16 blocos. O
 chassi recebe uma cópia limitada de firmware, checkpoint, sketch e histórico
-Serial; a placa fixa não é alterada. O editor direto da entidade será conectado
-junto da conversão física da montagem.
+Serial; a placa fixa não é alterada. A edição permanece na placa fixa para que o
+fonte e a compilação continuem visíveis ao aluno antes da cópia.
 
 O host executa quadros de 800.000 ciclos AVR (50 ms) em worker isolado. Cada
 quadro captura primeiro a pose confirmada e o cone do HC-SR04, executa o firmware
@@ -112,5 +111,7 @@ recebem pose, rotação e somente dois valores visuais limitados: estado operaci
 e hash curto do manifesto. A pose é interpolada no cliente; proprietário,
 manifesto completo e decisões futuras de física permanecem no servidor.
 
-O modelo atual é um protótipo sem textura própria. Ele serve para validar escala,
-orientação, persistência e tracking; o acabamento visual será feito no marco final.
+O modelo 1.2 possui textura própria e representa plataforma, rodas, motores,
+RoboBoard, ponte H e HC-SR04 frontal. A cor avermelhada indica falha ou quarentena;
+o cinza indica suspensão. Essas cores são somente diagnóstico visual: não alteram
+a física autoritativa.

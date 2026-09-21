@@ -34,3 +34,11 @@ A API suportada e suas limitacoes estao em
 Siga os seis roteiros em [`curriculum/0.4-laboratorios.md`](curriculum/0.4-laboratorios.md).
 Cada atividade aceita montagens eletricamente equivalentes; o servidor avalia o
 resultado, nao uma sequencia fixa de coordenadas.
+
+## Robo movel
+
+Para montar os oito modulos fisicos, compilar o sketch Arduino e executar a
+navegacao com HC-SR04, siga o
+[`manual guiado do robo movel`](robo-movel-guiado.md). O manual distingue timeout
+de distancia zero e explica por que o simulador nao substitui a calibracao de um
+sensor real.
