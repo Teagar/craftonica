@@ -28,11 +28,22 @@ import java.util.UUID;
 import java.util.ArrayList;
 import java.util.List;
 import br.com.craftonica.persistence.NbtMigrations;
+import br.com.craftonica.robot.modular.visual.ModularRobotVisualState;
+import cpw.mods.fml.common.registry.IEntityAdditionalSpawnData;
+import io.netty.buffer.ByteBuf;
 
 /** Server-authoritative persistent entity for an arbitrary captured rigid assembly. */
-public final class EntityModularRobot extends Entity {
+public final class EntityModularRobot extends Entity implements IEntityAdditionalSpawnData {
     private static final ComponentCatalog CATALOG = StandardComponentCatalog.create();
     private static final double SUBSTEP_SECONDS = 0.025;
+    private static final int WATCH_STATUS = 20;
+    private static final int WATCH_DIAGNOSTICS = 21;
+    private static final int WATCH_MECHANICAL_PHASE = 22;
+    public static final int DIAGNOSTIC_ELECTRICAL = 1;
+    public static final int DIAGNOSTIC_DRIVE = 2;
+    public static final int DIAGNOSTIC_THERMAL = 4;
+    public static final int DIAGNOSTIC_SENSOR = 8;
+    public static final int DIAGNOSTIC_QUARANTINE = 16;
     private ModularRobotState state;
     private RigidBodyProperties body;
     private TerrestrialRigidBodyModel.State dynamics;
@@ -44,6 +55,12 @@ public final class EntityModularRobot extends Entity {
     private long sensorSampleCounter;
     private MobileUltrasonicSystem.Status lastSensorStatus = MobileUltrasonicSystem.Status.IDLE;
     private NBTTagCompound preservedInvalidEnvelope;
+    private ModularRobotVisualState visualState;
+    private float mechanicalPhaseDegrees;
+    private boolean visualElectricalFault;
+    private double targetX, targetY, targetZ;
+    private float targetYaw, targetPitch;
+    private int interpolationTicks;
     private final RoboBoardRuntimeHost runtimeHost = new RoboBoardRuntimeHost();
     private final List<TerrestrialRigidBodyModel.AppliedForce> pendingForces =
             new ArrayList<TerrestrialRigidBodyModel.AppliedForce>();
@@ -62,18 +79,27 @@ public final class EntityModularRobot extends Entity {
         value.coupledDriveState = value.coupledDrive.initialState();
         value.boardState = board(manifest);
         value.ultrasonicSystem = new MobileUltrasonicSystem(manifest);
+        value.visualState = ModularRobotVisualState.fromManifest(manifest);
+        value.visualElectricalFault = !MobileElectricalEvaluator.evaluate(
+                manifest.getElectricalNetlist()).getDiagnostics().isEmpty();
         value.rotationYaw = yawDegrees(orientation.getForward());
         value.setPosition(anchor.x + 0.5, anchor.y, anchor.z + 0.5);
         value.dynamics = value.currentState(0.0, 0.0, 0.0, 0.0);
         value.configureBounds();
+        value.syncVisualState();
         return value;
     }
 
-    @Override protected void entityInit() { }
+    @Override protected void entityInit() {
+        dataWatcher.addObject(WATCH_STATUS, Integer.valueOf(ModularRobotState.Status.QUARANTINED.ordinal()));
+        dataWatcher.addObject(WATCH_DIAGNOSTICS, Integer.valueOf(DIAGNOSTIC_QUARANTINE));
+        dataWatcher.addObject(WATCH_MECHANICAL_PHASE, Float.valueOf(0.0F));
+    }
     @Override public void onUpdate() {
         super.onUpdate();
-        if (worldObj.isRemote || state == null) return;
-        if (!state.canSimulate()) { stopDynamics(); pendingForces.clear(); return; }
+        if (worldObj.isRemote) { interpolateClientPose(); return; }
+        if (state == null) return;
+        if (!state.canSimulate()) { stopDynamics(); pendingForces.clear(); syncVisualState(); return; }
         if (!ModularRobotTickBudget.allows(this)) { motionX = motionY = motionZ = 0.0; return; }
         updateRuntime();
         ensureBody();
@@ -96,6 +122,7 @@ public final class EntityModularRobot extends Entity {
         rotationYaw = (float) StrictMath.toDegrees(dynamics.yawRadians);
         motionX = dynamics.velocityX / 20.0; motionY = dynamics.velocityY / 20.0;
         motionZ = dynamics.velocityZ / 20.0;
+        advanceMechanicalPhase(); syncVisualState();
     }
 
     @Override protected void writeEntityToNBT(NBTTagCompound tag) {
@@ -123,7 +150,10 @@ public final class EntityModularRobot extends Entity {
             }
             body = RigidBodyProperties.derive(state.getManifest(), CATALOG);
             ultrasonicSystem = new MobileUltrasonicSystem(state.getManifest());
-            configureBounds();
+            visualState = ModularRobotVisualState.fromManifest(state.getManifest());
+            visualElectricalFault = !MobileElectricalEvaluator.evaluate(
+                    state.getManifest().getElectricalNetlist()).getDiagnostics().isEmpty();
+            configureBounds(); syncVisualState();
         } catch (RuntimeException invalid) {
             NBTTagCompound source = tag.hasKey("CraftonicaModularRobotV2")
                     ? tag.getCompoundTag("CraftonicaModularRobotV2") : tag;
@@ -133,7 +163,9 @@ public final class EntityModularRobot extends Entity {
             coupledDrive = new CoupledDriveLoop(state.getManifest(), CATALOG);
             coupledDriveState = coupledDrive.initialState(); boardState = null;
             ultrasonicSystem = new MobileUltrasonicSystem(state.getManifest()); sensorSampleCounter = 0L;
-            dynamics = currentState(0.0, 0.0, 0.0, 0.0); configureBounds();
+            visualState = ModularRobotVisualState.fromManifest(state.getManifest());
+            visualElectricalFault = true;
+            dynamics = currentState(0.0, 0.0, 0.0, 0.0); configureBounds(); syncVisualState();
         }
     }
 
@@ -180,6 +212,10 @@ public final class EntityModularRobot extends Entity {
     public ModularRobotState getRobotState() { return state; }
     public RigidBodyProperties getRigidBodyProperties() { ensureBody(); return body; }
     public MobileUltrasonicSystem.Status getLastSensorStatus() { return lastSensorStatus; }
+    public ModularRobotVisualState getVisualState() { return visualState; }
+    public int getVisualStatus() { return dataWatcher.getWatchableObjectInt(WATCH_STATUS); }
+    public int getVisualDiagnostics() { return dataWatcher.getWatchableObjectInt(WATCH_DIAGNOSTICS); }
+    public float getMechanicalPhaseDegrees() { return dataWatcher.getWatchableObjectFloat(WATCH_MECHANICAL_PHASE); }
     public NBTTagCompound getPreservedInvalidEnvelope() {
         return preservedInvalidEnvelope == null ? null : NbtMigrations.copy(preservedInvalidEnvelope);
     }
@@ -188,6 +224,63 @@ public final class EntityModularRobot extends Entity {
         if (worldObj != null && worldObj.isRemote) return;
         runtimeHost.cancel(); pendingControlFrame = null; pendingForces.clear();
         motionX = motionY = motionZ = 0.0;
+    }
+
+    @Override public void writeSpawnData(ByteBuf buffer) {
+        if (visualState == null) throw new IllegalStateException("missing visual state");
+        visualState.write(buffer);
+    }
+
+    @Override public void readSpawnData(ByteBuf buffer) {
+        try { visualState = ModularRobotVisualState.read(buffer); }
+        catch (RuntimeException invalid) { visualState = null; }
+    }
+
+    @Override public void setPositionAndRotation2(double x, double y, double z, float yaw, float pitch,
+            int increments) {
+        if (worldObj == null || !worldObj.isRemote) { setPositionAndRotation(x, y, z, yaw, pitch); return; }
+        targetX = x; targetY = y; targetZ = z; targetYaw = yaw; targetPitch = pitch;
+        interpolationTicks = StrictMath.max(1, StrictMath.min(5, increments));
+    }
+
+    private void interpolateClientPose() {
+        if (interpolationTicks <= 0) return;
+        double divisor = interpolationTicks;
+        setPosition(posX + (targetX - posX) / divisor, posY + (targetY - posY) / divisor,
+                posZ + (targetZ - posZ) / divisor);
+        rotationYaw += wrapDegrees(targetYaw - rotationYaw) / divisor;
+        rotationPitch += (targetPitch - rotationPitch) / divisor; interpolationTicks--;
+    }
+
+    private static float wrapDegrees(float value) {
+        value %= 360.0F; return value < -180.0F ? value + 360.0F : value >= 180.0F ? value - 360.0F : value;
+    }
+
+    private void advanceMechanicalPhase() {
+        if (coupledDriveState == null || coupledDriveState.getChannels().isEmpty()) return;
+        double sum = 0.0;
+        for (CoupledDriveLoop.ChannelState channel : coupledDriveState.getChannels())
+            sum += StrictMath.abs(channel.drive.angularVelocityRadPerSecond);
+        mechanicalPhaseDegrees += (float) StrictMath.toDegrees(sum / coupledDriveState.getChannels().size() * 0.05);
+        mechanicalPhaseDegrees %= 360.0F;
+    }
+
+    private void syncVisualState() {
+        if (dataWatcher == null || state == null) return;
+        int diagnostics = 0;
+        if (state.getStatus() == ModularRobotState.Status.QUARANTINED) diagnostics |= DIAGNOSTIC_QUARANTINE;
+        if (visualElectricalFault) diagnostics |= DIAGNOSTIC_ELECTRICAL;
+        if (lastSensorStatus == MobileUltrasonicSystem.Status.CROSSTALK_SERIALIZED
+                || lastSensorStatus == MobileUltrasonicSystem.Status.ACTIVE_LIMIT_EXCEEDED)
+            diagnostics |= DIAGNOSTIC_SENSOR;
+        if (coupledDriveState != null) for (CoupledDriveLoop.ChannelState channel : coupledDriveState.getChannels()) {
+            if (channel.diagnostic != br.com.craftonica.robot.modular.drive.DriveStep.Diagnostic.NONE)
+                diagnostics |= DIAGNOSTIC_DRIVE;
+            if (channel.drive.thermalShutdown) diagnostics |= DIAGNOSTIC_THERMAL;
+        }
+        dataWatcher.updateObject(WATCH_STATUS, Integer.valueOf(state.getStatus().ordinal()));
+        dataWatcher.updateObject(WATCH_DIAGNOSTICS, Integer.valueOf(diagnostics));
+        dataWatcher.updateObject(WATCH_MECHANICAL_PHASE, Float.valueOf(mechanicalPhaseDegrees));
     }
     public void applyForceForNextTick(TerrestrialRigidBodyModel.AppliedForce force) {
         if (worldObj.isRemote || force == null || pendingForces.size() >= TerrestrialRigidBodyModel.MAX_FORCES_PER_SUBSTEP)
