@@ -4,7 +4,8 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BLOCKS="$ROOT/src/main/resources/assets/craftonica/textures/blocks"
 ITEMS="$ROOT/src/main/resources/assets/craftonica/textures/items"
-mkdir -p "$BLOCKS" "$ITEMS"
+ENTITIES="$ROOT/src/main/resources/assets/craftonica/textures/entity"
+mkdir -p "$BLOCKS" "$ITEMS" "$ENTITIES"
 
 pixel() {
     magick -size 16x16 "$@" -filter point -strip -define png:color-type=6 PNG32:"$OUTPUT"
@@ -27,9 +28,6 @@ resistor resistor_220 '#c83232' '#c83232' '#7a3e25'
 resistor resistor_1k '#7a3e25' '#17191a' '#c83232'
 resistor resistor_10k '#7a3e25' '#17191a' '#e59a2f'
 
-OUTPUT="$BLOCKS/led_off.png" pixel xc:'#273238' +antialias -fill '#40515a' -draw 'rectangle 1,1 14,14' -fill '#71333a' -draw 'rectangle 4,4 11,12' -fill '#a84a4d' -draw 'rectangle 5,3 10,10' -fill '#d46b68' -draw 'rectangle 6,4 8,6' -fill '#aeb7ad' -draw 'rectangle 5,13 6,15 rectangle 9,13 10,15'
-OUTPUT="$BLOCKS/led_on.png" pixel xc:'#443427' +antialias -fill '#72552d' -draw 'rectangle 1,1 14,14' -fill '#b15a30' -draw 'rectangle 3,3 12,12' -fill '#f08a3c' -draw 'rectangle 4,2 11,11' -fill '#ffd86b' -draw 'rectangle 5,3 10,9' -fill '#fff3a5' -draw 'rectangle 6,4 8,6'
-OUTPUT="$BLOCKS/led_burned.png" pixel xc:'#1e2224' +antialias -fill '#353b3d' -draw 'rectangle 1,1 14,14' -fill '#3b2827' -draw 'rectangle 4,4 11,12' -fill '#181617' -draw 'rectangle 5,3 10,10' -fill '#69504a' -draw 'rectangle 6,4 7,5 rectangle 9,7 10,8' -fill '#77736d' -draw 'rectangle 5,13 6,15 rectangle 9,13 10,15'
 OUTPUT="$BLOCKS/led_anode.png" pixel xc:'#2b3337' +antialias -fill '#a9473f' -draw 'rectangle 2,2 13,13' -fill '#ef7662' -draw 'rectangle 4,4 11,11' -fill '#fff0be' -draw 'rectangle 7,5 8,10 rectangle 5,7 10,8'
 OUTPUT="$BLOCKS/led_cathode.png" pixel xc:'#2b3337' +antialias -fill '#315d78' -draw 'rectangle 2,2 13,13' -fill '#5695ad' -draw 'rectangle 4,4 11,11' -fill '#d7f0ef' -draw 'rectangle 5,7 10,8'
 OUTPUT="$BLOCKS/diode_off.png" pixel xc:'#273238' +antialias -fill '#6e7c83' -draw 'rectangle 2,4 13,11' -fill '#aebbc0' -draw 'rectangle 4,5 11,10' -fill '#e2f0ed' -draw 'rectangle 8,5 9,10'
@@ -37,6 +35,26 @@ OUTPUT="$BLOCKS/diode_anode.png" pixel xc:'#2b3337' +antialias -fill '#a9473f' -
 OUTPUT="$BLOCKS/diode_cathode.png" pixel xc:'#2b3337' +antialias -fill '#315d78' -draw 'rectangle 2,2 13,13' -fill '#5695ad' -draw 'rectangle 4,4 11,11' -fill '#d7f0ef' -draw 'rectangle 5,7 10,8'
 OUTPUT="$BLOCKS/lever.png" pixel xc:'#252d31' +antialias -fill '#4e5d63' -draw 'rectangle 2,5 13,13' -fill '#9a713d' -draw 'rectangle 7,1 9,11' -fill '#d7a35b' -draw 'rectangle 6,1 10,4'
 OUTPUT="$BLOCKS/roboboard.png" pixel xc:'#17272b' +antialias -fill '#24584e' -draw 'rectangle 1,1 14,14' -fill '#347765' -draw 'rectangle 2,2 13,13' -fill '#c9b66b' -draw 'rectangle 1,3 2,4 rectangle 1,7 2,8 rectangle 1,11 2,12 rectangle 13,3 14,4 rectangle 13,7 14,8 rectangle 13,11 14,12' -fill '#182126' -draw 'rectangle 5,4 10,10' -fill '#435058' -draw 'rectangle 6,5 9,9' -fill '#df9d35' -draw 'rectangle 11,2 12,3' -fill '#d9574f' -draw 'rectangle 11,12 12,13'
+OUTPUT="$BLOCKS/robot_chassis.png" pixel xc:'#172329' +antialias -fill '#263b42' -draw 'rectangle 1,1 14,14' -fill '#365761' -draw 'rectangle 2,2 13,12' -fill '#4d7480' -draw 'rectangle 3,3 12,5' -fill '#132026' -draw 'rectangle 2,13 13,14 rectangle 3,7 5,11 rectangle 10,7 12,11' -fill '#d79a32' -draw 'polygon 7,6 4,10 6,10 6,13 9,13 9,10 11,10'
+OUTPUT="$BLOCKS/h_bridge.png" pixel xc:'#152226' +antialias -fill '#244b43' -draw 'rectangle 1,1 14,14' -fill '#347264' -draw 'rectangle 2,2 13,13' -fill '#151a1d' -draw 'rectangle 5,4 10,11' -fill '#465057' -draw 'rectangle 6,5 9,10' -fill '#c8ad62' -draw 'rectangle 1,3 3,4 rectangle 1,7 3,8 rectangle 1,11 3,12 rectangle 12,3 14,4 rectangle 12,7 14,8 rectangle 12,11 14,12' -fill '#d95a48' -draw 'rectangle 3,2 4,3' -fill '#62b7a2' -draw 'rectangle 11,12 12,13'
+
+magick -size 64x64 xc:'#2a4650' +antialias \
+  -fill '#365b66' -draw 'rectangle 0,0 35,22' \
+  -fill '#4e7a84' -draw 'rectangle 1,1 34,8' \
+  -fill '#1a2428' -draw 'rectangle 52,0 63,22' \
+  -fill '#101619' -draw 'rectangle 54,2 61,20' \
+  -fill '#285f51' -draw 'rectangle 0,23 35,38' \
+  -fill '#3b806c' -draw 'rectangle 2,25 33,36' \
+  -fill '#172125' -draw 'rectangle 0,39 35,51' \
+  -fill '#4f5d61' -draw 'rectangle 2,41 33,49' \
+  -fill '#17372f' -draw 'rectangle 36,39 63,47' \
+  -fill '#d0b65e' -draw 'rectangle 38,41 61,45' \
+  -fill '#d28f2d' -draw 'rectangle 36,48 63,55' \
+  -fill '#244e47' -draw 'rectangle 0,52 23,63' \
+  -fill '#65a89a' -draw 'rectangle 2,54 21,61' \
+  -fill '#b9c5bf' -draw 'rectangle 24,52 35,63' \
+  -fill '#e5ece7' -draw 'rectangle 26,54 33,61' \
+  -filter point -strip -define png:color-type=6 PNG32:"$ENTITIES/mobile_robot.png"
 
 OUTPUT="$ITEMS/multimeter.png" pixel xc:none +antialias -fill '#172329' -draw 'rectangle 3,1 12,14 rectangle 2,3 13,12' -fill '#d59a2f' -draw 'rectangle 3,2 12,12' -fill '#f0bc48' -draw 'rectangle 4,2 11,4' -fill '#9dd8c8' -draw 'rectangle 5,4 10,7' -fill '#24454b' -draw 'rectangle 6,5 9,6' -fill '#30373a' -draw 'rectangle 5,9 10,12' -fill '#d94b45' -draw 'rectangle 6,10 7,11' -fill '#32383b' -draw 'rectangle 9,10 10,11' -fill '#d94b45' -draw 'rectangle 3,13 4,15' -fill '#202629' -draw 'rectangle 11,13 12,15'
 OUTPUT="$ITEMS/wrench.png" pixel xc:none +antialias -fill '#323b40' -draw 'polygon 2,1 5,1 7,4 5,6 13,14 11,16 3,8 1,9 0,6 2,4' -fill '#98a6aa' -draw 'polygon 3,1 5,2 6,4 4,6 2,5 1,6 2,8 4,7 12,15 13,14 5,6 7,4 5,1' -fill '#d9e0de' -draw 'polygon 3,2 5,3 5,4 4,5 2,4'

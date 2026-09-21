@@ -15,7 +15,7 @@ buildscript {
 
 apply plugin: "forge"
 
-version = "1.1.0"
+version = "1.2.0"
 group = "br.com.craftonica"
 archivesBaseName = "craftonica"
 
@@ -125,6 +125,42 @@ task runtimeWorkerJar(type: Jar, dependsOn: classes) {
     include "br/com/craftonica/runtime/protocol/**"
     include "br/com/craftonica/runtime/worker/**"
     manifest { attributes "Main-Class": "br.com.craftonica.runtime.worker.RuntimeWorkerMain" }
+    doLast {
+        def original = archivePath
+        def normalized = file("${archivePath}.normalized")
+        def input = new java.util.zip.ZipFile(original)
+        def output = new java.util.zip.ZipOutputStream(new FileOutputStream(normalized))
+        try {
+            def entries = java.util.Collections.list(input.entries()).sort { a, b -> a.name <=> b.name }
+            entries.each { entry ->
+                def copy = new java.util.zip.ZipEntry(entry.name)
+                copy.time = 315532800000L // 1980-01-01, portable ZIP epoch
+                output.putNextEntry(copy)
+                if (!entry.directory) {
+                    def contents = input.getInputStream(entry)
+                    try { output.write(contents.bytes) } finally { contents.close() }
+                }
+                output.closeEntry()
+            }
+        } finally {
+            output.close()
+            input.close()
+        }
+        if (!original.delete() || !normalized.renameTo(original))
+            throw new GradleException("Could not publish normalized runtime worker JAR")
+    }
+}
+
+task verifyRuntimeWorkerJar(dependsOn: runtimeWorkerJar) << {
+    def archive = new java.util.zip.ZipFile(runtimeWorkerJar.archivePath)
+    try {
+        archive.entries().each { entry ->
+            if (entry.time != 315532800000L)
+                throw new GradleException("Runtime worker contains non-reproducible timestamp: ${entry.name}")
+        }
+    } finally {
+        archive.close()
+    }
 }
 
 task verifyRuntimeGates(type: Test, dependsOn: [testClasses, runtimeWorkerJar]) {
@@ -194,4 +230,5 @@ build.dependsOn verifyElectricalGates
 build.dependsOn verifyFirmwareGates
 build.dependsOn verifyRuntimeGates
 build.dependsOn runtimeProfile
+build.dependsOn verifyRuntimeWorkerJar
 build.dependsOn verifyMigrationGates

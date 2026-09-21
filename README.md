@@ -1,4 +1,4 @@
-# Craftônica: Robotics Lab 1.1.0
+# Craftônica: Robotics Lab 1.2.0
 
 MVP educacional para Minecraft 1.7.10 e Forge 10.13.4.1614. O mundo funciona
 como uma bancada: fonte, fios, botão, resistores, LED e GND são blocos reais. A
@@ -8,7 +8,7 @@ O histórico do plano do MVP até a placa Arduino-compatible está em
 [`ROADMAP.md`](ROADMAP.md).
 
 Para instalar e operar a versão estável, comece em
-[`docs/installation-1.1.md`](docs/installation-1.1.md). Os roteiros de aluno,
+[`docs/installation-1.2.md`](docs/installation-1.2.md). Os roteiros de aluno,
 professor, solução de problemas e release estão no [`docs/README.md`](docs/README.md).
 
 Um operador pode gerar automaticamente uma sala superplana com seis projetos
@@ -22,7 +22,7 @@ A0-A5, 5 V e GND vinculados à mesma RoboBoard. Consulte
 
 A arquitetura normativa da RoboBoard e do pipeline de sketches está em
 [`docs/rfc/0002-runtime-arduino-compatible-seguro.md`](docs/rfc/0002-runtime-arduino-compatible-seguro.md).
-O contrato da futura plataforma robótica móvel está em
+O contrato normativo da plataforma robótica móvel está em
 [`docs/rfc/0003-plataforma-robotica-movel.md`](docs/rfc/0003-plataforma-robotica-movel.md).
 O estado atual e o comando temporário do chassi estão em
 [`docs/chassi-robotico.md`](docs/chassi-robotico.md).
@@ -43,7 +43,7 @@ O projeto não suporta Java posterior ao 8 porque usa ForgeGradle 1.2.
 
 O script baixa uma distribuição Temurin 8 fixada, verifica o SHA-256 e a guarda
 em `~/.cache/craftonica`, sem alterar o Java padrão. O artefato instalável é
-`build/libs/craftonica-1.1.0.jar`.
+`build/libs/craftonica-1.2.0.jar`.
 
 Para reconstruir e instalar com segurança na instância dedicada do Prism:
 
@@ -169,11 +169,12 @@ significam:
 | Chave inglesa | Ausente | Protótipo | Possui sprite, mas ainda não possui modelo próprio. |
 | Roteador de fios | Ausente | Protótipo | Possui sprite, mas ainda não possui modelo próprio. |
 | Manual do Craftônica | Ausente | Protótipo | Possui sprite e interface de livro vanilla. |
-| Sensor de distância HC-SR04 | Protótipo | Protótipo | Quatro terminais, transdutores, pulsos e resposta acústica implementados. |
+| Sensor de distância HC-SR04 | **Final** | **Final** | Placa, dois transdutores, quatro terminais, pulsos e resposta acústica aprovados. |
 | Trilhos acústicos (4 materiais) | Protótipo | Protótipo | Alvos configuráveis de 5-50 cm e incidência de 0-60°. |
 | Servo | Ausente | Ausente | Planejado no roadmap; ainda não registrado. |
-| Ponte H | Protótipo | **Ausente** | Bloco funcional provisório reutiliza textura do motor. |
-| Chassi robótico móvel | Protótipo | **Ausente** | Bloco e entidade persistente com geometria provisória sem textura própria. |
+| Ponte H | **Final** | **Final** | Placa dupla, circuito integrado e duas fileiras de terminais aprovados. |
+| Chassi robótico móvel | **Final** | **Final** | Núcleo orientado e entidade texturizada com plataforma, para-choque e módulos aprovados. |
+| Rodas e motores móveis | **Final** | **Final** | Duas rodas laterais, motores internos e leitura independente dos lados aprovados. |
 
 Ao adicionar um componente, inclua-o nesta tabela no mesmo commit. Um asset novo
 começa como **Protótipo**; somente uma aprovação explícita pode promovê-lo a
@@ -228,6 +229,10 @@ roteiro estão em [`docs/arena-robotica.md`](docs/arena-robotica.md).
 O sketch integrador de desvio com um único HC-SR04 pode ser carregado em uma
 RoboBoard vazia por `/craftonica robot sketch autonomous`; ele filtra três
 tentativas, preserva timeouts e mantém o robô em estado seguro se o sensor falhar.
+O percurso completo, da montagem física à navegação, está no
+[`manual guiado do robô móvel`](docs/robo-movel-guiado.md). A
+[`matriz de compatibilidade`](docs/compatibilidade-1.2.md) separa APIs suportadas,
+aproximações educacionais e diferenças para hardware real.
 Os limites, gates de soak e a matriz dedicada/multiplayer estão em
 [`docs/validacao-runtime-movel.md`](docs/validacao-runtime-movel.md).
 
@@ -448,8 +453,8 @@ gate de precisão e desempenho está em
 ## Limitações conhecidas
 
 - Não há CA, capacitores, indutores ou transistores.
-- A RoboBoard não simula áudio, mecânica, servos ou ponte H; essas integrações
-  estão fora do escopo da versão 1.0.
+- Buzzer e `tone()` não produzem áudio; servos ainda não são simulados. A ponte H
+  móvel controla apenas o primeiro chassi diferencial suportado.
 - A fonte e o GND têm terminais apenas horizontais no fluxo normal de colocação.
 - Curtos são limitados pela resistência interna simplificada da fonte; não há
   ainda um modelo não linear de limitação de corrente.

@@ -14,6 +14,8 @@ import br.com.craftonica.block.BlockElectricalLever;
 import br.com.craftonica.block.BlockPotentiometer;
 import br.com.craftonica.block.BlockEducationalActuator;
 import br.com.craftonica.block.BlockAnalogSensor;
+import br.com.craftonica.block.BlockRobotModule;
+import br.com.craftonica.block.BlockUltrasonicSensor;
 import br.com.craftonica.block.WireColor;
 import br.com.craftonica.render.CraftonicaRenderIds;
 import cpw.mods.fml.client.registry.ISimpleBlockRenderingHandler;
@@ -141,11 +143,53 @@ public final class ElectricalBlockRenderer implements ISimpleBlockRenderingHandl
             renderEducationalActuator((BlockEducationalActuator) block, metadata, world, x, y, z, parts);
         } else if (block instanceof BlockAnalogSensor) {
             renderAnalogSensor((BlockAnalogSensor) block, metadata, parts);
+        } else if (block instanceof BlockRobotModule) {
+            renderRobotModule((BlockRobotModule) block, metadata, parts);
+        } else if (block instanceof BlockUltrasonicSensor) {
+            renderUltrasonic((BlockUltrasonicSensor) block, metadata, parts);
         } else if (block instanceof BlockTwoTerminal) {
             renderResistor((BlockTwoTerminal) block, metadata, parts);
         } else if (block instanceof BlockSingleTerminal) {
             renderSingleTerminal((BlockSingleTerminal) block, metadata, parts);
         }
+    }
+
+    private void renderRobotModule(BlockRobotModule block, int metadata, PartRenderer parts) {
+        IIcon icon = block.getIcon(0, metadata);
+        int front = normalizeHorizontal(metadata & 7);
+        if (block.getType() == BlockRobotModule.Type.CHASSIS) {
+            parts.render(P, 2 * P, 2 * P, 15 * P, 6 * P, 14 * P, icon);
+            parts.render(2 * P, 6 * P, 3 * P, 14 * P, 8 * P, 13 * P, icon);
+            directionalBox(parts, front, 6 * P, 8 * P, 11 * P, 10 * P, 10 * P, 15 * P, icon);
+        } else {
+            parts.render(2 * P, 3 * P, 3 * P, 14 * P, 6 * P, 13 * P, icon);
+            parts.render(4 * P, 6 * P, 5 * P, 12 * P, 10 * P, 11 * P, icon);
+            for (int index = 0; index < 4; index++) {
+                double along = (2 + index * 4) * P;
+                directionalBox(parts, front, along, P, 2 * P, along + 2 * P, 4 * P, 5 * P, icon);
+                directionalBox(parts, front, along, P, 11 * P, along + 2 * P, 4 * P, 14 * P, icon);
+            }
+        }
+    }
+
+    private void renderUltrasonic(BlockUltrasonicSensor block, int metadata, PartRenderer parts) {
+        int front = BlockUltrasonicSensor.normalizeFront(metadata & 7);
+        directionalBox(parts, front, 2 * P, 2 * P, 5 * P, 14 * P, 14 * P, 10 * P, block.getBodyIcon());
+        directionalBox(parts, front, 3 * P, 5 * P, 10 * P, 7 * P, 11 * P, 15 * P, block.getFrontIcon());
+        directionalBox(parts, front, 9 * P, 5 * P, 10 * P, 13 * P, 11 * P, 15 * P, block.getFrontIcon());
+        parts.render(6 * P, 14 * P, 6 * P, 10 * P, 1, 10 * P, block.getVccIcon());
+        parts.render(6 * P, 0, 6 * P, 10 * P, 2 * P, 10 * P, block.getGroundIcon());
+        renderLead(parts, BlockUltrasonicSensor.leftOf(front), block.getTriggerIcon(), 6 * P, 10 * P);
+        renderLead(parts, BlockUltrasonicSensor.rightOf(front), block.getEchoIcon(), 6 * P, 10 * P);
+    }
+
+    private void directionalBox(PartRenderer parts, int front,
+                                double minX, double minY, double minZ,
+                                double maxX, double maxY, double maxZ, IIcon icon) {
+        if (front == 3) parts.render(minX, minY, minZ, maxX, maxY, maxZ, icon);
+        else if (front == 2) parts.render(1 - maxX, minY, 1 - maxZ, 1 - minX, maxY, 1 - minZ, icon);
+        else if (front == 4) parts.render(1 - maxZ, minY, minX, 1 - minZ, maxY, maxX, icon);
+        else parts.render(minZ, minY, 1 - maxX, maxZ, maxY, 1 - minX, icon);
     }
 
     private void renderWire(BlockElectricalWire block, int metadata, IBlockAccess world, int x, int y, int z,

@@ -58,9 +58,9 @@ public final class ModBlocks {
             "dc_motor", "dcMotor", "craftonica:dc_motor");
     public static final BlockUltrasonicSensor ULTRASONIC_SENSOR = new BlockUltrasonicSensor();
     public static final BlockRobotModule ROBOT_CHASSIS = new BlockRobotModule(BlockRobotModule.Type.CHASSIS,
-            "robotChassis", "craftonica:roboboard");
+            "robotChassis", "craftonica:robot_chassis");
     public static final BlockRobotModule H_BRIDGE = new BlockRobotModule(BlockRobotModule.Type.H_BRIDGE,
-            "hBridge", "craftonica:dc_motor");
+            "hBridge", "craftonica:h_bridge");
     public static final BlockCalibrationTarget TARGET_MDF = new BlockCalibrationTarget("targetMdf",
             "craftonica:target_mdf", AcousticMaterialProfile.MDF);
     public static final BlockCalibrationTarget TARGET_PLASTIC = new BlockCalibrationTarget("targetPlastic",

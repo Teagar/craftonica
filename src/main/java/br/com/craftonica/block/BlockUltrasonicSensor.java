@@ -3,6 +3,7 @@ package br.com.craftonica.block;
 import br.com.craftonica.CraftonicaCreativeTab;
 import br.com.craftonica.network.BlockPosition;
 import br.com.craftonica.network.ElectricalNetworkManager;
+import br.com.craftonica.render.CraftonicaRenderIds;
 import br.com.craftonica.tile.TileEntityUltrasonicSensor;
 import net.minecraft.block.BlockContainer;
 import net.minecraft.block.material.Material;
@@ -48,6 +49,16 @@ public final class BlockUltrasonicSensor extends BlockContainer
         if (side == rightOf(facing)) return echo;
         return body;
     }
+
+    public IIcon getBodyIcon() { return body; }
+    public IIcon getFrontIcon() { return front; }
+    public IIcon getVccIcon() { return vcc; }
+    public IIcon getGroundIcon() { return ground; }
+    public IIcon getTriggerIcon() { return trigger; }
+    public IIcon getEchoIcon() { return echo; }
+    @Override public boolean isOpaqueCube() { return false; }
+    @Override public boolean renderAsNormalBlock() { return false; }
+    @Override public int getRenderType() { return CraftonicaRenderIds.ELECTRICAL_COMPONENT; }
 
     @Override public boolean canConnectOnSide(IBlockAccess world, int x, int y, int z, int side) {
         int facing = normalizeFront(world.getBlockMetadata(x, y, z) & 7);
