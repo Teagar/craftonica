@@ -158,11 +158,15 @@ public final class MobileElectricalNetlistTest {
         terminals.add(t(p(7, 0, 0), StandardComponentCatalog.ROBO_PORT, "terminal", 2, "D2"));
         terminals.add(t(sensor, StandardComponentCatalog.HC_SR04, "echo", 3, ""));
         terminals.add(t(p(8, 0, 0), StandardComponentCatalog.ROBO_PORT, "terminal", 3, "D3"));
-        assertTrue(MobileElectricalEvaluator.evaluate(new MobileElectricalNetlist(terminals))
-                .getDiagnostics().isEmpty());
+        MobileElectricalEvaluation valid = MobileElectricalEvaluator.evaluate(new MobileElectricalNetlist(terminals));
+        assertTrue(valid.getDiagnostics().isEmpty());
+        assertTrue(valid.getSensors().get(sensor).enabled);
+        assertEquals("D2", valid.getSensors().get(sensor).triggerRole);
+        assertEquals("D3", valid.getSensors().get(sensor).echoRole);
         terminals.set(4, t(sensor, StandardComponentCatalog.HC_SR04, "trig", 4, ""));
-        assertTrue(has(MobileElectricalEvaluator.evaluate(new MobileElectricalNetlist(terminals)),
-                MobileElectricalDiagnostic.Code.SENSOR_TRIGGER_OPEN));
+        MobileElectricalEvaluation invalid = MobileElectricalEvaluator.evaluate(new MobileElectricalNetlist(terminals));
+        assertTrue(has(invalid, MobileElectricalDiagnostic.Code.SENSOR_TRIGGER_OPEN));
+        assertFalse(invalid.getSensors().get(sensor).enabled);
     }
 
     private static MobileElectricalNetlist bridgeNetlist(boolean complete, String pwm, String direction) {

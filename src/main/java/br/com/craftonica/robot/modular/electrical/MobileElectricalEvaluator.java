@@ -16,14 +16,16 @@ public final class MobileElectricalEvaluator {
         if (netlist == null) throw new IllegalArgumentException("netlist");
         Map<GridVector, MobileElectricalEvaluation.DriveBinding> drives =
                 new LinkedHashMap<GridVector, MobileElectricalEvaluation.DriveBinding>();
+        Map<GridVector, MobileElectricalEvaluation.SensorBinding> sensors =
+                new LinkedHashMap<GridVector, MobileElectricalEvaluation.SensorBinding>();
         List<MobileElectricalDiagnostic> diagnostics = new ArrayList<MobileElectricalDiagnostic>();
         for (MobileTerminal terminal : netlist.getTerminals()) {
             if (StandardComponentCatalog.H_BRIDGE.equals(terminal.componentTypeId)
                     && "vcc".equals(terminal.portId)) evaluateBridge(netlist, terminal.modulePosition, drives, diagnostics);
             if (StandardComponentCatalog.HC_SR04.equals(terminal.componentTypeId)
-                    && "vcc".equals(terminal.portId)) evaluateSensor(netlist, terminal.modulePosition, diagnostics);
+                    && "vcc".equals(terminal.portId)) evaluateSensor(netlist, terminal.modulePosition, sensors, diagnostics);
         }
-        return new MobileElectricalEvaluation(drives, diagnostics);
+        return new MobileElectricalEvaluation(drives, sensors, diagnostics);
     }
 
     private static void evaluateBridge(MobileElectricalNetlist netlist, GridVector position,
@@ -44,15 +46,22 @@ public final class MobileElectricalEvaluator {
     }
 
     private static void evaluateSensor(MobileElectricalNetlist netlist, GridVector position,
-                                       List<MobileElectricalDiagnostic> diagnostics) {
-        if (!powered(netlist, position, "vcc"))
+            Map<GridVector, MobileElectricalEvaluation.SensorBinding> sensors,
+            List<MobileElectricalDiagnostic> diagnostics) {
+        boolean power = powered(netlist, position, "vcc");
+        boolean ground = grounded(netlist, position, "gnd");
+        String trigger = connectedDigitalRole(netlist, position, "trig");
+        String echo = connectedDigitalRole(netlist, position, "echo");
+        if (!power)
             diagnostic(diagnostics, MobileElectricalDiagnostic.Code.SENSOR_VCC_OPEN, position);
-        if (!grounded(netlist, position, "gnd"))
+        if (!ground)
             diagnostic(diagnostics, MobileElectricalDiagnostic.Code.SENSOR_GND_OPEN, position);
-        if (connectedDigitalRole(netlist, position, "trig") == null)
+        if (trigger == null)
             diagnostic(diagnostics, MobileElectricalDiagnostic.Code.SENSOR_TRIGGER_OPEN, position);
-        if (connectedDigitalRole(netlist, position, "echo") == null)
+        if (echo == null)
             diagnostic(diagnostics, MobileElectricalDiagnostic.Code.SENSOR_ECHO_OPEN, position);
+        sensors.put(position, new MobileElectricalEvaluation.SensorBinding(
+                power && ground && trigger != null && echo != null, trigger, echo, position));
     }
 
     private static boolean connectedToType(MobileElectricalNetlist netlist, GridVector position,
