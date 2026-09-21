@@ -537,11 +537,15 @@ passarem pelos mesmos caminhos de produção.
 
 ## Questões adiadas
 
+O RFC 0005 define o perfil inicial para transmissões, juntas, servos e corpos
+articulados. Os demais itens abaixo continuam adiados quando não cobertos por um
+perfil posterior explícito.
+
 - múltiplas RoboBoards e barramentos de comunicação;
 - bateria com estado de carga e envelhecimento;
-- engrenagens, correias, diferenciais e relações de transmissão;
-- juntas, servos, braços e corpos articulados;
-- esteiras, rodas omni e mecanum;
+- correias flexíveis, diferenciais e transmissões fora do perfil RFC 0005;
+- juntas multi-GDL e loops articulados fora do perfil RFC 0005;
+- contato de esteiras, rodas omni e mecanum até seus perfis derivados do RFC 0005;
 - suspensão e pneus deformáveis;
 - dano, quebra estrutural e reparo em movimento;
 - interferência acústica completa entre vários sonares;
