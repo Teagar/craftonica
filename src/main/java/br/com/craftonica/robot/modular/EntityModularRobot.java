@@ -17,6 +17,7 @@ import br.com.craftonica.runtime.protocol.RuntimeProtocol;
 import br.com.craftonica.runtime.server.RoboBoardRuntimeHost;
 import br.com.craftonica.tile.RoboBoardState;
 import br.com.craftonica.tile.RoboBoardStateNbtCodec;
+import br.com.craftonica.robot.modular.sensor.MobileUltrasonicSystem;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.nbt.NBTTagCompound;
@@ -38,6 +39,9 @@ public final class EntityModularRobot extends Entity {
     private CoupledDriveLoop.State coupledDriveState;
     private CoupledDriveLoop.ControlFrame pendingControlFrame;
     private RoboBoardState boardState;
+    private MobileUltrasonicSystem ultrasonicSystem;
+    private long sensorSampleCounter;
+    private MobileUltrasonicSystem.Status lastSensorStatus = MobileUltrasonicSystem.Status.IDLE;
     private final RoboBoardRuntimeHost runtimeHost = new RoboBoardRuntimeHost();
     private final List<TerrestrialRigidBodyModel.AppliedForce> pendingForces =
             new ArrayList<TerrestrialRigidBodyModel.AppliedForce>();
@@ -55,6 +59,7 @@ public final class EntityModularRobot extends Entity {
         value.coupledDrive = new CoupledDriveLoop(manifest, CATALOG);
         value.coupledDriveState = value.coupledDrive.initialState();
         value.boardState = board(manifest);
+        value.ultrasonicSystem = new MobileUltrasonicSystem(manifest);
         value.rotationYaw = yawDegrees(orientation.getForward());
         value.setPosition(anchor.x + 0.5, anchor.y, anchor.z + 0.5);
         value.dynamics = value.currentState(0.0, 0.0, 0.0, 0.0);
@@ -104,6 +109,7 @@ public final class EntityModularRobot extends Entity {
             NBTTagCompound value = new NBTTagCompound(); RoboBoardStateNbtCodec.write(boardState, value);
             tag.setTag("CraftonicaMobileBoard", value);
         }
+        tag.setLong("CraftonicaSensorCounter", sensorSampleCounter);
     }
 
     @Override protected void readEntityFromNBT(NBTTagCompound tag) {
@@ -115,6 +121,9 @@ public final class EntityModularRobot extends Entity {
             boardState = tag.hasKey("CraftonicaMobileBoard")
                     ? RoboBoardStateNbtCodec.read(tag.getCompoundTag("CraftonicaMobileBoard"))
                     : board(state.getManifest());
+            ultrasonicSystem = new MobileUltrasonicSystem(state.getManifest());
+            sensorSampleCounter = tag.getLong("CraftonicaSensorCounter");
+            if (sensorSampleCounter < 0) throw new IllegalArgumentException("sensor counter");
             NBTTagCompound value = tag.getCompoundTag("CraftonicaRigidBody");
             double vx = value.getDouble("VelocityX"), vy = value.getDouble("VelocityY");
             double vz = value.getDouble("VelocityZ"), angular = value.getDouble("AngularVelocity");
@@ -137,7 +146,8 @@ public final class EntityModularRobot extends Entity {
                 player.addChatMessage(new ChatComponentText("Robô modular " + state.getRobotId()
                         + " — " + state.getStatus().name() + ", redes="
                         + state.getManifest().getElectricalNetlist().getNetworkCount()
-                        + ", diagnósticos=" + electrical.getDiagnostics().size()));
+                        + ", diagnósticos=" + electrical.getDiagnostics().size()
+                        + ", sensores=" + lastSensorStatus.name()));
             }
         }
         return true;
@@ -145,6 +155,7 @@ public final class EntityModularRobot extends Entity {
 
     public ModularRobotState getRobotState() { return state; }
     public RigidBodyProperties getRigidBodyProperties() { ensureBody(); return body; }
+    public MobileUltrasonicSystem.Status getLastSensorStatus() { return lastSensorStatus; }
     public void applyForceForNextTick(TerrestrialRigidBodyModel.AppliedForce force) {
         if (worldObj.isRemote || force == null || pendingForces.size() >= TerrestrialRigidBodyModel.MAX_FORCES_PER_SUBSTEP)
             return;
@@ -163,10 +174,21 @@ public final class EntityModularRobot extends Entity {
     }
 
     private void updateRuntime() {
-        if (boardState == null || !boardState.isRunning()) { runtimeHost.cancel(); return; }
+        if (boardState == null || !boardState.isRunning()) {
+            runtimeHost.cancel(); lastSensorStatus = MobileUltrasonicSystem.Status.IDLE; return;
+        }
         RuntimeProtocol.Identity identity = RuntimeProtocol.Identity.mobile(worldObj.provider.dimensionId,
                 state.getRobotId(), boardState.getGeneration());
-        runtimeHost.tick(identity, worldObj.getTotalWorldTime(), boardState, emptyInputs(),
+        AvrInputs inputs = AvrInputs.allLow();
+        if (runtimeHost.needsInput() && ultrasonicSystem != null) {
+            long seed = worldObj.getSeed() ^ state.getRobotId().getMostSignificantBits()
+                    ^ state.getRobotId().getLeastSignificantBits() ^ sensorSampleCounter;
+            sensorSampleCounter = sensorSampleCounter == Long.MAX_VALUE ? 0L : sensorSampleCounter + 1L;
+            MobileUltrasonicSystem.Sample sample = ultrasonicSystem.sample(worldObj, this, boardState,
+                    posX, posY, posZ, StrictMath.toRadians(rotationYaw), seed);
+            inputs = sample.inputs; lastSensorStatus = sample.status;
+        }
+        runtimeHost.tick(identity, worldObj.getTotalWorldTime(), boardState, inputs,
                 new RoboBoardRuntimeHost.OutputListener() {
                     @Override public void committed(RoboBoardState committed, RuntimeProtocol.Result result) {
                         if (pendingControlFrame == null)
@@ -222,6 +244,8 @@ public final class EntityModularRobot extends Entity {
             coupledDrive = new CoupledDriveLoop(state.getManifest(), CATALOG);
             coupledDriveState = coupledDrive.initialState();
         }
+        if (ultrasonicSystem == null && state != null)
+            ultrasonicSystem = new MobileUltrasonicSystem(state.getManifest());
     }
 
     private void configureBounds() {
@@ -250,10 +274,6 @@ public final class EntityModularRobot extends Entity {
             return data == null ? null : RoboBoardStateNbtCodec.read(data);
         }
         return null;
-    }
-
-    private static AvrInputs emptyInputs() {
-        return AvrInputs.allLow();
     }
 
     @Override public void setDead() { runtimeHost.cancel(); super.setDead(); }
