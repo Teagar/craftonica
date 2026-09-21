@@ -4,6 +4,8 @@ import br.com.craftonica.robot.modular.ComponentOrientation;
 import br.com.craftonica.robot.modular.Direction;
 import br.com.craftonica.robot.modular.GridVector;
 import br.com.craftonica.robot.modular.assembly.AssemblyEdge;
+import br.com.craftonica.robot.modular.electrical.MobileElectricalNetlist;
+import br.com.craftonica.robot.modular.electrical.MobileTerminal;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 
@@ -40,6 +42,15 @@ public final class ModularManifestNbtCodec {
             edges.appendTag(value);
         }
         tag.setTag("Edges", edges); tag.setByteArray("Fingerprint", manifest.getFingerprint());
+        NBTTagList terminals = new NBTTagList();
+        for (MobileTerminal terminal : manifest.getElectricalNetlist().getTerminals()) {
+            NBTTagCompound value = new NBTTagCompound(); value.setInteger("X", terminal.modulePosition.x);
+            value.setInteger("Y", terminal.modulePosition.y); value.setInteger("Z", terminal.modulePosition.z);
+            value.setString("Type", terminal.componentTypeId); value.setString("Port", terminal.portId);
+            value.setByte("Face", (byte) terminal.face.ordinal()); value.setString("Role", terminal.role);
+            value.setInteger("Net", terminal.networkId); terminals.appendTag(value);
+        }
+        tag.setTag("ElectricalTerminals", terminals);
         return tag;
     }
 
@@ -66,7 +77,18 @@ public final class ModularManifestNbtCodec {
                     new GridVector(value.getInteger("AX"), value.getInteger("AY"), value.getInteger("AZ")), value.getString("APort"),
                     new GridVector(value.getInteger("BX"), value.getInteger("BY"), value.getInteger("BZ")), value.getString("BPort")));
         }
-        ModularRobotManifest manifest = new ModularRobotManifest(new UUID(tag.getLong("ManifestMost"), tag.getLong("ManifestLeast")), modules, edges);
+        NBTTagList terminalTags = tag.getTagList("ElectricalTerminals", 10);
+        if (terminalTags.tagCount() > MobileElectricalNetlist.MAX_TERMINALS) throw new IllegalArgumentException("terminal count");
+        List<MobileTerminal> terminals = new ArrayList<MobileTerminal>();
+        for (int i = 0; i < terminalTags.tagCount(); i++) {
+            NBTTagCompound value = terminalTags.getCompoundTagAt(i); int face = value.getByte("Face");
+            if (face < 0 || face >= Direction.values().length) throw new IllegalArgumentException("terminal face");
+            terminals.add(new MobileTerminal(new GridVector(value.getInteger("X"), value.getInteger("Y"), value.getInteger("Z")),
+                    value.getString("Type"), value.getString("Port"), Direction.values()[face],
+                    value.getString("Role"), value.getInteger("Net")));
+        }
+        ModularRobotManifest manifest = new ModularRobotManifest(new UUID(tag.getLong("ManifestMost"), tag.getLong("ManifestLeast")),
+                modules, edges, new MobileElectricalNetlist(terminals));
         if (!manifest.hasFingerprint(tag.getByteArray("Fingerprint"))) throw new IllegalArgumentException("manifest fingerprint");
         return manifest;
     }

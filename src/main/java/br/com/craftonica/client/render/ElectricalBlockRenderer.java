@@ -16,6 +16,7 @@ import br.com.craftonica.block.BlockEducationalActuator;
 import br.com.craftonica.block.BlockAnalogSensor;
 import br.com.craftonica.block.BlockRobotModule;
 import br.com.craftonica.block.BlockUltrasonicSensor;
+import br.com.craftonica.block.BlockModularUltrasonicSensor;
 import br.com.craftonica.block.WireColor;
 import br.com.craftonica.render.CraftonicaRenderIds;
 import cpw.mods.fml.client.registry.ISimpleBlockRenderingHandler;
@@ -178,7 +179,9 @@ public final class ElectricalBlockRenderer implements ISimpleBlockRenderingHandl
         directionalBox(parts, front, 3 * P, 5 * P, 10 * P, 7 * P, 11 * P, 15 * P, block.getFrontIcon());
         directionalBox(parts, front, 9 * P, 5 * P, 10 * P, 13 * P, 11 * P, 15 * P, block.getFrontIcon());
         parts.render(6 * P, 14 * P, 6 * P, 10 * P, 1, 10 * P, block.getVccIcon());
-        parts.render(6 * P, 0, 6 * P, 10 * P, 2 * P, 10 * P, block.getGroundIcon());
+        if (block instanceof BlockModularUltrasonicSensor)
+            renderLead(parts, BlockUltrasonicSensor.backOf(front), block.getGroundIcon(), 6 * P, 10 * P);
+        else parts.render(6 * P, 0, 6 * P, 10 * P, 2 * P, 10 * P, block.getGroundIcon());
         renderLead(parts, BlockUltrasonicSensor.leftOf(front), block.getTriggerIcon(), 6 * P, 10 * P);
         renderLead(parts, BlockUltrasonicSensor.rightOf(front), block.getEchoIcon(), 6 * P, 10 * P);
     }

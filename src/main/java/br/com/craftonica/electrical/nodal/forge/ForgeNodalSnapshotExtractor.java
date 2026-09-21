@@ -132,10 +132,17 @@ public final class ForgeNodalSnapshotExtractor {
             kind = "analog_sensor";
             parameters.put("voltage", ((TileEntityAnalogSensor) tile).getOutputMicrovolts() / 1000000.0);
             parameters.put("internalResistance", (double) ((BlockAnalogSensor) block).getOutputResistanceOhms());
+        } else if (block instanceof BlockModularDcMotor) {
+            kind = "actuator";
+            parameters.put("resistance", 4.0);
+            state.put("type", "MODULAR_DC_MOTOR");
         } else if (block instanceof BlockEducationalActuator) {
             kind = "actuator";
             parameters.put("resistance", (double) ((BlockEducationalActuator) block).getResistanceOhms());
             state.put("type", ((BlockEducationalActuator) block).getType().name());
+        } else if (block instanceof BlockHBridgeTerminal) {
+            kind = "terminal_device";
+            state.put("type", "H_BRIDGE_TERMINAL");
         } else if (block instanceof BlockElectricalWire) {
             kind = "wire";
             groups = Collections.singletonList(new int[]{0, 1, 2, 3, 4, 5});
@@ -198,9 +205,22 @@ public final class ForgeNodalSnapshotExtractor {
         } else if (block instanceof BlockUltrasonicSensor) {
             int front = BlockUltrasonicSensor.normalizeFront(metadata & 7);
             terminals.add(new TerminalSnapshot(p, Face.UP, 0));
-            terminals.add(new TerminalSnapshot(p, Face.DOWN, 1));
+            terminals.add(new TerminalSnapshot(p, block instanceof BlockModularUltrasonicSensor
+                    ? face(BlockUltrasonicSensor.backOf(front)) : Face.DOWN, 1));
             terminals.add(new TerminalSnapshot(p, face(BlockUltrasonicSensor.leftOf(front)), 2));
             terminals.add(new TerminalSnapshot(p, face(BlockUltrasonicSensor.rightOf(front)), 3));
+        } else if (block instanceof BlockHBridgeTerminal) {
+            int outward = -1;
+            for (int side = 0; side < 6; side++) if (world.canConnectOnSide(block, p, side)) {
+                if (outward >= 0) throw new IllegalArgumentException("Terminal de ponte H ambiguo");
+                outward = side;
+            }
+            if (outward < 0) throw new IllegalArgumentException("Terminal de ponte H orfao");
+            terminals.add(new TerminalSnapshot(p, face(outward), 0));
+        } else if (block instanceof BlockModularDcMotor) {
+            int front = BlockUltrasonicSensor.normalizeFront(metadata & 7);
+            terminals.add(new TerminalSnapshot(p, face(front), 0));
+            terminals.add(new TerminalSnapshot(p, Face.UP, 1));
         } else if (block instanceof BlockElectricalWire) {
             for (int side = 0; side < 6; side++) terminals.add(new TerminalSnapshot(p, face(side), side));
         } else if (block instanceof BlockSingleTerminal) {

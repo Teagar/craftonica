@@ -17,8 +17,8 @@ import net.minecraft.util.IIcon;
 import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
 
-/** Four-terminal HC-SR04: top VCC, bottom GND, left TRIG, right ECHO. */
-public final class BlockUltrasonicSensor extends BlockContainer
+/** Legacy four-terminal HC-SR04: top VCC, bottom GND, left TRIG, right ECHO. */
+public class BlockUltrasonicSensor extends BlockContainer
         implements IElectricalBlock, IRotatableElectricalBlock {
     public static final double SUPPLY_RESISTANCE_OHMS = 10000.0;
     public static final double SIGNAL_RESISTANCE_OHMS = 1000000.0;
@@ -110,6 +110,7 @@ public final class BlockUltrasonicSensor extends BlockContainer
     public static int rightOf(int front) {
         return front == 2 ? 5 : front == 3 ? 4 : front == 4 ? 2 : 3;
     }
+    public static int backOf(int front) { return front == 2 ? 3 : front == 3 ? 2 : front == 4 ? 5 : 4; }
 
     private static void invalidate(World world, int x, int y, int z) {
         if (!world.isRemote) ElectricalNetworkManager.forWorld(world).invalidateAround(new BlockPosition(x, y, z));

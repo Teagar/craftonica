@@ -2,6 +2,8 @@ package br.com.craftonica.robot.modular;
 
 import br.com.craftonica.registry.ModItems;
 import br.com.craftonica.robot.modular.transaction.forge.ForgeModularAssemblyService;
+import br.com.craftonica.robot.modular.electrical.MobileElectricalEvaluation;
+import br.com.craftonica.robot.modular.electrical.MobileElectricalEvaluator;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.nbt.NBTTagCompound;
@@ -49,11 +51,21 @@ public final class EntityModularRobot extends Entity {
         if (!worldObj.isRemote && state != null) {
             if (player.getCurrentEquippedItem() != null && player.getCurrentEquippedItem().getItem() == ModItems.WRENCH)
                 ForgeModularAssemblyService.disassemble(this, player);
-            else player.addChatMessage(new ChatComponentText("Robô modular " + state.getRobotId()
-                    + " — " + state.getStatus().name()));
+            else {
+                MobileElectricalEvaluation electrical = getElectricalEvaluation();
+                player.addChatMessage(new ChatComponentText("Robô modular " + state.getRobotId()
+                        + " — " + state.getStatus().name() + ", redes="
+                        + state.getManifest().getElectricalNetlist().getNetworkCount()
+                        + ", diagnósticos=" + electrical.getDiagnostics().size()));
+            }
         }
         return true;
     }
 
     public ModularRobotState getRobotState() { return state; }
+    public MobileElectricalEvaluation getElectricalEvaluation() {
+        return MobileElectricalEvaluator.evaluate(state == null
+                ? br.com.craftonica.robot.modular.electrical.MobileElectricalNetlist.EMPTY
+                : state.getManifest().getElectricalNetlist());
+    }
 }

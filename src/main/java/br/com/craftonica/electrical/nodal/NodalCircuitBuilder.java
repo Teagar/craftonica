@@ -51,7 +51,7 @@ public final class NodalCircuitBuilder {
         return new NodalCircuit(new ArrayList<NodeId>(nodeSet),branches,terminalNodes,components,errors,fingerprint(components,branches));
     }
     private NodeId nodeSetNode(TerminalId root,boolean reference){return reference?NodeId.REFERENCE:new NodeId(root);}
-    private boolean isConductor(String kind){return "wire".equalsIgnoreCase(kind)||"ground".equalsIgnoreCase(kind);}
+    private boolean isConductor(String kind){return "wire".equalsIgnoreCase(kind)||"ground".equalsIgnoreCase(kind)||"terminal_device".equalsIgnoreCase(kind);}
     private boolean valid(int i,List<TerminalSnapshot> t){return i>=0&&i<t.size();}
     private CircuitDiagnostic diag(DiagnosticCode code,List<ComponentSnapshot> cs){List<BlockPosition> p=new ArrayList<BlockPosition>();for(ComponentSnapshot c:cs)p.add(c.getPosition());return new CircuitDiagnostic(code,CircuitDiagnostic.Severity.ERROR,p);}
     private int position(BlockPosition a,BlockPosition b){int c=Integer.compare(a.x,b.x);if(c==0)c=Integer.compare(a.y,b.y);return c==0?Integer.compare(a.z,b.z):c;}

@@ -14,6 +14,7 @@ import br.com.craftonica.robot.modular.assembly.DiscoveredComponent;
 import br.com.craftonica.robot.modular.assembly.forge.ForgeAssemblyWorldView;
 import br.com.craftonica.robot.modular.manifest.ModularBlockSnapshot;
 import br.com.craftonica.robot.modular.manifest.ModularRobotManifest;
+import br.com.craftonica.robot.modular.electrical.MobileNetlistExtractor;
 import br.com.craftonica.robot.modular.transaction.AssemblyTransaction;
 import br.com.craftonica.robot.modular.transaction.AssemblyTransactionResult;
 import br.com.craftonica.tile.TileEntityRoboBoard;
@@ -108,7 +109,8 @@ public final class ForgeModularAssemblyService {
                     component.localPosition, component.localOrientation, key.toString(),
                     world.getBlockMetadata(p.x, p.y, p.z) & 15, tileData));
         }
-        return new ModularRobotManifest(UUID.randomUUID(), modules, graph.getEdges());
+        return new ModularRobotManifest(UUID.randomUUID(), modules, graph.getEdges(),
+                MobileNetlistExtractor.extract(modules, CATALOG));
     }
 
     /** Reconciles journals only when every target chunk is already loaded. Conflicts stay recorded. */

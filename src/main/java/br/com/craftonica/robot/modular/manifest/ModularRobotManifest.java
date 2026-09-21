@@ -1,6 +1,8 @@
 package br.com.craftonica.robot.modular.manifest;
 
 import br.com.craftonica.robot.modular.assembly.AssemblyEdge;
+import br.com.craftonica.robot.modular.electrical.MobileElectricalNetlist;
+import br.com.craftonica.robot.modular.electrical.MobileTerminal;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -25,21 +27,30 @@ public final class ModularRobotManifest {
     private final UUID manifestId;
     private final List<ModularBlockSnapshot> modules;
     private final List<AssemblyEdge> edges;
+    private final MobileElectricalNetlist electricalNetlist;
     private final byte[] fingerprint;
 
     public ModularRobotManifest(UUID manifestId, List<ModularBlockSnapshot> modules,
                                 List<AssemblyEdge> edges) {
+        this(manifestId, modules, edges, MobileElectricalNetlist.EMPTY);
+    }
+
+    public ModularRobotManifest(UUID manifestId, List<ModularBlockSnapshot> modules,
+                                List<AssemblyEdge> edges, MobileElectricalNetlist electricalNetlist) {
         if (manifestId == null || modules == null || modules.isEmpty() || modules.size() > MAX_MODULES
-                || edges == null || edges.size() > MAX_EDGES) throw new IllegalArgumentException("manifest");
+                || edges == null || edges.size() > MAX_EDGES || electricalNetlist == null)
+            throw new IllegalArgumentException("manifest");
         this.manifestId = manifestId;
         this.modules = canonicalModules(modules);
         this.edges = canonicalEdges(edges);
-        fingerprint = fingerprint(this.manifestId, this.modules, this.edges);
+        this.electricalNetlist = electricalNetlist;
+        fingerprint = fingerprint(this.manifestId, this.modules, this.edges, electricalNetlist);
     }
 
     public UUID getManifestId() { return manifestId; }
     public List<ModularBlockSnapshot> getModules() { return modules; }
     public List<AssemblyEdge> getEdges() { return edges; }
+    public MobileElectricalNetlist getElectricalNetlist() { return electricalNetlist; }
     public byte[] getFingerprint() { return fingerprint.clone(); }
 
     public boolean hasFingerprint(byte[] expected) {
@@ -82,7 +93,8 @@ public final class ModularRobotManifest {
         return edge.kind.name() + ":" + (a.compareTo(b) <= 0 ? a + "=" + b : b + "=" + a);
     }
 
-    private static byte[] fingerprint(UUID id, List<ModularBlockSnapshot> modules, List<AssemblyEdge> edges) {
+    private static byte[] fingerprint(UUID id, List<ModularBlockSnapshot> modules, List<AssemblyEdge> edges,
+                                      MobileElectricalNetlist netlist) {
         try {
             ByteArrayOutputStream bytes = new ByteArrayOutputStream();
             DataOutputStream out = new DataOutputStream(bytes);
@@ -98,6 +110,14 @@ public final class ModularRobotManifest {
             }
             out.writeInt(edges.size());
             for (AssemblyEdge edge : edges) text(out, key(edge));
+            // Empty netlists retain the CRL-73 checksum so already captured inert assemblies remain readable.
+            if (!netlist.getTerminals().isEmpty()) {
+                out.writeInt(netlist.getTerminals().size());
+                for (MobileTerminal terminal : netlist.getTerminals()) {
+                    text(out, terminal.key()); text(out, terminal.componentTypeId); text(out, terminal.role);
+                    out.writeByte(terminal.face.ordinal()); out.writeInt(terminal.networkId);
+                }
+            }
             out.close();
             return MessageDigest.getInstance("SHA-256").digest(bytes.toByteArray());
         } catch (IOException impossible) {

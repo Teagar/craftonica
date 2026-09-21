@@ -9,7 +9,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.world.World;
 
 /** Physical chassis or dual H-bridge module used by the bounded robot assembly. */
-public final class BlockRobotModule extends Block implements IRotatableElectricalBlock {
+public class BlockRobotModule extends Block implements IRotatableElectricalBlock {
     public enum Type { CHASSIS, H_BRIDGE }
     private final Type type;
     public BlockRobotModule(Type type, String name, String texture) {

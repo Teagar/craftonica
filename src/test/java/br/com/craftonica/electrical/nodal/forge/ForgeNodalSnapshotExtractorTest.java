@@ -95,17 +95,26 @@ public class ForgeNodalSnapshotExtractorTest {
     @Test public void mapsFourIndependentUltrasonicTerminalsAndBranches() {
         FakeWorld world = new FakeWorld();
         BlockPosition position = new BlockPosition(0, 0, 0);
-        world.put(0, 0, 0, new BlockUltrasonicSensor(), 3);
+        world.put(0, 0, 0, new BlockModularUltrasonicSensor(), 3);
         world.tiles.put(position, new TileEntityUltrasonicSensor());
         NodalExtractionResult extraction = new ForgeNodalSnapshotExtractor(world).extract(position);
         ComponentSnapshot sensor = find(extraction, "ultrasonic_sensor");
         assertEquals(4, sensor.getTerminals().size());
         assertEquals(Face.UP, sensor.getTerminals().get(0).getId().getFace());
-        assertEquals(Face.DOWN, sensor.getTerminals().get(1).getId().getFace());
+        assertEquals(Face.NORTH, sensor.getTerminals().get(1).getId().getFace());
         assertEquals(Face.EAST, sensor.getTerminals().get(2).getId().getFace());
         assertEquals(Face.WEST, sensor.getTerminals().get(3).getId().getFace());
         NodalCircuitBuilder builder = new NodalCircuitBuilder().add(sensor);
         assertEquals(3, builder.build().getBranches().size());
+    }
+
+    @Test public void legacyUltrasonicKeepsItsBottomGroundTerminal() {
+        FakeWorld world = new FakeWorld(); BlockPosition position = new BlockPosition(0, 0, 0);
+        world.put(0, 0, 0, new BlockUltrasonicSensor(), 3);
+        world.tiles.put(position, new TileEntityUltrasonicSensor());
+        ComponentSnapshot sensor = find(new ForgeNodalSnapshotExtractor(world).extract(position),
+                "ultrasonic_sensor");
+        assertEquals(Face.DOWN, sensor.getTerminals().get(1).getId().getFace());
     }
 
     @Test public void rejectsInvalidMetadataAndComponentParameters() {
@@ -120,6 +129,32 @@ public class ForgeNodalSnapshotExtractorTest {
         assertEquals(DiagnosticCode.INVALID_COMPONENT_DATA, badFace.getDiagnostics().get(0).getCode());
     }
 
+    @Test public void hBridgeTerminalExposesOnlyItsPhysicalOutwardFace() {
+        FakeWorld world = new FakeWorld(); BlockPosition position = new BlockPosition(0, 0, 0);
+        world.put(0, 0, 0, new BlockHBridgeTerminal(), 0);
+        world.connectableSides.put(position, Integer.valueOf(1 << 2));
+        NodalExtractionResult extraction = new ForgeNodalSnapshotExtractor(world).extract(position);
+        assertTrue(extraction.isComplete());
+        ComponentSnapshot terminal = find(extraction, "terminal_device");
+        assertEquals(1, terminal.getTerminals().size());
+        assertEquals(Face.NORTH, terminal.getTerminals().get(0).getId().getFace());
+    }
+
+    @Test public void robotChassisIsNotAnElectricalComponent() {
+        assertFalse(new BlockRobotModule(BlockRobotModule.Type.CHASSIS,
+                "testChassis", "craftonica:robot_chassis") instanceof IElectricalBlock);
+    }
+
+    @Test public void modularMotorSeparatesElectricalTerminalsFromRearShaftAndMount() {
+        FakeWorld world = new FakeWorld(); BlockPosition position = new BlockPosition(0, 0, 0);
+        world.put(0, 0, 0, new BlockModularDcMotor(), 3);
+        world.connectableSides.put(position, Integer.valueOf((1 << 3) | (1 << 1)));
+        ComponentSnapshot motor = find(new ForgeNodalSnapshotExtractor(world).extract(position), "actuator");
+        assertEquals(Face.SOUTH, motor.getTerminals().get(0).getId().getFace());
+        assertEquals(Face.UP, motor.getTerminals().get(1).getId().getFace());
+        assertEquals(Double.valueOf(4.0), motor.getParameters().get("resistance"));
+    }
+
     private ComponentSnapshot find(NodalExtractionResult result, String kind) {
         for (ComponentSnapshot snapshot : result.getSnapshots()) if (kind.equals(snapshot.getKind())) return snapshot;
         throw new AssertionError(kind);
@@ -129,6 +164,7 @@ public class ForgeNodalSnapshotExtractorTest {
         private final Map<BlockPosition, Block> blocks = new HashMap<BlockPosition, Block>();
         private final Map<BlockPosition, Integer> metadata = new HashMap<BlockPosition, Integer>();
         private final Map<BlockPosition, TileEntity> tiles = new HashMap<BlockPosition, TileEntity>();
+        private final Map<BlockPosition, Integer> connectableSides = new HashMap<BlockPosition, Integer>();
         private final Set<String> loadedChunks = new HashSet<String>(Arrays.asList("0,0", "-1,0", "0,-1", "0,1", "-1,-1", "-1,1", "1,-1"));
         private int readsAtUnloadedChunk;
 
@@ -144,6 +180,7 @@ public class ForgeNodalSnapshotExtractorTest {
         public int getMetadata(BlockPosition p) { return metadata.containsKey(p) ? metadata.get(p) : 0; }
         public TileEntity getTileEntity(BlockPosition p) { return tiles.get(p); }
         public boolean canConnectOnSide(Block block, BlockPosition p, int side) {
+            if (connectableSides.containsKey(p)) return (connectableSides.get(p).intValue() & 1 << side) != 0;
             if (block instanceof BlockElectricalWire) return true;
             if (block instanceof BlockSingleTerminal || block instanceof BlockLed) return (getMetadata(p) & 7) == side
                     || block instanceof BlockLed && ((getMetadata(p) & 7) == opposite(side));
