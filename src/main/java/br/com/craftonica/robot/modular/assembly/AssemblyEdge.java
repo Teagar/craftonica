@@ -11,8 +11,11 @@ public final class AssemblyEdge {
     public final GridVector secondPosition;
     public final String secondPort;
 
-    AssemblyEdge(Kind kind, GridVector firstPosition, String firstPort,
+    public AssemblyEdge(Kind kind, GridVector firstPosition, String firstPort,
                  GridVector secondPosition, String secondPort) {
+        if (kind == null || firstPosition == null || secondPosition == null || firstPort == null
+                || firstPort.length() == 0 || secondPort == null || secondPort.length() == 0)
+            throw new IllegalArgumentException("assembly edge");
         this.kind = kind;
         this.firstPosition = firstPosition;
         this.firstPort = firstPort;

@@ -5,7 +5,7 @@ import br.com.craftonica.block.IRotatableElectricalBlock;
 import br.com.craftonica.network.BlockPosition;
 import br.com.craftonica.network.ElectricalNetworkManager;
 import br.com.craftonica.block.BlockRobotModule;
-import br.com.craftonica.robot.RobotAssemblyService;
+import br.com.craftonica.robot.modular.transaction.forge.ForgeModularAssemblyService;
 import net.minecraft.block.Block;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.Item;
@@ -29,7 +29,7 @@ public final class ItemWrench extends Item {
         if (block instanceof BlockRobotModule
                 && ((BlockRobotModule) block).getType() == BlockRobotModule.Type.CHASSIS
                 && !player.isSneaking()) {
-            if (!world.isRemote && RobotAssemblyService.assemble(world, x, y, z, player))
+            if (!world.isRemote && ForgeModularAssemblyService.assemble(world, x, y, z, player))
                 stack.damageItem(1, player);
             return true;
         }
