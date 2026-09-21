@@ -8,6 +8,15 @@ import br.com.craftonica.robot.modular.physics.CompoundCollisionProbe;
 import br.com.craftonica.robot.modular.physics.RigidBodyProperties;
 import br.com.craftonica.robot.modular.physics.TerrestrialRigidBodyModel;
 import br.com.craftonica.robot.modular.physics.forge.ForgeRigidBodyWorld;
+import br.com.craftonica.robot.modular.drive.CoupledDriveLoop;
+import br.com.craftonica.robot.modular.drive.SimulationTickBudget;
+import br.com.craftonica.robot.modular.drive.forge.ModularRobotTickBudget;
+import br.com.craftonica.robot.modular.manifest.ModularBlockSnapshot;
+import br.com.craftonica.runtime.core.AvrInputs;
+import br.com.craftonica.runtime.protocol.RuntimeProtocol;
+import br.com.craftonica.runtime.server.RoboBoardRuntimeHost;
+import br.com.craftonica.tile.RoboBoardState;
+import br.com.craftonica.tile.RoboBoardStateNbtCodec;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.nbt.NBTTagCompound;
@@ -25,6 +34,11 @@ public final class EntityModularRobot extends Entity {
     private ModularRobotState state;
     private RigidBodyProperties body;
     private TerrestrialRigidBodyModel.State dynamics;
+    private CoupledDriveLoop coupledDrive;
+    private CoupledDriveLoop.State coupledDriveState;
+    private CoupledDriveLoop.ControlFrame pendingControlFrame;
+    private RoboBoardState boardState;
+    private final RoboBoardRuntimeHost runtimeHost = new RoboBoardRuntimeHost();
     private final List<TerrestrialRigidBodyModel.AppliedForce> pendingForces =
             new ArrayList<TerrestrialRigidBodyModel.AppliedForce>();
 
@@ -38,6 +52,9 @@ public final class EntityModularRobot extends Entity {
         EntityModularRobot value = new EntityModularRobot(world);
         value.state = new ModularRobotState(robotId, ownerId, anchor, orientation, manifest);
         value.body = RigidBodyProperties.derive(manifest, CATALOG);
+        value.coupledDrive = new CoupledDriveLoop(manifest, CATALOG);
+        value.coupledDriveState = value.coupledDrive.initialState();
+        value.boardState = board(manifest);
         value.rotationYaw = yawDegrees(orientation.getForward());
         value.setPosition(anchor.x + 0.5, anchor.y, anchor.z + 0.5);
         value.dynamics = value.currentState(0.0, 0.0, 0.0, 0.0);
@@ -50,6 +67,8 @@ public final class EntityModularRobot extends Entity {
         super.onUpdate();
         if (worldObj.isRemote || state == null) return;
         if (!state.canSimulate()) { stopDynamics(); pendingForces.clear(); return; }
+        if (!ModularRobotTickBudget.allows(this)) { motionX = motionY = motionZ = 0.0; return; }
+        updateRuntime();
         ensureBody();
         ForgeRigidBodyWorld collisionWorld = new ForgeRigidBodyWorld(worldObj, this);
         List<Integer> supported = collisionWorld.supportedContacts(body, dynamics);
@@ -57,6 +76,13 @@ public final class EntityModularRobot extends Entity {
         List<TerrestrialRigidBodyModel.AppliedForce> forces =
                 new ArrayList<TerrestrialRigidBodyModel.AppliedForce>(pendingForces);
         pendingForces.clear();
+        if (pendingControlFrame != null) {
+            CoupledDriveLoop.Result drive = coupledDrive.step(coupledDriveState, pendingControlFrame,
+                    dynamics, supported, new SimulationTickBudget(), 0.05);
+            if (!drive.delayed) {
+                coupledDriveState = drive.state; forces.addAll(drive.forces); pendingControlFrame = null;
+            }
+        }
         integrateSubstep(collisionWorld, supported, forces);
         integrateSubstep(collisionWorld, supported, forces);
         setPosition(dynamics.x, dynamics.y, dynamics.z);
@@ -74,12 +100,21 @@ public final class EntityModularRobot extends Entity {
             value.setDouble("AngularVelocity", dynamics.angularVelocityRadiansPerSecond);
             tag.setTag("CraftonicaRigidBody", value);
         }
+        if (boardState != null) {
+            NBTTagCompound value = new NBTTagCompound(); RoboBoardStateNbtCodec.write(boardState, value);
+            tag.setTag("CraftonicaMobileBoard", value);
+        }
     }
 
     @Override protected void readEntityFromNBT(NBTTagCompound tag) {
         try {
             state = ModularRobotState.read(tag.getCompoundTag("CraftonicaModularRobot"));
             body = RigidBodyProperties.derive(state.getManifest(), CATALOG);
+            coupledDrive = new CoupledDriveLoop(state.getManifest(), CATALOG);
+            coupledDriveState = coupledDrive.initialState();
+            boardState = tag.hasKey("CraftonicaMobileBoard")
+                    ? RoboBoardStateNbtCodec.read(tag.getCompoundTag("CraftonicaMobileBoard"))
+                    : board(state.getManifest());
             NBTTagCompound value = tag.getCompoundTag("CraftonicaRigidBody");
             double vx = value.getDouble("VelocityX"), vy = value.getDouble("VelocityY");
             double vz = value.getDouble("VelocityZ"), angular = value.getDouble("AngularVelocity");
@@ -115,10 +150,30 @@ public final class EntityModularRobot extends Entity {
             return;
         pendingForces.add(force);
     }
+    /** Accepts at most one sequential, already-confirmed AVR frame; no client packet calls this API. */
+    public boolean submitConfirmedControlFrame(CoupledDriveLoop.ControlFrame frame) {
+        if (worldObj.isRemote || frame == null || pendingControlFrame != null || coupledDriveState == null
+                || frame.sequence != coupledDriveState.nextSequence) return false;
+        pendingControlFrame = frame; return true;
+    }
     public MobileElectricalEvaluation getElectricalEvaluation() {
         return MobileElectricalEvaluator.evaluate(state == null
                 ? br.com.craftonica.robot.modular.electrical.MobileElectricalNetlist.EMPTY
                 : state.getManifest().getElectricalNetlist());
+    }
+
+    private void updateRuntime() {
+        if (boardState == null || !boardState.isRunning()) { runtimeHost.cancel(); return; }
+        RuntimeProtocol.Identity identity = RuntimeProtocol.Identity.mobile(worldObj.provider.dimensionId,
+                state.getRobotId(), boardState.getGeneration());
+        runtimeHost.tick(identity, worldObj.getTotalWorldTime(), boardState, emptyInputs(),
+                new RoboBoardRuntimeHost.OutputListener() {
+                    @Override public void committed(RoboBoardState committed, RuntimeProtocol.Result result) {
+                        if (pendingControlFrame == null)
+                            submitConfirmedControlFrame(coupledDrive.controlFrame(
+                                    coupledDriveState.nextSequence, committed, 5.0));
+                    }
+                });
     }
 
     private void integrateSubstep(ForgeRigidBodyWorld world, List<Integer> supported,
@@ -163,6 +218,10 @@ public final class EntityModularRobot extends Entity {
     private void ensureBody() {
         if (body == null && state != null) { body = RigidBodyProperties.derive(state.getManifest(), CATALOG); configureBounds(); }
         if (dynamics == null) dynamics = currentState(0.0, 0.0, 0.0, 0.0);
+        if (coupledDrive == null && state != null) {
+            coupledDrive = new CoupledDriveLoop(state.getManifest(), CATALOG);
+            coupledDriveState = coupledDrive.initialState();
+        }
     }
 
     private void configureBounds() {
@@ -183,4 +242,19 @@ public final class EntityModularRobot extends Entity {
         if (forward == Direction.WEST) return 90.0F;
         return 0.0F;
     }
+
+    private static RoboBoardState board(br.com.craftonica.robot.modular.manifest.ModularRobotManifest manifest) {
+        for (ModularBlockSnapshot module : manifest.getModules()) {
+            if (!StandardComponentCatalog.ROBO_BOARD.equals(module.componentTypeId)) continue;
+            NBTTagCompound data = module.getTileData();
+            return data == null ? null : RoboBoardStateNbtCodec.read(data);
+        }
+        return null;
+    }
+
+    private static AvrInputs emptyInputs() {
+        return AvrInputs.allLow();
+    }
+
+    @Override public void setDead() { runtimeHost.cancel(); super.setDead(); }
 }
