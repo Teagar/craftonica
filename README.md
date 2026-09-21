@@ -22,8 +22,10 @@ A0-A5, 5 V e GND vinculados à mesma RoboBoard. Consulte
 
 A arquitetura normativa da RoboBoard e do pipeline de sketches está em
 [`docs/rfc/0002-runtime-arduino-compatible-seguro.md`](docs/rfc/0002-runtime-arduino-compatible-seguro.md).
-O contrato normativo da plataforma robótica móvel está em
-[`docs/rfc/0003-plataforma-robotica-movel.md`](docs/rfc/0003-plataforma-robotica-movel.md).
+O contrato do protótipo móvel fixo da versão 1.2 está no
+[`RFC 0003`](docs/rfc/0003-plataforma-robotica-movel.md). O plano normativo que o
+substitui por robótica modular construída somente com blocos está no
+[`RFC 0004`](docs/rfc/0004-robotica-modular-fisica.md).
 O estado atual e o comando temporário do chassi estão em
 [`docs/chassi-robotico.md`](docs/chassi-robotico.md).
 
