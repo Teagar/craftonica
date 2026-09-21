@@ -28,7 +28,9 @@ public final class MobileElectricalEvaluation {
         public final String directionRole;
         public final GridVector motorPosition;
 
-        DriveBinding(boolean enabled, String pwmRole, String directionRole, GridVector motorPosition) {
+        public DriveBinding(boolean enabled, String pwmRole, String directionRole, GridVector motorPosition) {
+            if (enabled && (pwmRole == null || directionRole == null || motorPosition == null))
+                throw new IllegalArgumentException("enabled drive binding");
             this.enabled = enabled; this.pwmRole = pwmRole; this.directionRole = directionRole;
             this.motorPosition = motorPosition;
         }
