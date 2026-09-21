@@ -1,10 +1,16 @@
 # RFC 0003: plataforma robótica móvel
 
-- Status: proposta implementável
+- Status: implementada na 1.2 e substituída pelo RFC 0004 para novas montagens
 - Marco alvo: robô diferencial autônomo
 - Card: CRL-57
 - Dependências: RFC 0001, RFC 0002, CRL-55 e CRL-56
 - Última atualização: 2026-09-20
+
+> **Nota histórica:** este documento especifica o protótipo fixo
+> `mobile_robot:1`, com oito módulos. A arquitetura modular baseada integralmente
+> nos blocos, conexões e geometria construídos pelo jogador está no
+> [RFC 0004](0004-robotica-modular-fisica.md). Este perfil legado não deve receber
+> novos layouts especiais.
 
 ## Resumo
 
