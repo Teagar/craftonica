@@ -27,6 +27,7 @@ import net.minecraft.world.World;
 import java.util.UUID;
 import java.util.ArrayList;
 import java.util.List;
+import br.com.craftonica.persistence.NbtMigrations;
 
 /** Server-authoritative persistent entity for an arbitrary captured rigid assembly. */
 public final class EntityModularRobot extends Entity {
@@ -42,6 +43,7 @@ public final class EntityModularRobot extends Entity {
     private MobileUltrasonicSystem ultrasonicSystem;
     private long sensorSampleCounter;
     private MobileUltrasonicSystem.Status lastSensorStatus = MobileUltrasonicSystem.Status.IDLE;
+    private NBTTagCompound preservedInvalidEnvelope;
     private final RoboBoardRuntimeHost runtimeHost = new RoboBoardRuntimeHost();
     private final List<TerrestrialRigidBodyModel.AppliedForce> pendingForces =
             new ArrayList<TerrestrialRigidBodyModel.AppliedForce>();
@@ -97,42 +99,63 @@ public final class EntityModularRobot extends Entity {
     }
 
     @Override protected void writeEntityToNBT(NBTTagCompound tag) {
-        if (state != null) tag.setTag("CraftonicaModularRobot", state.write());
-        if (dynamics != null) {
-            NBTTagCompound value = new NBTTagCompound();
-            value.setDouble("VelocityX", dynamics.velocityX); value.setDouble("VelocityY", dynamics.velocityY);
-            value.setDouble("VelocityZ", dynamics.velocityZ);
-            value.setDouble("AngularVelocity", dynamics.angularVelocityRadiansPerSecond);
-            tag.setTag("CraftonicaRigidBody", value);
+        if (preservedInvalidEnvelope != null) {
+            tag.setTag("CraftonicaModularRobotV2", NbtMigrations.copy(preservedInvalidEnvelope)); return;
         }
-        if (boardState != null) {
-            NBTTagCompound value = new NBTTagCompound(); RoboBoardStateNbtCodec.write(boardState, value);
-            tag.setTag("CraftonicaMobileBoard", value);
-        }
-        tag.setLong("CraftonicaSensorCounter", sensorSampleCounter);
+        if (state == null) return;
+        ensureBody();
+        tag.setTag("CraftonicaModularRobotV2", ModularRobotPersistence.write(state, dynamics,
+                coupledDrive, coupledDriveState, boardState, sensorSampleCounter));
     }
 
     @Override protected void readEntityFromNBT(NBTTagCompound tag) {
         try {
-            state = ModularRobotState.read(tag.getCompoundTag("CraftonicaModularRobot"));
+            if (tag.hasKey("CraftonicaModularRobotV2")) {
+                NBTTagCompound envelope = tag.getCompoundTag("CraftonicaModularRobotV2");
+                ModularRobotPersistence.Snapshot restored = ModularRobotPersistence.read(envelope, CATALOG);
+                state = restored.robot; dynamics = restored.body; coupledDrive = restored.drive;
+                coupledDriveState = restored.driveState; boardState = restored.board;
+                sensorSampleCounter = restored.sensorCounter;
+                setPositionAndRotation(dynamics.x, dynamics.y, dynamics.z,
+                        (float) StrictMath.toDegrees(dynamics.yawRadians), 0.0F);
+            } else {
+                readDevelopmentSchemaOne(tag);
+            }
+            body = RigidBodyProperties.derive(state.getManifest(), CATALOG);
+            ultrasonicSystem = new MobileUltrasonicSystem(state.getManifest());
+            configureBounds();
+        } catch (RuntimeException invalid) {
+            NBTTagCompound source = tag.hasKey("CraftonicaModularRobotV2")
+                    ? tag.getCompoundTag("CraftonicaModularRobotV2") : tag;
+            preservedInvalidEnvelope = ModularRobotPersistence.preserve(source);
+            state = ModularRobotState.quarantined("INVALID_PERSISTED_STATE");
             body = RigidBodyProperties.derive(state.getManifest(), CATALOG);
             coupledDrive = new CoupledDriveLoop(state.getManifest(), CATALOG);
-            coupledDriveState = coupledDrive.initialState();
-            boardState = tag.hasKey("CraftonicaMobileBoard")
-                    ? RoboBoardStateNbtCodec.read(tag.getCompoundTag("CraftonicaMobileBoard"))
-                    : board(state.getManifest());
-            ultrasonicSystem = new MobileUltrasonicSystem(state.getManifest());
-            sensorSampleCounter = tag.getLong("CraftonicaSensorCounter");
-            if (sensorSampleCounter < 0) throw new IllegalArgumentException("sensor counter");
-            NBTTagCompound value = tag.getCompoundTag("CraftonicaRigidBody");
-            double vx = value.getDouble("VelocityX"), vy = value.getDouble("VelocityY");
-            double vz = value.getDouble("VelocityZ"), angular = value.getDouble("AngularVelocity");
-            if (StrictMath.abs(vx) > 100.0 || StrictMath.abs(vy) > 100.0 || StrictMath.abs(vz) > 100.0
-                    || StrictMath.abs(angular) > 100.0) throw new IllegalArgumentException("rigid body velocity");
-            dynamics = currentState(vx, vy, vz, angular); configureBounds();
-        } catch (RuntimeException invalid) {
-            setDead();
+            coupledDriveState = coupledDrive.initialState(); boardState = null;
+            ultrasonicSystem = new MobileUltrasonicSystem(state.getManifest()); sensorSampleCounter = 0L;
+            dynamics = currentState(0.0, 0.0, 0.0, 0.0); configureBounds();
         }
+    }
+
+    private void readDevelopmentSchemaOne(NBTTagCompound tag) {
+        state = ModularRobotState.read(tag.getCompoundTag("CraftonicaModularRobot"));
+        coupledDrive = new CoupledDriveLoop(state.getManifest(), CATALOG);
+        coupledDriveState = coupledDrive.initialState();
+        boardState = tag.hasKey("CraftonicaMobileBoard")
+                ? RoboBoardStateNbtCodec.read(tag.getCompoundTag("CraftonicaMobileBoard"))
+                : board(state.getManifest());
+        if (boardState != null && ("UNKNOWN_SCHEMA".equals(boardState.getFault())
+                || "INVALID_IDENTITY".equals(boardState.getFault())
+                || "INVALID_PERSISTED_STATE".equals(boardState.getFault())))
+            throw new IllegalArgumentException("board state");
+        sensorSampleCounter = tag.getLong("CraftonicaSensorCounter");
+        if (sensorSampleCounter < 0) throw new IllegalArgumentException("sensor counter");
+        NBTTagCompound value = tag.getCompoundTag("CraftonicaRigidBody");
+        double vx = value.getDouble("VelocityX"), vy = value.getDouble("VelocityY");
+        double vz = value.getDouble("VelocityZ"), angular = value.getDouble("AngularVelocity");
+        if (StrictMath.abs(vx) > 100.0 || StrictMath.abs(vy) > 100.0 || StrictMath.abs(vz) > 100.0
+                || StrictMath.abs(angular) > 100.0) throw new IllegalArgumentException("rigid body velocity");
+        dynamics = currentState(vx, vy, vz, angular);
     }
 
     @Override public boolean canBeCollidedWith() { return !isDead; }
@@ -147,7 +170,8 @@ public final class EntityModularRobot extends Entity {
                         + " — " + state.getStatus().name() + ", redes="
                         + state.getManifest().getElectricalNetlist().getNetworkCount()
                         + ", diagnósticos=" + electrical.getDiagnostics().size()
-                        + ", sensores=" + lastSensorStatus.name()));
+                        + ", sensores=" + lastSensorStatus.name()
+                        + (state.getDiagnostic().length() == 0 ? "" : ", estado=" + state.getDiagnostic())));
             }
         }
         return true;
@@ -156,6 +180,15 @@ public final class EntityModularRobot extends Entity {
     public ModularRobotState getRobotState() { return state; }
     public RigidBodyProperties getRigidBodyProperties() { ensureBody(); return body; }
     public MobileUltrasonicSystem.Status getLastSensorStatus() { return lastSensorStatus; }
+    public NBTTagCompound getPreservedInvalidEnvelope() {
+        return preservedInvalidEnvelope == null ? null : NbtMigrations.copy(preservedInvalidEnvelope);
+    }
+    /** Cancels process-local work without advancing or rewriting persisted simulation state. */
+    public void prepareForChunkUnload() {
+        if (worldObj != null && worldObj.isRemote) return;
+        runtimeHost.cancel(); pendingControlFrame = null; pendingForces.clear();
+        motionX = motionY = motionZ = 0.0;
+    }
     public void applyForceForNextTick(TerrestrialRigidBodyModel.AppliedForce force) {
         if (worldObj.isRemote || force == null || pendingForces.size() >= TerrestrialRigidBodyModel.MAX_FORCES_PER_SUBSTEP)
             return;

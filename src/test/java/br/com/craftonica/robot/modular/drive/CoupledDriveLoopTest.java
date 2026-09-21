@@ -69,6 +69,22 @@ public final class CoupledDriveLoopTest {
                 result.state.getChannels().get(0).diagnostic);
     }
 
+    @Test public void dynamicChannelStateRoundTripsWithoutResettingSequenceOrTemperature() {
+        CoupledDriveLoop loop = new CoupledDriveLoop(manifest(), StandardComponentCatalog.create());
+        CoupledDriveLoop.State stepped = loop.step(loop.initialState(), frame(0), body(0.4),
+                Collections.singletonList(0), new SimulationTickBudget(), 0.025).state;
+        CoupledDriveLoop.State restored = loop.readState(loop.writeState(stepped));
+        CoupledDriveLoop.ChannelState expected = stepped.getChannels().get(0);
+        CoupledDriveLoop.ChannelState actual = restored.getChannels().get(0);
+        assertEquals(stepped.nextSequence, restored.nextSequence);
+        assertEquals(Double.doubleToLongBits(expected.drive.angularVelocityRadPerSecond),
+                Double.doubleToLongBits(actual.drive.angularVelocityRadPerSecond));
+        assertEquals(Double.doubleToLongBits(expected.drive.motorTemperatureCelsius),
+                Double.doubleToLongBits(actual.drive.motorTemperatureCelsius));
+        assertEquals(Double.doubleToLongBits(expected.loadTorqueNm), Double.doubleToLongBits(actual.loadTorqueNm));
+        assertEquals(expected.diagnostic, actual.diagnostic);
+    }
+
     private static CoupledDriveLoop.ControlFrame frame(long sequence) {
         Map<GridVector, DriveInput> commands = new HashMap<GridVector, DriveInput>();
         commands.put(p(0,0,0), new DriveInput(true, 5.0, 255, DriveInput.Mode.FORWARD, 0.0));
