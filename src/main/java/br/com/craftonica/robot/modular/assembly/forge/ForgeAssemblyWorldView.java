@@ -61,6 +61,9 @@ public final class ForgeAssemblyWorldView implements AssemblyWorldView {
         if (block == ModBlocks.H_BRIDGE_TERMINAL) return StandardComponentCatalog.H_BRIDGE_TERMINAL;
         if (block == ModBlocks.MODULAR_DC_MOTOR) return StandardComponentCatalog.DC_MOTOR;
         if (block == ModBlocks.MECHANICAL_AXLE) return StandardComponentCatalog.AXLE;
+        if (block == ModBlocks.MECHANICAL_BEARING) return StandardComponentCatalog.BEARING;
+        if (block == ModBlocks.SPUR_GEAR_12) return StandardComponentCatalog.GEAR_12;
+        if (block == ModBlocks.SPUR_GEAR_36) return StandardComponentCatalog.GEAR_36;
         if (block == ModBlocks.ROBOT_WHEEL) return StandardComponentCatalog.WHEEL;
         if (block == ModBlocks.ROBOT_WHEEL_150) return StandardComponentCatalog.WHEEL_150;
         if (block == ModBlocks.PASSIVE_CASTER) return StandardComponentCatalog.CASTER;
@@ -71,7 +74,9 @@ public final class ForgeAssemblyWorldView implements AssemblyWorldView {
     private static ComponentOrientation orientation(Block block, int metadata) {
         if (block == ModBlocks.ROBOT_CHASSIS || block == ModBlocks.H_BRIDGE_CHANNEL
                 || block == ModBlocks.MODULAR_DC_MOTOR
-                || block == ModBlocks.MECHANICAL_AXLE || block == ModBlocks.ROBOT_WHEEL
+                || block == ModBlocks.MECHANICAL_AXLE || block == ModBlocks.MECHANICAL_BEARING
+                || block == ModBlocks.SPUR_GEAR_12 || block == ModBlocks.SPUR_GEAR_36
+                || block == ModBlocks.ROBOT_WHEEL
                 || block == ModBlocks.ROBOT_WHEEL_150
                 || block == ModBlocks.POWER_SOURCE || block == ModBlocks.GROUND
                 || block == ModBlocks.MODULAR_ULTRASONIC_SENSOR)

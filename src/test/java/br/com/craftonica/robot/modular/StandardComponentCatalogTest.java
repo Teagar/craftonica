@@ -15,8 +15,10 @@ public final class StandardComponentCatalogTest {
                 StandardComponentCatalog.POWER_SOURCE, StandardComponentCatalog.ROBO_BOARD,
                 StandardComponentCatalog.ROBO_PORT,
                 StandardComponentCatalog.H_BRIDGE, StandardComponentCatalog.DC_MOTOR,
-                StandardComponentCatalog.H_BRIDGE_TERMINAL,
-                StandardComponentCatalog.AXLE, StandardComponentCatalog.WHEEL,
+                 StandardComponentCatalog.H_BRIDGE_TERMINAL,
+                 StandardComponentCatalog.AXLE, StandardComponentCatalog.BEARING,
+                 StandardComponentCatalog.GEAR_12, StandardComponentCatalog.GEAR_36,
+                 StandardComponentCatalog.WHEEL,
                 StandardComponentCatalog.WHEEL_150,
                 StandardComponentCatalog.CASTER, StandardComponentCatalog.HC_SR04 };
         for (String id : required) {
@@ -33,11 +35,16 @@ public final class StandardComponentCatalogTest {
             }
             for (MechanicalPort port : type.getMechanicalPorts())
                 assertFinite(port.maximumTorqueNewtonMetres);
+            if (type.getTransmission() != null) {
+                assertFinite(type.getTransmission().efficiency);
+                assertFinite(type.getTransmission().rotationalInertiaKgM2);
+                assertFinite(type.getTransmission().maximumAngularVelocityRadPerSecond);
+            }
             assertFiniteProfile(type.getActuator());
             assertFiniteProfile(type.getContact());
             assertFiniteProfile(type.getSensor());
         }
-        assertEquals(14, catalog.all().size());
+        assertEquals(17, catalog.all().size());
     }
 
     @Test public void profilesAndPortsDescribeRealPathsInsteadOfRobotSlots() {
@@ -52,6 +59,11 @@ public final class StandardComponentCatalogTest {
         assertEquals(ActuatorProfile.Kind.DC_MOTOR,
                 catalog.require(StandardComponentCatalog.DC_MOTOR).getActuator().kind);
         assertEquals(2, catalog.require(StandardComponentCatalog.AXLE).getMechanicalPorts().size());
+        assertEquals(TransmissionProfile.Kind.BEARING,
+                catalog.require(StandardComponentCatalog.BEARING).getTransmission().kind);
+        assertEquals(12, catalog.require(StandardComponentCatalog.GEAR_12).getTransmission().toothCount);
+        assertTrue(catalog.require(StandardComponentCatalog.GEAR_12).getTransmission().meshesWith(
+                catalog.require(StandardComponentCatalog.GEAR_36).getTransmission()));
         assertEquals(ContactProfile.Kind.DRIVEN_WHEEL,
                 catalog.require(StandardComponentCatalog.WHEEL).getContact().kind);
         assertEquals(ContactProfile.Kind.PASSIVE_CASTER,
@@ -112,6 +124,12 @@ public final class StandardComponentCatalogTest {
         }});
         expectInvalid(new Action() { public void run() {
             new PortPose(GridVector.ZERO, Direction.UP, new Vector3(0.5, 0.5, 0.5));
+        }});
+        expectInvalid(new Action() { public void run() {
+            TransmissionProfile.spurGear(0, 0.01, 0.9, 0.01, 10.0);
+        }});
+        expectInvalid(new Action() { public void run() {
+            TransmissionProfile.bearing(1.1, 0.01, 10.0);
         }});
     }
 

@@ -26,7 +26,6 @@ public strictfp final class CoupledDriveLoop {
     public static final int MAX_CHANNELS = 16;
     private final List<Channel> channels;
     private final RigidBodyProperties body;
-    private final DcMotorParameters motor = DcMotorParameters.educational();
     private final HBridgeParameters bridge = HBridgeParameters.educational();
 
     public CoupledDriveLoop(ModularRobotManifest manifest, ComponentCatalog catalog) {
@@ -49,8 +48,8 @@ public strictfp final class CoupledDriveLoop {
 
     public State initialState() {
         List<ChannelState> values = new ArrayList<ChannelState>();
-        for (Channel ignored : channels) values.add(new ChannelState(
-                DriveState.ambient(motor, bridge), 0.0, 0.0, DriveStep.Diagnostic.NONE));
+        for (Channel channel : channels) values.add(new ChannelState(
+                DriveState.ambient(channel.motor, bridge), 0.0, 0.0, DriveStep.Diagnostic.NONE));
         return new State(0L, values);
     }
 
@@ -137,21 +136,26 @@ public strictfp final class CoupledDriveLoop {
             else command = new DriveInput(command.wiringValid, command.supplyVolts, command.pwm,
                     command.mode, old.loadTorqueNm);
             double wheelVelocity = wheelVelocity(channel, rigidBody);
-            DriveState feedback = new DriveState(wheelVelocity, old.drive.motorTemperatureCelsius,
+            double motorVelocity = channel.path == null ? wheelVelocity
+                    : channel.path.motorAngularVelocity(wheelVelocity);
+            DriveState feedback = new DriveState(motorVelocity, old.drive.motorTemperatureCelsius,
                     old.drive.bridgeTemperatureCelsius, old.drive.thermalShutdown);
-            DriveStep drive = MobileDriveSimulation.step(channel.binding, motor, bridge,
+            DriveStep drive = MobileDriveSimulation.step(channel.binding, channel.motor, bridge,
                     feedback, command, seconds);
             double load = 0.0;
             if (channel.contactIndex >= 0 && supportedContacts.contains(Integer.valueOf(channel.contactIndex))) {
-                double force = drive.shaftTorqueNm / channel.path.wheelRadiusMetres;
+                double outputTorque = channel.path.outputTorque(drive.shaftTorqueNm);
+                double force = outputTorque / channel.path.wheelRadiusMetres;
                 double pathLimit = channel.path.maximumTorqueNm / channel.path.wheelRadiusMetres;
                 if (StrictMath.abs(force) > 0.0) forces.add(new TerrestrialRigidBodyModel.AppliedForce(
                         channel.contactIndex, force, StrictMath.min(StrictMath.abs(force), pathLimit)));
                 double normal = body.massKg * TerrestrialRigidBodyModel.GRAVITY_METRES_PER_SECOND_SQUARED
                         / supportedContacts.size();
                 double friction = body.getContacts().get(channel.contactIndex).longitudinalFriction * normal;
-                load = StrictMath.copySign(StrictMath.min(StrictMath.min(StrictMath.abs(force), pathLimit), friction)
-                        * channel.path.wheelRadiusMetres, drive.shaftTorqueNm);
+                double outputLoad = StrictMath.copySign(
+                        StrictMath.min(StrictMath.min(StrictMath.abs(force), pathLimit), friction)
+                                * channel.path.wheelRadiusMetres, outputTorque);
+                load = channel.path.motorLoadTorque(outputLoad);
             }
             next.add(new ChannelState(drive.state, load, drive.currentAmps, channel.path == null
                     ? DriveStep.Diagnostic.OPEN_CIRCUIT : drive.diagnostic));
@@ -199,11 +203,19 @@ public strictfp final class CoupledDriveLoop {
 
     private static final class Channel {
         final GridVector bridgePosition; final MobileElectricalEvaluation.DriveBinding binding;
-        final MechanicalAssembly.DrivePath path; final int contactIndex;
+        final MechanicalAssembly.DrivePath path; final int contactIndex; final DcMotorParameters motor;
         Channel(GridVector bridgePosition, MobileElectricalEvaluation.DriveBinding binding,
-                MechanicalAssembly.DrivePath path, int contactIndex) {
+                 MechanicalAssembly.DrivePath path, int contactIndex) {
             this.bridgePosition = bridgePosition; this.binding = binding; this.path = path;
             this.contactIndex = contactIndex;
+            DcMotorParameters base = DcMotorParameters.educational();
+            motor = path == null ? base : new DcMotorParameters(base.resistanceOhms,
+                    base.torqueConstantNmPerAmp, base.backEmfVoltSecondsPerRad,
+                    base.rotorInertiaKgM2 + path.reflectedInertiaKgM2,
+                    base.viscousFrictionNmSecondsPerRad, base.maximumCurrentAmps,
+                    base.maximumAngularVelocityRadPerSecond, base.ambientTemperatureCelsius,
+                    base.maximumTemperatureCelsius, base.thermalCapacityJoulesPerKelvin,
+                    base.thermalResistanceKelvinPerWatt);
         }
     }
     public static final class ChannelState {

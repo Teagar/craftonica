@@ -17,6 +17,9 @@ public final class StandardComponentCatalog {
     public static final String H_BRIDGE_TERMINAL = "craftonica:h_bridge_terminal";
     public static final String DC_MOTOR = "craftonica:modular_dc_motor";
     public static final String AXLE = "craftonica:axle";
+    public static final String BEARING = "craftonica:bearing";
+    public static final String GEAR_12 = "craftonica:spur_gear_12t";
+    public static final String GEAR_36 = "craftonica:spur_gear_36t";
     public static final String WHEEL = "craftonica:wheel";
     public static final String WHEEL_150 = "craftonica:wheel_150mm";
     public static final String CASTER = "craftonica:caster";
@@ -39,6 +42,9 @@ public final class StandardComponentCatalog {
         values.add(hBridgeTerminal());
         values.add(motor());
         values.add(axle());
+        values.add(bearing());
+        values.add(gear(GEAR_12, 12, 0.18, 0.00004));
+        values.add(gear(GEAR_36, 36, 0.42, 0.00035));
         values.add(wheel());
         values.add(wheel150());
         values.add(caster());
@@ -154,9 +160,34 @@ public final class StandardComponentCatalog {
                 new BoxVolume(0.42, 0.42, 0.0, 0.58, 0.58, 1.0))
                 .structural(structural("mount_down", Direction.DOWN))
                 .mechanical(mechanical("shaft_in", Direction.NORTH, MechanicalPort.Kind.ROTARY_SHAFT,
-                        MechanicalPort.Coupling.SOCKET, 0.5))
+                         MechanicalPort.Coupling.SOCKET, 0.5))
                 .mechanical(mechanical("shaft_out", Direction.SOUTH, MechanicalPort.Kind.ROTARY_SHAFT,
-                        MechanicalPort.Coupling.PLUG, 0.5)).build();
+                         MechanicalPort.Coupling.PLUG, 0.5))
+                .transmission(TransmissionProfile.shaft(1.0, 0.00003, 400.0)).build();
+    }
+
+    private static ComponentType bearing() {
+        return base(BEARING, 0.3, ComponentMaterial.STEEL,
+                new BoxVolume(0.25, 0.25, 0.0, 0.75, 0.75, 1.0))
+                .structural(structural("mount_down", Direction.DOWN))
+                .mechanical(mechanical("shaft_in", Direction.NORTH, MechanicalPort.Kind.ROTARY_SHAFT,
+                        MechanicalPort.Coupling.SOCKET, 0.75))
+                .mechanical(mechanical("shaft_out", Direction.SOUTH, MechanicalPort.Kind.ROTARY_SHAFT,
+                        MechanicalPort.Coupling.PLUG, 0.75))
+                .transmission(TransmissionProfile.bearing(0.99, 0.00002, 500.0)).build();
+    }
+
+    private static ComponentType gear(String id, int teeth, double mass, double inertia) {
+        return base(id, mass, ComponentMaterial.STEEL,
+                new BoxVolume(0.1, 0.1, 0.1, 0.9, 0.9, 0.9))
+                .structural(structural("mount_down", Direction.DOWN))
+                .mechanical(mechanical("shaft_in", Direction.NORTH, MechanicalPort.Kind.ROTARY_SHAFT,
+                        MechanicalPort.Coupling.SOCKET, 1.0))
+                .mechanical(mechanical("shaft_out", Direction.SOUTH, MechanicalPort.Kind.ROTARY_SHAFT,
+                        MechanicalPort.Coupling.PLUG, 1.0))
+                .mechanical(mechanical("mesh", Direction.EAST, Direction.NORTH,
+                        MechanicalPort.Kind.GEAR_MESH, MechanicalPort.Coupling.NEUTRAL, 1.0))
+                .transmission(TransmissionProfile.spurGear(teeth, 0.01, 0.96, inertia, 350.0)).build();
     }
 
     private static ComponentType wheel() {
@@ -234,8 +265,13 @@ public final class StandardComponentCatalog {
     }
 
     private static MechanicalPort mechanical(String id, Direction face, MechanicalPort.Kind kind,
-                                             MechanicalPort.Coupling coupling, double torque) {
+                                              MechanicalPort.Coupling coupling, double torque) {
         return new MechanicalPort(id, kind, coupling, PortPose.center(face), face, torque);
+    }
+
+    private static MechanicalPort mechanical(String id, Direction face, Direction axis,
+            MechanicalPort.Kind kind, MechanicalPort.Coupling coupling, double torque) {
+        return new MechanicalPort(id, kind, coupling, PortPose.center(face), axis, torque);
     }
 
     private static Map<String, Double> parameters(Object... pairs) {
