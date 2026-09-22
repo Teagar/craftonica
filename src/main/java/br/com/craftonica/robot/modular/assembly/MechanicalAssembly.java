@@ -18,7 +18,8 @@ public strictfp final class MechanicalAssembly {
         TRANSMISSION_LOOP_UNSUPPORTED,
         TRANSMISSION_BRANCH_UNSUPPORTED,
         TRANSMISSION_LIMIT_EXCEEDED,
-        MULTIPLE_INPUTS
+        MULTIPLE_INPUTS,
+        TRACK_MOUNT_OPEN
     }
     private final List<DrivePath> drives;
     private final List<GroundContact> contacts;

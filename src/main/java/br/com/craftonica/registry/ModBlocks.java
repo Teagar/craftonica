@@ -91,6 +91,8 @@ public final class ModBlocks {
             BlockMechanicalComponent.Type.WHEEL, "robotWheel150", "craftonica:dc_motor_active");
     public static final BlockMechanicalComponent PASSIVE_CASTER = new BlockMechanicalComponent(
             BlockMechanicalComponent.Type.CASTER, "passiveCaster", "craftonica:robot_chassis");
+    public static final BlockMechanicalComponent TRACK_MODULE = new BlockMechanicalComponent(
+            BlockMechanicalComponent.Type.TRACK, "trackModule", "craftonica:track_module");
     public static final BlockCalibrationTarget TARGET_MDF = new BlockCalibrationTarget("targetMdf",
             "craftonica:target_mdf", AcousticMaterialProfile.MDF);
     public static final BlockCalibrationTarget TARGET_PLASTIC = new BlockCalibrationTarget("targetPlastic",
@@ -139,6 +141,7 @@ public final class ModBlocks {
         GameRegistry.registerBlock(ROBOT_WHEEL, "robot_wheel");
         GameRegistry.registerBlock(ROBOT_WHEEL_150, "robot_wheel_150");
         GameRegistry.registerBlock(PASSIVE_CASTER, "passive_caster");
+        GameRegistry.registerBlock(TRACK_MODULE, "track_module");
         GameRegistry.registerBlock(TARGET_MDF, "target_mdf");
         GameRegistry.registerBlock(TARGET_PLASTIC, "target_plastic");
         GameRegistry.registerBlock(TARGET_STYROFOAM, "target_styrofoam");

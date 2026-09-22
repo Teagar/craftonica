@@ -63,6 +63,7 @@ tile.spurGear36.name=36-tooth spur gear
 tile.educationalServo.name=180° educational servo
 tile.revoluteJoint.name=±90° robotic hinge
 tile.prismaticJoint.name=1 m robotic linear rail
+tile.trackModule.name=Educational track module
 tile.robotWheel.name=100 mm robot wheel
 tile.robotWheel150.name=150 mm robot wheel
 tile.passiveCaster.name=50 mm passive caster

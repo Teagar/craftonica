@@ -117,7 +117,14 @@ public strictfp final class CoupledDriveLoop {
 
     public Result step(State previous, ControlFrame frame, TerrestrialRigidBodyModel.State rigidBody,
             List<Integer> supportedContacts, SimulationTickBudget budget, double seconds) {
-        if (previous == null || rigidBody == null || supportedContacts == null || budget == null)
+        return step(previous, frame, rigidBody, supportedContacts,
+                Collections.<Integer, Double>emptyMap(), budget, seconds);
+    }
+
+    public Result step(State previous, ControlFrame frame, TerrestrialRigidBodyModel.State rigidBody,
+            List<Integer> supportedContacts, Map<Integer, Double> surfaceFriction,
+            SimulationTickBudget budget, double seconds) {
+        if (previous == null || rigidBody == null || supportedContacts == null || surfaceFriction == null || budget == null)
             throw new IllegalArgumentException("coupled step");
         if (previous.channels.size() != channels.size() || Double.isNaN(seconds)
                 || Double.isInfinite(seconds) || seconds <= 0.0
@@ -147,11 +154,14 @@ public strictfp final class CoupledDriveLoop {
                 double outputTorque = channel.path.outputTorque(drive.shaftTorqueNm);
                 double force = outputTorque / channel.path.wheelRadiusMetres;
                 double pathLimit = channel.path.maximumTorqueNm / channel.path.wheelRadiusMetres;
-                if (StrictMath.abs(force) > 0.0) forces.add(new TerrestrialRigidBodyModel.AppliedForce(
-                        channel.contactIndex, force, StrictMath.min(StrictMath.abs(force), pathLimit)));
+                Double multiplier = surfaceFriction.get(Integer.valueOf(channel.contactIndex));
+                double grip = multiplier == null ? 1.0 : multiplier.doubleValue();
+                if (!finite(grip) || grip < 0.0) throw new IllegalArgumentException("surface friction");
                 double normal = body.massKg * TerrestrialRigidBodyModel.GRAVITY_METRES_PER_SECOND_SQUARED
                         / supportedContacts.size();
-                double friction = body.getContacts().get(channel.contactIndex).longitudinalFriction * normal;
+                double friction = body.getContacts().get(channel.contactIndex).longitudinalFriction * normal * grip;
+                if (StrictMath.abs(force) > 0.0) forces.add(new TerrestrialRigidBodyModel.AppliedForce(
+                        channel.contactIndex, force, StrictMath.min(StrictMath.abs(force), StrictMath.min(pathLimit, friction))));
                 double outputLoad = StrictMath.copySign(
                         StrictMath.min(StrictMath.min(StrictMath.abs(force), pathLimit), friction)
                                 * channel.path.wheelRadiusMetres, outputTorque);
