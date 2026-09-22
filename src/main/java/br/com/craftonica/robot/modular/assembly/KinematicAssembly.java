@@ -42,6 +42,7 @@ public final class KinematicAssembly {
         public final GridVector modulePosition;
         public final int parentBodyId, childBodyId;
         public final JointProfile.Kind kind;
+        public final JointProfile profile;
         public final Direction axis;
         public final double minimumPosition, maximumPosition, maximumVelocity, maximumEffort;
         /** First component on the physical transmission path, not necessarily the actuator itself. */
@@ -49,7 +50,7 @@ public final class KinematicAssembly {
         Joint(GridVector position, int parent, int child, JointProfile profile, Direction axis,
                 GridVector driveConnectionPosition) {
             this.modulePosition = position; this.parentBodyId = parent; this.childBodyId = child;
-            this.kind = profile.kind; this.axis = axis; this.minimumPosition = profile.minimumPosition;
+            this.kind = profile.kind; this.profile = profile; this.axis = axis; this.minimumPosition = profile.minimumPosition;
             this.maximumPosition = profile.maximumPosition; this.maximumVelocity = profile.maximumVelocity;
             this.maximumEffort = profile.maximumEffort; this.driveConnectionPosition = driveConnectionPosition;
         }

@@ -29,6 +29,9 @@ public final class JointStateSetTest {
         JointStateSet client = JointStateSet.readClient(bytes);
         assertEquals(1, client.getEntries().size());
         assertEquals(0, bytes.readableBytes());
+        JointStateSet watched = JointStateSet.decodeClientString(client.encodeClientString());
+        assertEquals(client.getEntries().get(0).state.position,
+                watched.getEntries().get(0).state.position, 0.0);
     }
 
     @Test public void rejectsCoordinatesOutsideJointContractAndTrailingClientBytes() {
