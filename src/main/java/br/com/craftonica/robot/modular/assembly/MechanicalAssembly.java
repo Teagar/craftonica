@@ -47,9 +47,11 @@ public strictfp final class MechanicalAssembly {
         public final double wheelRadiusMetres, tractionLeverArmMetres, wheelWidthMetres, maximumTorqueNm;
         public final double speedRatio, efficiency, reflectedInertiaKgM2;
         public final int directionSign, gearStages;
+        private final List<EncoderTap> encoderTaps;
         DrivePath(GridVector motorPosition, GridVector wheelPosition, Direction axleAxis,
                   double radius, double tractionLever, double width, double maximumTorqueNm, double speedRatio,
-                  int directionSign, double efficiency, double reflectedInertiaKgM2, int gearStages) {
+                  int directionSign, double efficiency, double reflectedInertiaKgM2, int gearStages,
+                  List<EncoderTap> encoderTaps) {
             this.motorPosition = motorPosition; this.wheelPosition = wheelPosition; this.axleAxis = axleAxis;
             this.wheelRadiusMetres = radius; this.tractionLeverArmMetres = tractionLever;
             this.wheelWidthMetres = width; this.maximumTorqueNm = maximumTorqueNm;
@@ -60,6 +62,7 @@ public strictfp final class MechanicalAssembly {
                 throw new IllegalArgumentException("drive transmission");
             this.speedRatio = speedRatio; this.directionSign = directionSign; this.efficiency = efficiency;
             this.reflectedInertiaKgM2 = reflectedInertiaKgM2; this.gearStages = gearStages;
+            this.encoderTaps = Collections.unmodifiableList(new ArrayList<EncoderTap>(encoderTaps));
         }
         public double linearSpeedMetresPerSecond(double angularVelocityRadPerSecond) {
             return outputAngularVelocity(angularVelocityRadPerSecond) * tractionLeverArmMetres;
@@ -85,12 +88,27 @@ public strictfp final class MechanicalAssembly {
                 throw new IllegalArgumentException("output inertia");
             return reflectedInertiaKgM2 + outputInertiaKgM2 / (speedRatio * speedRatio);
         }
+        public List<EncoderTap> getEncoderTaps() { return encoderTaps; }
         private static void requireFinite(double value, String label) {
             if (!finite(value)) throw new IllegalArgumentException(label);
         }
         private static boolean finite(double value) {
             return !Double.isNaN(value) && !Double.isInfinite(value);
         }
+    }
+
+    public static final class EncoderTap {
+        public final GridVector position; public final double speedRatio; public final int directionSign;
+        EncoderTap(GridVector position,double speedRatio,int directionSign){
+            if(position==null||!finite(speedRatio)||speedRatio<=0.0||(directionSign!=-1&&directionSign!=1))
+                throw new IllegalArgumentException("encoder tap");
+            this.position=position;this.speedRatio=speedRatio;this.directionSign=directionSign;
+        }
+        public double angularVelocity(double motorAngularVelocity){
+            if(!finite(motorAngularVelocity))throw new IllegalArgumentException("motor angular velocity");
+            return directionSign*motorAngularVelocity/speedRatio;
+        }
+        private static boolean finite(double value){return !Double.isNaN(value)&&!Double.isInfinite(value);}
     }
 
     public static final class TransmissionDiagnostic {

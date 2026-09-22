@@ -99,6 +99,12 @@ public final class ModBlocks {
             BlockMechanicalComponent.Type.MECANUM_WHEEL, "mecanumWheelLeft", "craftonica:mecanum_wheel_left");
     public static final BlockMechanicalComponent MECANUM_WHEEL_RIGHT = new BlockMechanicalComponent(
             BlockMechanicalComponent.Type.MECANUM_WHEEL, "mecanumWheelRight", "craftonica:mecanum_wheel_right");
+    public static final BlockMechanicalComponent ROTARY_ENCODER = new BlockMechanicalComponent(
+            BlockMechanicalComponent.Type.ENCODER, "rotaryEncoder", "craftonica:rotary_encoder");
+    public static final BlockMechanicalComponent LIMIT_SWITCH = new BlockMechanicalComponent(
+            BlockMechanicalComponent.Type.LIMIT_SWITCH, "limitSwitch", "craftonica:limit_switch");
+    public static final BlockMechanicalComponent EDUCATIONAL_IMU = new BlockMechanicalComponent(
+            BlockMechanicalComponent.Type.IMU, "educationalImu", "craftonica:educational_imu");
     public static final BlockCalibrationTarget TARGET_MDF = new BlockCalibrationTarget("targetMdf",
             "craftonica:target_mdf", AcousticMaterialProfile.MDF);
     public static final BlockCalibrationTarget TARGET_PLASTIC = new BlockCalibrationTarget("targetPlastic",
@@ -151,6 +157,9 @@ public final class ModBlocks {
         GameRegistry.registerBlock(OMNI_WHEEL, "omni_wheel");
         GameRegistry.registerBlock(MECANUM_WHEEL_LEFT, "mecanum_wheel_left");
         GameRegistry.registerBlock(MECANUM_WHEEL_RIGHT, "mecanum_wheel_right");
+        GameRegistry.registerBlock(ROTARY_ENCODER, "rotary_encoder");
+        GameRegistry.registerBlock(LIMIT_SWITCH, "limit_switch");
+        GameRegistry.registerBlock(EDUCATIONAL_IMU, "educational_imu");
         GameRegistry.registerBlock(TARGET_MDF, "target_mdf");
         GameRegistry.registerBlock(TARGET_PLASTIC, "target_plastic");
         GameRegistry.registerBlock(TARGET_STYROFOAM, "target_styrofoam");

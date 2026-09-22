@@ -43,6 +43,7 @@ public final class ModularRobotPersistenceTest {
                 Double.doubleToLongBits(restored.body.angularVelocityRadiansPerSecond));
         assertEquals(board.getBoardId(), restored.board.getBoardId());
         assertEquals(91L, restored.sensorCounter); assertEquals(0L, restored.driveState.nextSequence);
+        assertNotNull(restored.motionSensors);assertNotNull(restored.motionSensorState);
     }
 
     @Test public void payloadTamperingAndFutureSchemaAreRejected() {

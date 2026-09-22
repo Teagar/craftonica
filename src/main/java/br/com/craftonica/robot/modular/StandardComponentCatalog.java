@@ -31,6 +31,9 @@ public final class StandardComponentCatalog {
     public static final String MECANUM_LEFT = "craftonica:mecanum_wheel_left";
     public static final String MECANUM_RIGHT = "craftonica:mecanum_wheel_right";
     public static final String HC_SR04 = "craftonica:modular_ultrasonic_sensor";
+    public static final String ENCODER = "craftonica:rotary_encoder";
+    public static final String LIMIT_SWITCH = "craftonica:limit_switch";
+    public static final String IMU = "craftonica:educational_imu";
 
     private static final String RIGID = "craftonica:rigid_mount";
     private static final BoxVolume FULL = BoxVolume.FULL_BLOCK;
@@ -63,6 +66,9 @@ public final class StandardComponentCatalog {
         values.add(mecanumWheel(MECANUM_LEFT, true));
         values.add(mecanumWheel(MECANUM_RIGHT, false));
         values.add(ultrasonic());
+        values.add(encoder());
+        values.add(limitSwitch());
+        values.add(imu());
         return new ComponentCatalog(values);
     }
 
@@ -337,6 +343,66 @@ public final class StandardComponentCatalog {
                         parameters("minimum_range_metres", 0.02, "maximum_range_metres", 4.0,
                                 "half_angle_radians", StrictMath.toRadians(15.0),
                                 "sound_speed_metres_per_second", 343.0))).build();
+    }
+
+    private static ComponentType encoder() {
+        return base(ENCODER, 0.18, ComponentMaterial.ENGINEERING_PLASTIC,
+                new BoxVolume(0.15, 0.15, 0.0, 0.85, 0.85, 1.0))
+                .structural(structural("mount_down", Direction.DOWN))
+                .mechanical(mechanical("shaft_in", Direction.NORTH, MechanicalPort.Kind.ROTARY_SHAFT,
+                        MechanicalPort.Coupling.SOCKET, 0.6))
+                .mechanical(mechanical("shaft_out", Direction.SOUTH, MechanicalPort.Kind.ROTARY_SHAFT,
+                        MechanicalPort.Coupling.PLUG, 0.6))
+                .transmission(TransmissionProfile.bearing(0.995, 0.00001, 600.0))
+                .electrical(electrical("vcc", Direction.UP, ElectricalPort.Domain.POWER,
+                        ElectricalPort.Flow.INPUT, 5.5, 0.03))
+                .electrical(electrical("gnd", Direction.DOWN, ElectricalPort.Domain.POWER,
+                        ElectricalPort.Flow.PASSIVE, 5.5, 0.03))
+                .electrical(electrical("channel_a", Direction.WEST, ElectricalPort.Domain.DIGITAL,
+                        ElectricalPort.Flow.OUTPUT, 5.5, 0.01))
+                .electrical(electrical("channel_b", Direction.EAST, ElectricalPort.Domain.DIGITAL,
+                        ElectricalPort.Flow.OUTPUT, 5.5, 0.01))
+                .sensor(new SensorProfile("craftonica:quadrature_20ppr", 1,
+                        SensorProfile.Kind.ROTARY_ENCODER,
+                        parameters("pulses_per_revolution", 20.0, "maximum_edges_per_sample", 1.0,
+                                "maximum_angular_velocity_rad_per_second", 600.0))).build();
+    }
+
+    private static ComponentType limitSwitch() {
+        return base(LIMIT_SWITCH, 0.09, ComponentMaterial.ENGINEERING_PLASTIC,
+                new BoxVolume(0.15, 0.0, 0.15, 0.85, 0.45, 0.85))
+                .structural(structural("mount_down", Direction.DOWN))
+                .electrical(electrical("vcc", Direction.UP, ElectricalPort.Domain.POWER,
+                        ElectricalPort.Flow.INPUT, 5.5, 0.02))
+                .electrical(electrical("gnd", Direction.SOUTH, ElectricalPort.Domain.POWER,
+                        ElectricalPort.Flow.PASSIVE, 5.5, 0.02))
+                .electrical(electrical("signal", Direction.NORTH, ElectricalPort.Domain.DIGITAL,
+                        ElectricalPort.Flow.OUTPUT, 5.5, 0.01))
+                .sensor(new SensorProfile("craftonica:limit_switch_educational", 1,
+                        SensorProfile.Kind.LIMIT_SWITCH,
+                        parameters("travel_metres", 0.04))).build();
+    }
+
+    private static ComponentType imu() {
+        return base(IMU, 0.06, ComponentMaterial.ENGINEERING_PLASTIC,
+                new BoxVolume(0.15, 0.0, 0.15, 0.85, 0.2, 0.85))
+                .structural(structural("mount_down", Direction.DOWN))
+                .electrical(electrical("vcc", Direction.UP, ElectricalPort.Domain.POWER,
+                        ElectricalPort.Flow.INPUT, 5.5, 0.04))
+                .electrical(electrical("gnd", Direction.DOWN, ElectricalPort.Domain.POWER,
+                        ElectricalPort.Flow.PASSIVE, 5.5, 0.04))
+                .electrical(electrical("gyro_z", Direction.NORTH, ElectricalPort.Domain.ANALOG,
+                        ElectricalPort.Flow.OUTPUT, 5.5, 0.01))
+                .electrical(electrical("accel_x", Direction.WEST, ElectricalPort.Domain.ANALOG,
+                        ElectricalPort.Flow.OUTPUT, 5.5, 0.01))
+                .electrical(electrical("accel_z", Direction.EAST, ElectricalPort.Domain.ANALOG,
+                        ElectricalPort.Flow.OUTPUT, 5.5, 0.01))
+                .sensor(new SensorProfile("craftonica:imu_3axis_educational", 1,
+                        SensorProfile.Kind.IMU,
+                        parameters("gyro_range_rad_per_second", StrictMath.toRadians(250.0),
+                                "acceleration_range_metres_per_second_squared", 19.6133,
+                                "noise_fraction", 0.003, "adc_levels", 1024.0,
+                                "sample_period_seconds", 0.05))).build();
     }
 
     private static ComponentType.Builder base(String id, double massKg, ComponentMaterial material) {

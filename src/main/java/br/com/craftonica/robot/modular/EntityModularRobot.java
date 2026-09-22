@@ -18,6 +18,7 @@ import br.com.craftonica.runtime.server.RoboBoardRuntimeHost;
 import br.com.craftonica.tile.RoboBoardState;
 import br.com.craftonica.tile.RoboBoardStateNbtCodec;
 import br.com.craftonica.robot.modular.sensor.MobileUltrasonicSystem;
+import br.com.craftonica.robot.modular.sensor.MobileMotionSensorSystem;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.nbt.NBTTagCompound;
@@ -65,6 +66,9 @@ public final class EntityModularRobot extends Entity implements IEntityAdditiona
     private MobileUltrasonicSystem ultrasonicSystem;
     private long sensorSampleCounter;
     private MobileUltrasonicSystem.Status lastSensorStatus = MobileUltrasonicSystem.Status.IDLE;
+    private MobileMotionSensorSystem motionSensors;
+    private MobileMotionSensorSystem.State motionSensorState;
+    private MobileMotionSensorSystem.Status lastMotionSensorStatus = MobileMotionSensorSystem.Status.OK;
     private NBTTagCompound preservedInvalidEnvelope;
     private ModularRobotVisualState visualState;
     private float mechanicalPhaseDegrees;
@@ -122,9 +126,9 @@ public final class EntityModularRobot extends Entity implements IEntityAdditiona
         if (state == null) return;
         if (!state.canSimulate()) { stopDynamics(); pendingForces.clear(); syncVisualState(); return; }
         if (!ModularRobotTickBudget.allows(this)) { motionX = motionY = motionZ = 0.0; return; }
-        updateRuntime();
         ensureBody();
         ForgeRigidBodyWorld collisionWorld = new ForgeRigidBodyWorld(worldObj, this);
+        updateRuntime(collisionWorld);
         ArticulatedTickBudget articulatedBudget = new ArticulatedTickBudget();
         List<Integer> supported = collisionWorld.supportedContacts(rootBody == null ? body : rootBody, dynamics);
         if (supported == null) { stopDynamics(); pendingForces.clear(); return; }
@@ -159,7 +163,7 @@ public final class EntityModularRobot extends Entity implements IEntityAdditiona
         ensureBody();
         tag.setTag("CraftonicaModularRobotV2", ModularRobotPersistence.write(state, dynamics,
                 coupledDrive, coupledDriveState, boardState, sensorSampleCounter, jointStates,
-                servoJointLoop, servoJointState));
+                servoJointLoop, servoJointState,motionSensors,motionSensorState));
     }
 
     @Override protected void readEntityFromNBT(NBTTagCompound tag) {
@@ -172,6 +176,7 @@ public final class EntityModularRobot extends Entity implements IEntityAdditiona
                 sensorSampleCounter = restored.sensorCounter;
                 jointStates = restored.joints;
                 servoJointLoop = restored.servoLoop; servoJointState = restored.servoState;
+                motionSensors=restored.motionSensors;motionSensorState=restored.motionSensorState;
                 setPositionAndRotation(dynamics.x, dynamics.y, dynamics.z,
                         (float) StrictMath.toDegrees(dynamics.yawRadians), 0.0F);
             } else {
@@ -194,6 +199,7 @@ public final class EntityModularRobot extends Entity implements IEntityAdditiona
             ultrasonicSystem = new MobileUltrasonicSystem(state.getManifest()); sensorSampleCounter = 0L;
             visualState = ModularRobotVisualState.fromManifest(state.getManifest());
             articulatedMechanism = null; servoJointLoop = null; servoJointState = null;
+            motionSensors=null;motionSensorState=null;
             initializeArticulated(state.getManifest());
             visualElectricalFault = true;
             dynamics = currentState(0.0, 0.0, 0.0, 0.0); configureBounds(); syncVisualState();
@@ -236,6 +242,7 @@ public final class EntityModularRobot extends Entity implements IEntityAdditiona
                         + state.getManifest().getElectricalNetlist().getNetworkCount()
                         + ", diagnósticos=" + electrical.getDiagnostics().size()
                         + ", sensores=" + lastSensorStatus.name()
+                        + ", movimento=" + lastMotionSensorStatus.name()
                         + ", esteiras=" + (trackAssembly == null ? 0 : trackAssembly.getUnits().size())
                         + ", falhasEsteira=" + (trackAssembly == null ? 0 : trackAssembly.getDiagnostics().size())
                         + (state.getDiagnostic().length() == 0 ? "" : ", estado=" + state.getDiagnostic())));
@@ -318,6 +325,7 @@ public final class EntityModularRobot extends Entity implements IEntityAdditiona
         if (lastSensorStatus == MobileUltrasonicSystem.Status.CROSSTALK_SERIALIZED
                 || lastSensorStatus == MobileUltrasonicSystem.Status.ACTIVE_LIMIT_EXCEEDED)
             diagnostics |= DIAGNOSTIC_SENSOR;
+        if(lastMotionSensorStatus!=MobileMotionSensorSystem.Status.OK)diagnostics|=DIAGNOSTIC_SENSOR;
         if (coupledDriveState != null) for (CoupledDriveLoop.ChannelState channel : coupledDriveState.getChannels()) {
             if (channel.diagnostic != br.com.craftonica.robot.modular.drive.DriveStep.Diagnostic.NONE)
                 diagnostics |= DIAGNOSTIC_DRIVE;
@@ -359,7 +367,7 @@ public final class EntityModularRobot extends Entity implements IEntityAdditiona
                 : state.getManifest().getElectricalNetlist());
     }
 
-    private void updateRuntime() {
+    private void updateRuntime(ForgeRigidBodyWorld sensorWorld) {
         if (boardState == null || !boardState.isRunning()) {
             runtimeHost.cancel(); lastSensorStatus = MobileUltrasonicSystem.Status.IDLE; return;
         }
@@ -373,6 +381,13 @@ public final class EntityModularRobot extends Entity implements IEntityAdditiona
             MobileUltrasonicSystem.Sample sample = ultrasonicSystem.sample(worldObj, this, boardState,
                     posX, posY, posZ, StrictMath.toRadians(rotationYaw), seed);
             inputs = sample.inputs; lastSensorStatus = sample.status;
+            if(motionSensors!=null&&motionSensorState!=null){
+                br.com.craftonica.robot.modular.physics.articulated.ArticulatedPose pose=articulatedMechanism.pose(
+                        jointStates,ArticulatedSolver.rootTransform(dynamics.x,dynamics.y,dynamics.z,dynamics.yawRadians));
+                MobileMotionSensorSystem.Sample motion=motionSensors.sample(motionSensorState,inputs,coupledDrive,
+                        coupledDriveState,dynamics,pose,sensorWorld,seed^0x6d6f74696f6eL);
+                motionSensorState=motion.state;inputs=motion.inputs;lastMotionSensorStatus=motion.status;
+            }
         }
         runtimeHost.tick(identity, worldObj.getTotalWorldTime(), boardState, inputs,
                 new RoboBoardRuntimeHost.OutputListener() {
@@ -454,6 +469,8 @@ public final class EntityModularRobot extends Entity implements IEntityAdditiona
         if (servoJointLoop == null) servoJointLoop = new ServoJointLoop(manifest, CATALOG,
                 articulatedMechanism.getKinematic());
         if (servoJointState == null) servoJointState = servoJointLoop.initialState();
+        if(motionSensors==null)motionSensors=new MobileMotionSensorSystem(manifest,CATALOG,articulatedMechanism);
+        if(motionSensorState==null)motionSensorState=motionSensors.initialState();
     }
 
     private void configureBounds() {

@@ -5,7 +5,7 @@ umask 077
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
 TEMP_DIR=$(mktemp -d -- "${TMPDIR:-/tmp}/craftonica-compiler-test.XXXXXXXX")
 trap 'rm -rf -- "$TEMP_DIR"' EXIT HUP INT TERM
-mkdir -p -- "$TEMP_DIR/blink" "$TEMP_DIR/servo" "$TEMP_DIR/out-a" "$TEMP_DIR/out-b" "$TEMP_DIR/out-servo" "$TEMP_DIR/hostile"
+mkdir -p -- "$TEMP_DIR/blink" "$TEMP_DIR/servo" "$TEMP_DIR/sensors" "$TEMP_DIR/out-a" "$TEMP_DIR/out-b" "$TEMP_DIR/out-servo" "$TEMP_DIR/out-sensors" "$TEMP_DIR/hostile"
 UNIT_SEQUENCE=0
 
 run_compile() {
@@ -39,6 +39,21 @@ void loop() { arm.writeMicroseconds(1750); delay(20); }
 EOF
 run_compile "$TEMP_DIR/servo" ServoDemo.ino "$TEMP_DIR/out-servo"
 [[ -s "$TEMP_DIR/out-servo/firmware.elf" && -s "$TEMP_DIR/out-servo/firmware.hex" ]]
+
+cat > "$TEMP_DIR/sensors/SensorDemo.ino" <<'EOF'
+#include <CraftonicaSensors.h>
+CraftonicaEncoder encoder(2, 3);
+CraftonicaImu3 imu(A0, A1, A2);
+void setup() { encoder.begin(); Serial.begin(9600); }
+void loop() {
+  encoder.update();
+  if (craftonicaLimitPressed(4)) Serial.println(encoder.read());
+  Serial.println(imu.gyroZRadiansPerSecond());
+  delay(10);
+}
+EOF
+run_compile "$TEMP_DIR/sensors" SensorDemo.ino "$TEMP_DIR/out-sensors"
+[[ -s "$TEMP_DIR/out-sensors/firmware.elf" && -s "$TEMP_DIR/out-sensors/firmware.hex" ]]
 
 expect_rejected() {
     local label=$1
@@ -87,3 +102,4 @@ printf 'PASS: seccomp denied socket syscall\n'
 
 printf 'PASS: Blink ELF/HEX/map are byte-identical across two clean builds\n'
 printf 'PASS: Servo.h compiles for the published D9/D10 Timer1 profile\n'
+printf 'PASS: CraftonicaSensors.h compiles for encoder, limit switch and IMU APIs\n'

@@ -7,6 +7,8 @@ import br.com.craftonica.robot.modular.assembly.KinematicAssembly;
 import br.com.craftonica.robot.modular.assembly.KinematicAssemblyAnalyzer;
 import br.com.craftonica.robot.modular.joint.JointStateSet;
 import br.com.craftonica.robot.modular.servo.ServoJointLoop;
+import br.com.craftonica.robot.modular.sensor.MobileMotionSensorSystem;
+import br.com.craftonica.robot.modular.physics.articulated.ArticulatedMechanism;
 import br.com.craftonica.tile.RoboBoardState;
 import br.com.craftonica.tile.RoboBoardStateNbtCodec;
 import net.minecraft.nbt.NBTTagCompound;
@@ -41,6 +43,13 @@ public final class ModularRobotPersistence {
     public static NBTTagCompound write(ModularRobotState robot, TerrestrialRigidBodyModel.State body,
             CoupledDriveLoop drive, CoupledDriveLoop.State driveState, RoboBoardState board,
             long sensorCounter, JointStateSet joints, ServoJointLoop servoLoop, ServoJointLoop.State servoState) {
+        return write(robot,body,drive,driveState,board,sensorCounter,joints,servoLoop,servoState,null,null);
+    }
+
+    public static NBTTagCompound write(ModularRobotState robot, TerrestrialRigidBodyModel.State body,
+            CoupledDriveLoop drive, CoupledDriveLoop.State driveState, RoboBoardState board,
+            long sensorCounter, JointStateSet joints, ServoJointLoop servoLoop, ServoJointLoop.State servoState,
+            MobileMotionSensorSystem motionSensors, MobileMotionSensorSystem.State motionSensorState) {
         if (robot == null || body == null || drive == null || driveState == null || sensorCounter < 0 || joints == null)
             throw new IllegalArgumentException("modular persistence state");
         NBTTagCompound payload = new NBTTagCompound(); payload.setTag("Robot", robot.write());
@@ -58,6 +67,8 @@ public final class ModularRobotPersistence {
         payload.setLong("SensorCounter", sensorCounter);
         payload.setTag("Joints", joints.write());
         if (servoLoop != null && servoState != null) payload.setTag("ServoJoints", servoLoop.writeState(servoState));
+        if (motionSensors != null && motionSensorState != null)
+            payload.setTag("MotionSensors", motionSensors.write(motionSensorState));
         byte[] hash = hash(payload);
         NBTTagCompound envelope = new NBTTagCompound(); envelope.setInteger("Schema", SCHEMA_VERSION);
         envelope.setString("Kind", "modular_robot"); envelope.setTag("Payload", payload);
@@ -107,7 +118,12 @@ public final class ModularRobotPersistence {
         ServoJointLoop servoLoop = new ServoJointLoop(robot.getManifest(), catalog, kinematic);
         ServoJointLoop.State servoState = payload.hasKey("ServoJoints")
                 ? servoLoop.readState(payload.getCompoundTag("ServoJoints")) : servoLoop.initialState();
-        return new Snapshot(robot, body, drive, driveState, board, sensorCounter, joints, servoLoop, servoState);
+        ArticulatedMechanism mechanism=new ArticulatedMechanism(robot.getManifest(),catalog);
+        MobileMotionSensorSystem motionSensors=new MobileMotionSensorSystem(robot.getManifest(),catalog,mechanism);
+        MobileMotionSensorSystem.State motionSensorState=payload.hasKey("MotionSensors")
+                ?motionSensors.read(payload.getCompoundTag("MotionSensors")):motionSensors.initialState();
+        return new Snapshot(robot, body, drive, driveState, board, sensorCounter, joints, servoLoop, servoState,
+                motionSensors,motionSensorState);
     }
 
     public static NBTTagCompound preserve(NBTTagCompound source) {
@@ -155,13 +171,17 @@ public final class ModularRobotPersistence {
         public final JointStateSet joints;
         public final ServoJointLoop servoLoop;
         public final ServoJointLoop.State servoState;
+        public final MobileMotionSensorSystem motionSensors;
+        public final MobileMotionSensorSystem.State motionSensorState;
 
         Snapshot(ModularRobotState robot, TerrestrialRigidBodyModel.State body, CoupledDriveLoop drive,
                 CoupledDriveLoop.State driveState, RoboBoardState board, long sensorCounter, JointStateSet joints,
-                ServoJointLoop servoLoop, ServoJointLoop.State servoState) {
+                ServoJointLoop servoLoop, ServoJointLoop.State servoState,
+                MobileMotionSensorSystem motionSensors,MobileMotionSensorSystem.State motionSensorState) {
             this.robot = robot; this.body = body; this.drive = drive; this.driveState = driveState;
             this.board = board; this.sensorCounter = sensorCounter; this.joints = joints;
             this.servoLoop = servoLoop; this.servoState = servoState;
+            this.motionSensors=motionSensors;this.motionSensorState=motionSensorState;
         }
     }
 }
