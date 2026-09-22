@@ -42,11 +42,16 @@ public strictfp final class RigidBodyProperties {
 
     public static RigidBodyProperties derive(ModularRobotManifest manifest, ComponentCatalog catalog) {
         if (manifest == null || catalog == null) throw new IllegalArgumentException("manifest or catalog");
+        return derive(manifest.getModules(), catalog);
+    }
+
+    public static RigidBodyProperties derive(List<ModularBlockSnapshot> modules, ComponentCatalog catalog) {
+        if (modules == null || modules.isEmpty() || catalog == null) throw new IllegalArgumentException("modules or catalog");
         List<Contribution> contributions = new ArrayList<Contribution>();
         List<AxisAlignedVolume> volumes = new ArrayList<AxisAlignedVolume>();
         List<Contact> contacts = new ArrayList<Contact>();
         double totalMass = 0.0, weightedX = 0.0, weightedY = 0.0, weightedZ = 0.0;
-        for (ModularBlockSnapshot module : manifest.getModules()) {
+        for (ModularBlockSnapshot module : modules) {
             ComponentType type = catalog.require(module.componentTypeId);
             if (type.getSchemaVersion() != module.componentSchema)
                 throw new IllegalArgumentException("component schema: " + module.componentTypeId);

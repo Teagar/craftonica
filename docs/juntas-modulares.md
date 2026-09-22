@@ -39,9 +39,9 @@ robô, ordenadas pela posição local do bloco e validadas novamente no carregam
 O payload de criação da entidade envia ao cliente somente essa projeção limitada;
 o cliente não possui API para enviar estado físico de volta ao servidor.
 
-## Fronteira desta etapa
+## Simulação
 
-O CRL-86 entrega blocos, topologia, coordenadas, batentes e a entrada física para
-servo/transmissão. A composição das poses dos corpos, colisão articulada e aplicação
-do esforço ao mecanismo completo pertencem ao solver do CRL-87. Até esse solver,
-as juntas persistem em repouso e nenhuma animação visual é usada como autoridade.
+O CRL-87 compõe as poses dos corpos, deriva massa/inércia móvel, aplica gravidade e
+esforços, trata colisão articulada e publica a projeção visual autoritativa. Consulte
+[`simulacao-articulada-servidor.md`](simulacao-articulada-servidor.md) para o contrato
+do solver e seus limites.

@@ -31,6 +31,10 @@ import br.com.craftonica.persistence.NbtMigrations;
 import br.com.craftonica.robot.modular.visual.ModularRobotVisualState;
 import br.com.craftonica.robot.modular.assembly.KinematicAssemblyAnalyzer;
 import br.com.craftonica.robot.modular.joint.JointStateSet;
+import br.com.craftonica.robot.modular.physics.articulated.ArticulatedMechanism;
+import br.com.craftonica.robot.modular.physics.articulated.ArticulatedSolver;
+import br.com.craftonica.robot.modular.physics.articulated.ArticulatedTickBudget;
+import br.com.craftonica.robot.modular.servo.ServoJointLoop;
 import cpw.mods.fml.common.registry.IEntityAdditionalSpawnData;
 import io.netty.buffer.ByteBuf;
 
@@ -41,13 +45,16 @@ public final class EntityModularRobot extends Entity implements IEntityAdditiona
     private static final int WATCH_STATUS = 20;
     private static final int WATCH_DIAGNOSTICS = 21;
     private static final int WATCH_MECHANICAL_PHASE = 22;
+    private static final int WATCH_JOINT_STATES = 23;
     public static final int DIAGNOSTIC_ELECTRICAL = 1;
     public static final int DIAGNOSTIC_DRIVE = 2;
     public static final int DIAGNOSTIC_THERMAL = 4;
     public static final int DIAGNOSTIC_SENSOR = 8;
     public static final int DIAGNOSTIC_QUARANTINE = 16;
+    public static final int DIAGNOSTIC_ARTICULATED = 32;
     private ModularRobotState state;
     private RigidBodyProperties body;
+    private RigidBodyProperties rootBody;
     private TerrestrialRigidBodyModel.State dynamics;
     private CoupledDriveLoop coupledDrive;
     private CoupledDriveLoop.State coupledDriveState;
@@ -60,10 +67,15 @@ public final class EntityModularRobot extends Entity implements IEntityAdditiona
     private ModularRobotVisualState visualState;
     private float mechanicalPhaseDegrees;
     private JointStateSet jointStates = JointStateSet.EMPTY;
+    private ArticulatedMechanism articulatedMechanism;
+    private ServoJointLoop servoJointLoop;
+    private ServoJointLoop.State servoJointState;
+    private ArticulatedSolver.Status articulatedStatus = ArticulatedSolver.Status.ADVANCED;
     private boolean visualElectricalFault;
     private double targetX, targetY, targetZ;
     private float targetYaw, targetPitch;
     private int interpolationTicks;
+    private String lastClientJointPayload = "";
     private final RoboBoardRuntimeHost runtimeHost = new RoboBoardRuntimeHost();
     private final List<TerrestrialRigidBodyModel.AppliedForce> pendingForces =
             new ArrayList<TerrestrialRigidBodyModel.AppliedForce>();
@@ -84,6 +96,7 @@ public final class EntityModularRobot extends Entity implements IEntityAdditiona
         value.ultrasonicSystem = new MobileUltrasonicSystem(manifest);
         value.visualState = ModularRobotVisualState.fromManifest(manifest);
         value.jointStates = JointStateSet.initial(KinematicAssemblyAnalyzer.analyze(manifest, CATALOG));
+        value.initializeArticulated(manifest);
         value.visualElectricalFault = !MobileElectricalEvaluator.evaluate(
                 manifest.getElectricalNetlist()).getDiagnostics().isEmpty();
         value.rotationYaw = yawDegrees(orientation.getForward());
@@ -98,17 +111,19 @@ public final class EntityModularRobot extends Entity implements IEntityAdditiona
         dataWatcher.addObject(WATCH_STATUS, Integer.valueOf(ModularRobotState.Status.QUARANTINED.ordinal()));
         dataWatcher.addObject(WATCH_DIAGNOSTICS, Integer.valueOf(DIAGNOSTIC_QUARANTINE));
         dataWatcher.addObject(WATCH_MECHANICAL_PHASE, Float.valueOf(0.0F));
+        dataWatcher.addObject(WATCH_JOINT_STATES, "");
     }
     @Override public void onUpdate() {
         super.onUpdate();
-        if (worldObj.isRemote) { interpolateClientPose(); return; }
+        if (worldObj.isRemote) { interpolateClientPose(); syncClientJointStates(); return; }
         if (state == null) return;
         if (!state.canSimulate()) { stopDynamics(); pendingForces.clear(); syncVisualState(); return; }
         if (!ModularRobotTickBudget.allows(this)) { motionX = motionY = motionZ = 0.0; return; }
         updateRuntime();
         ensureBody();
         ForgeRigidBodyWorld collisionWorld = new ForgeRigidBodyWorld(worldObj, this);
-        List<Integer> supported = collisionWorld.supportedContacts(body, dynamics);
+        ArticulatedTickBudget articulatedBudget = new ArticulatedTickBudget();
+        List<Integer> supported = collisionWorld.supportedContacts(rootBody == null ? body : rootBody, dynamics);
         if (supported == null) { stopDynamics(); pendingForces.clear(); return; }
         List<TerrestrialRigidBodyModel.AppliedForce> forces =
                 new ArrayList<TerrestrialRigidBodyModel.AppliedForce>(pendingForces);
@@ -121,7 +136,9 @@ public final class EntityModularRobot extends Entity implements IEntityAdditiona
             }
         }
         integrateSubstep(collisionWorld, supported, forces);
+        integrateArticulated(collisionWorld, articulatedBudget);
         integrateSubstep(collisionWorld, supported, forces);
+        integrateArticulated(collisionWorld, articulatedBudget);
         setPosition(dynamics.x, dynamics.y, dynamics.z);
         rotationYaw = (float) StrictMath.toDegrees(dynamics.yawRadians);
         motionX = dynamics.velocityX / 20.0; motionY = dynamics.velocityY / 20.0;
@@ -136,7 +153,8 @@ public final class EntityModularRobot extends Entity implements IEntityAdditiona
         if (state == null) return;
         ensureBody();
         tag.setTag("CraftonicaModularRobotV2", ModularRobotPersistence.write(state, dynamics,
-                coupledDrive, coupledDriveState, boardState, sensorSampleCounter, jointStates));
+                coupledDrive, coupledDriveState, boardState, sensorSampleCounter, jointStates,
+                servoJointLoop, servoJointState));
     }
 
     @Override protected void readEntityFromNBT(NBTTagCompound tag) {
@@ -148,6 +166,7 @@ public final class EntityModularRobot extends Entity implements IEntityAdditiona
                 coupledDriveState = restored.driveState; boardState = restored.board;
                 sensorSampleCounter = restored.sensorCounter;
                 jointStates = restored.joints;
+                servoJointLoop = restored.servoLoop; servoJointState = restored.servoState;
                 setPositionAndRotation(dynamics.x, dynamics.y, dynamics.z,
                         (float) StrictMath.toDegrees(dynamics.yawRadians), 0.0F);
             } else {
@@ -169,6 +188,8 @@ public final class EntityModularRobot extends Entity implements IEntityAdditiona
             coupledDriveState = coupledDrive.initialState(); boardState = null;
             ultrasonicSystem = new MobileUltrasonicSystem(state.getManifest()); sensorSampleCounter = 0L;
             visualState = ModularRobotVisualState.fromManifest(state.getManifest());
+            articulatedMechanism = null; servoJointLoop = null; servoJointState = null;
+            initializeArticulated(state.getManifest());
             visualElectricalFault = true;
             dynamics = currentState(0.0, 0.0, 0.0, 0.0); configureBounds(); syncVisualState();
         }
@@ -194,6 +215,7 @@ public final class EntityModularRobot extends Entity implements IEntityAdditiona
                 || StrictMath.abs(angular) > 100.0) throw new IllegalArgumentException("rigid body velocity");
         dynamics = currentState(vx, vy, vz, angular);
         jointStates = JointStateSet.initial(KinematicAssemblyAnalyzer.analyze(state.getManifest(), CATALOG));
+        initializeArticulated(state.getManifest());
     }
 
     @Override public boolean canBeCollidedWith() { return !isDead; }
@@ -294,9 +316,23 @@ public final class EntityModularRobot extends Entity implements IEntityAdditiona
                 diagnostics |= DIAGNOSTIC_DRIVE;
             if (channel.drive.thermalShutdown) diagnostics |= DIAGNOSTIC_THERMAL;
         }
+        if (articulatedStatus != ArticulatedSolver.Status.ADVANCED) diagnostics |= DIAGNOSTIC_ARTICULATED;
+        if (servoJointState != null) for (ServoJointLoop.ChannelState channel : servoJointState.getChannels()) {
+            if (channel.diagnostic != br.com.craftonica.robot.modular.servo.ServoStep.Diagnostic.NONE)
+                diagnostics |= DIAGNOSTIC_DRIVE;
+            if (channel.servo.thermalShutdown) diagnostics |= DIAGNOSTIC_THERMAL;
+        }
         dataWatcher.updateObject(WATCH_STATUS, Integer.valueOf(state.getStatus().ordinal()));
         dataWatcher.updateObject(WATCH_DIAGNOSTICS, Integer.valueOf(diagnostics));
         dataWatcher.updateObject(WATCH_MECHANICAL_PHASE, Float.valueOf(mechanicalPhaseDegrees));
+        dataWatcher.updateObject(WATCH_JOINT_STATES, jointStates.encodeClientString());
+    }
+
+    private void syncClientJointStates() {
+        String payload = dataWatcher.getWatchableObjectString(WATCH_JOINT_STATES);
+        if (payload == null || payload.length() == 0 || payload.equals(lastClientJointPayload)) return;
+        try { jointStates = JointStateSet.decodeClientString(payload); lastClientJointPayload = payload; }
+        catch (RuntimeException ignored) { }
     }
     public void applyForceForNextTick(TerrestrialRigidBodyModel.AppliedForce force) {
         if (worldObj.isRemote || force == null || pendingForces.size() >= TerrestrialRigidBodyModel.MAX_FORCES_PER_SUBSTEP)
@@ -363,9 +399,21 @@ public final class EntityModularRobot extends Entity implements IEntityAdditiona
         else dynamics = dynamics.stopPlanar();
     }
 
+    private void integrateArticulated(ForgeRigidBodyWorld world, ArticulatedTickBudget budget) {
+        if (articulatedMechanism == null || articulatedMechanism.getKinematic().getJoints().isEmpty()) return;
+        ServoJointLoop.Evaluation servo = servoJointLoop.evaluate(servoJointState, jointStates, boardState, SUBSTEP_SECONDS);
+        world.beginSubstep();
+        ArticulatedSolver.Result result = ArticulatedSolver.step(articulatedMechanism, jointStates,
+                servo.efforts, ArticulatedSolver.rootTransform(dynamics.x, dynamics.y, dynamics.z,
+                        dynamics.yawRadians), world, budget, SUBSTEP_SECONDS);
+        articulatedStatus = result.status;
+        if (!result.delayed) jointStates = result.state;
+        servoJointState = servoJointLoop.applyReactions(servo.state, result.reactions);
+    }
+
     private CompoundCollisionProbe.Result collision(ForgeRigidBodyWorld world,
             TerrestrialRigidBodyModel.State from, TerrestrialRigidBodyModel.State candidate) {
-        return CompoundCollisionProbe.sweep(body, world, from, candidate);
+        return CompoundCollisionProbe.sweep(rootBody == null ? body : rootBody, world, from, candidate);
     }
 
     private void stopDynamics() {
@@ -388,6 +436,15 @@ public final class EntityModularRobot extends Entity implements IEntityAdditiona
         }
         if (ultrasonicSystem == null && state != null)
             ultrasonicSystem = new MobileUltrasonicSystem(state.getManifest());
+        if (articulatedMechanism == null && state != null) initializeArticulated(state.getManifest());
+    }
+
+    private void initializeArticulated(br.com.craftonica.robot.modular.manifest.ModularRobotManifest manifest) {
+        articulatedMechanism = new ArticulatedMechanism(manifest, CATALOG);
+        rootBody = articulatedMechanism.getBodies().get(0);
+        if (servoJointLoop == null) servoJointLoop = new ServoJointLoop(manifest, CATALOG,
+                articulatedMechanism.getKinematic());
+        if (servoJointState == null) servoJointState = servoJointLoop.initialState();
     }
 
     private void configureBounds() {

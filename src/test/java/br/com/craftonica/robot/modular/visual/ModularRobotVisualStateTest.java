@@ -16,6 +16,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import java.util.Arrays;
+import br.com.craftonica.robot.modular.joint.JointState;
+import br.com.craftonica.robot.modular.joint.JointStateSet;
+import br.com.craftonica.robot.modular.Vector3;
 
 import static org.junit.Assert.*;
 
@@ -64,6 +68,23 @@ public final class ModularRobotVisualStateTest {
         assertEquals(state.encodedSize(), buffer.readableBytes());
         assertTrue(buffer.readableBytes() <= ModularRobotVisualState.MAX_PAYLOAD_BYTES);
         assertEquals(256, ModularRobotVisualState.read(buffer).getModules().size());
+    }
+
+    @Test public void articulatedProjectionRoundTripsBodyTreeAndUsesServerCoordinate() {
+        GridVector parent=new GridVector(0,0,0),joint=new GridVector(0,0,1),child=new GridVector(0,0,2);
+        ModularRobotManifest manifest=new ModularRobotManifest(UUID.randomUUID(),Arrays.asList(
+                module(StandardComponentCatalog.CHASSIS,"craftonica:robot_chassis",0,0,0,ComponentOrientation.NORTH_UP,0),
+                module(StandardComponentCatalog.REVOLUTE_JOINT,"craftonica:revolute_joint",0,0,1,ComponentOrientation.NORTH_UP,0),
+                module(StandardComponentCatalog.CHASSIS,"craftonica:robot_chassis",0,0,2,ComponentOrientation.NORTH_UP,0)),
+                Arrays.asList(new AssemblyEdge(AssemblyEdge.Kind.JOINT,parent,"mount_south",joint,"parent"),
+                        new AssemblyEdge(AssemblyEdge.Kind.JOINT,joint,"child",child,"mount_north")));
+        ModularRobotVisualState original=ModularRobotVisualState.fromManifest(manifest);
+        ByteBuf bytes=Unpooled.buffer();original.write(bytes);ModularRobotVisualState restored=ModularRobotVisualState.read(bytes);
+        assertEquals(2,restored.getBodyCount());assertEquals(1,restored.getJoints().size());
+        JointStateSet state=new JointStateSet(Collections.singletonList(new JointStateSet.Entry(joint,
+                new JointState(StrictMath.PI/2.0,0.0))));
+        Vector3 moved=restored.bodyTransforms(state).get(1).point(new Vector3(0,0.5,2));
+        assertEquals(-0.5,moved.y,1.0e-12);assertEquals(1.0,moved.z,1.0e-12);
     }
 
     private static ModularRobotVisualState state(ModularBlockSnapshot module) {

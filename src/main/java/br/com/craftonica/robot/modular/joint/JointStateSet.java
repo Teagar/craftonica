@@ -3,6 +3,7 @@ package br.com.craftonica.robot.modular.joint;
 import br.com.craftonica.robot.modular.GridVector;
 import br.com.craftonica.robot.modular.assembly.KinematicAssembly;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 
@@ -11,6 +12,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.Base64;
 
 /** Bounded canonical server state for joint coordinates; clients receive a read-only projection. */
 public final class JointStateSet {
@@ -95,10 +97,26 @@ public final class JointStateSet {
         if (count > MAX_JOINTS || buffer.readableBytes() != count * 19)
             throw new IllegalArgumentException("joint client payload");
         List<Entry> values = new ArrayList<Entry>();
-        for (int i = 0; i < count; i++) values.add(new Entry(
-                new GridVector(buffer.readByte(), buffer.readByte(), buffer.readByte()),
-                new JointState(buffer.readDouble(), buffer.readDouble())));
+        for (int i = 0; i < count; i++) {
+            GridVector position=new GridVector(buffer.readByte(), buffer.readByte(), buffer.readByte());
+            JointState state=new JointState(buffer.readDouble(), buffer.readDouble());
+            if(StrictMath.abs(state.position)>10000.0||StrictMath.abs(state.velocity)>10000.0)
+                throw new IllegalArgumentException("joint client state bounds");
+            values.add(new Entry(position,state));
+        }
         return new JointStateSet(values);
+    }
+
+    public String encodeClientString() {
+        ByteBuf buffer = Unpooled.buffer(2 + entries.size() * 19); writeClient(buffer);
+        byte[] bytes = new byte[buffer.readableBytes()]; buffer.readBytes(bytes);
+        return Base64.getEncoder().encodeToString(bytes);
+    }
+
+    public static JointStateSet decodeClientString(String encoded) {
+        if (encoded == null || encoded.length() > 1024) throw new IllegalArgumentException("joint client string");
+        try { return readClient(Unpooled.wrappedBuffer(Base64.getDecoder().decode(encoded))); }
+        catch (IllegalArgumentException invalid) { throw new IllegalArgumentException("joint client string", invalid); }
     }
 
     public static final class Entry {
