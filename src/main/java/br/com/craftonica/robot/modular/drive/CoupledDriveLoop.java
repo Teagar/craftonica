@@ -152,8 +152,8 @@ public strictfp final class CoupledDriveLoop {
             double load = 0.0;
             if (channel.contactIndex >= 0 && supportedContacts.contains(Integer.valueOf(channel.contactIndex))) {
                 double outputTorque = channel.path.outputTorque(drive.shaftTorqueNm);
-                double force = outputTorque / channel.path.wheelRadiusMetres;
-                double pathLimit = channel.path.maximumTorqueNm / channel.path.wheelRadiusMetres;
+                double force = outputTorque / channel.path.tractionLeverArmMetres;
+                double pathLimit = channel.path.maximumTorqueNm / channel.path.tractionLeverArmMetres;
                 Double multiplier = surfaceFriction.get(Integer.valueOf(channel.contactIndex));
                 double grip = multiplier == null ? 1.0 : multiplier.doubleValue();
                 if (!finite(grip) || grip < 0.0) throw new IllegalArgumentException("surface friction");
@@ -164,7 +164,7 @@ public strictfp final class CoupledDriveLoop {
                         channel.contactIndex, force, StrictMath.min(StrictMath.abs(force), StrictMath.min(pathLimit, friction))));
                 double outputLoad = StrictMath.copySign(
                         StrictMath.min(StrictMath.min(StrictMath.abs(force), pathLimit), friction)
-                                * channel.path.wheelRadiusMetres, outputTorque);
+                                * channel.path.tractionLeverArmMetres, outputTorque);
                 load = channel.path.motorLoadTorque(outputLoad);
             }
             next.add(new ChannelState(drive.state, load, drive.currentAmps, channel.path == null
@@ -183,8 +183,8 @@ public strictfp final class CoupledDriveLoop {
         double rz = contact.pointMetres.z - body.centerOfMassMetres.z;
         double contactX = vx + state.angularVelocityRadiansPerSecond * rz;
         double contactZ = vz - state.angularVelocityRadiansPerSecond * rx;
-        return (contactX * contact.rollingDirection.x + contactZ * contact.rollingDirection.z)
-                / contact.radiusMetres;
+        return (contactX * contact.tractionDirection.x + contactZ * contact.tractionDirection.z)
+                / contact.tractionLeverArmMetres;
     }
 
     private static MechanicalAssembly.DrivePath path(MechanicalAssembly mechanical, GridVector motor) {

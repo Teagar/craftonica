@@ -93,18 +93,31 @@ public strictfp final class RigidBodyProperties {
                 type.getVolume());
         Vector3 point = new Vector3(center.x, physicalVolume.minimum.y, center.z);
         Vector3 rolling = new Vector3(0.0, 0.0, 0.0);
-        if (profile.kind == ContactProfile.Kind.DRIVEN_WHEEL || profile.kind == ContactProfile.Kind.DRIVEN_TRACK) {
+        Vector3 traction = rolling;
+        if (profile.kind == ContactProfile.Kind.DRIVEN_WHEEL || profile.kind == ContactProfile.Kind.DRIVEN_TRACK
+                || profile.kind == ContactProfile.Kind.OMNI_WHEEL
+                || profile.kind == ContactProfile.Kind.MECANUM_WHEEL) {
             MechanicalPort hub = null;
             for (MechanicalPort port : type.getMechanicalPorts())
                 if (port.kind == MechanicalPort.Kind.WHEEL_HUB) { hub = port; break; }
             if (hub == null) throw new IllegalArgumentException("wheel without hub");
             Direction axle = module.localOrientation.toWorld(hub.axis);
             rolling = horizontalPerpendicular(axle);
+            traction = rolling;
+            double angle = StrictMath.toRadians(parameter(profile, "traction_angle_degrees"));
+            if (angle != 0.0 && parameter(profile, "roller_handedness") < 0.5) angle = -angle;
+            if (angle != 0.0) {
+                double lateralX = -rolling.z, lateralZ = rolling.x;
+                traction = new Vector3(rolling.x * StrictMath.cos(angle) + lateralX * StrictMath.sin(angle),
+                        0.0, rolling.z * StrictMath.cos(angle) + lateralZ * StrictMath.sin(angle));
+            }
         }
-        return new Contact(module.localPosition, profile.kind, point, rolling, radius,
+        double tractionLever = radius * StrictMath.abs(StrictMath.cos(
+                StrictMath.toRadians(parameter(profile, "traction_angle_degrees"))));
+        return new Contact(module.localPosition, profile.kind, point, rolling, traction, radius,
                 parameter(profile, "longitudinal_friction"), parameter(profile, "lateral_friction"),
                 parameter(profile, "rolling_friction"), parameter(profile, "contact_length_metres"),
-                parameter(profile, "width_metres"));
+                parameter(profile, "width_metres"), tractionLever);
     }
 
     private static Vector3 horizontalPerpendicular(Direction axle) {
@@ -214,20 +227,26 @@ public strictfp final class RigidBodyProperties {
         public final ContactProfile.Kind kind;
         public final Vector3 pointMetres;
         public final Vector3 rollingDirection;
+        public final Vector3 tractionDirection;
         public final double radiusMetres;
         public final double longitudinalFriction;
         public final double lateralFriction;
         public final double rollingFriction;
         public final double contactLengthMetres, contactWidthMetres;
+        public final double tractionLeverArmMetres;
 
         Contact(GridVector modulePosition, ContactProfile.Kind kind, Vector3 point, Vector3 rolling,
+                Vector3 traction,
                 double radius, double longitudinal, double lateral, double rollingFriction,
-                double contactLength, double contactWidth) {
+                double contactLength, double contactWidth, double tractionLever) {
             this.modulePosition = modulePosition; this.kind = kind; this.pointMetres = point;
-            this.rollingDirection = rolling; this.radiusMetres = radius;
+            this.rollingDirection = rolling; this.tractionDirection = traction; this.radiusMetres = radius;
             this.longitudinalFriction = longitudinal; this.lateralFriction = lateral;
             this.rollingFriction = rollingFriction;
             this.contactLengthMetres = contactLength; this.contactWidthMetres = contactWidth;
+            if (tractionLever <= 0.0 || tractionLever > radius)
+                throw new IllegalArgumentException("traction lever");
+            this.tractionLeverArmMetres = tractionLever;
         }
     }
 }

@@ -57,7 +57,10 @@ public final class ModularRobotVisualState {
         List<Module> values = new ArrayList<Module>();
         for (ModularBlockSnapshot module : manifest.getModules()) {
             int flags = StandardComponentCatalog.WHEEL.equals(module.componentTypeId)
-                    || StandardComponentCatalog.WHEEL_150.equals(module.componentTypeId) ? FLAG_WHEEL
+                    || StandardComponentCatalog.WHEEL_150.equals(module.componentTypeId)
+                    || StandardComponentCatalog.OMNI_WHEEL.equals(module.componentTypeId)
+                    || StandardComponentCatalog.MECANUM_LEFT.equals(module.componentTypeId)
+                    || StandardComponentCatalog.MECANUM_RIGHT.equals(module.componentTypeId) ? FLAG_WHEEL
                     : StandardComponentCatalog.AXLE.equals(module.componentTypeId) ? FLAG_AXLE : 0;
             if (!StandardComponentCatalog.WIRE.equals(module.componentTypeId)
                     && !StandardComponentCatalog.CASTER.equals(module.componentTypeId)) flags |= FLAG_DIRECTIONAL;

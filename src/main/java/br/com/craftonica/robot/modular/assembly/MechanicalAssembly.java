@@ -44,23 +44,25 @@ public strictfp final class MechanicalAssembly {
     public static final class DrivePath {
         public final GridVector motorPosition, wheelPosition;
         public final Direction axleAxis;
-        public final double wheelRadiusMetres, wheelWidthMetres, maximumTorqueNm;
+        public final double wheelRadiusMetres, tractionLeverArmMetres, wheelWidthMetres, maximumTorqueNm;
         public final double speedRatio, efficiency, reflectedInertiaKgM2;
         public final int directionSign, gearStages;
         DrivePath(GridVector motorPosition, GridVector wheelPosition, Direction axleAxis,
-                  double radius, double width, double maximumTorqueNm, double speedRatio,
+                  double radius, double tractionLever, double width, double maximumTorqueNm, double speedRatio,
                   int directionSign, double efficiency, double reflectedInertiaKgM2, int gearStages) {
             this.motorPosition = motorPosition; this.wheelPosition = wheelPosition; this.axleAxis = axleAxis;
-            this.wheelRadiusMetres = radius; this.wheelWidthMetres = width; this.maximumTorqueNm = maximumTorqueNm;
+            this.wheelRadiusMetres = radius; this.tractionLeverArmMetres = tractionLever;
+            this.wheelWidthMetres = width; this.maximumTorqueNm = maximumTorqueNm;
             if (!finite(speedRatio) || speedRatio <= 0.0 || (directionSign != -1 && directionSign != 1)
                     || !finite(efficiency) || efficiency <= 0.0 || efficiency > 1.0
+                    || !finite(tractionLever) || tractionLever <= 0.0 || tractionLever > radius
                     || !finite(reflectedInertiaKgM2) || reflectedInertiaKgM2 < 0.0 || gearStages < 0)
                 throw new IllegalArgumentException("drive transmission");
             this.speedRatio = speedRatio; this.directionSign = directionSign; this.efficiency = efficiency;
             this.reflectedInertiaKgM2 = reflectedInertiaKgM2; this.gearStages = gearStages;
         }
         public double linearSpeedMetresPerSecond(double angularVelocityRadPerSecond) {
-            return outputAngularVelocity(angularVelocityRadPerSecond) * wheelRadiusMetres;
+            return outputAngularVelocity(angularVelocityRadPerSecond) * tractionLeverArmMetres;
         }
         public double outputAngularVelocity(double motorAngularVelocity) {
             requireFinite(motorAngularVelocity, "motor angular velocity");

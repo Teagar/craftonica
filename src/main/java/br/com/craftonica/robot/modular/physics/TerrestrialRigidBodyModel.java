@@ -33,15 +33,15 @@ public strictfp final class TerrestrialRigidBodyModel {
                 throw new IllegalArgumentException("force contact");
             if (!supported[force.contactIndex]) continue;
             RigidBodyProperties.Contact contact = body.getContacts().get(force.contactIndex);
-            if (contact.rollingDirection.x == 0.0 && contact.rollingDirection.z == 0.0) continue;
+            if (contact.tractionDirection.x == 0.0 && contact.tractionDirection.z == 0.0) continue;
             double normalForce = body.massKg * GRAVITY_METRES_PER_SECOND_SQUARED
                     / supportedContacts.size();
             double limit = StrictMath.min(force.maximumMagnitudeNewtons,
                     normalForce * contact.longitudinalFriction);
             double longitudinal = StrictMath.copySign(StrictMath.min(
                     StrictMath.abs(force.longitudinalForceNewtons), limit), force.longitudinalForceNewtons);
-            double fx = contact.rollingDirection.x * longitudinal;
-            double fz = contact.rollingDirection.z * longitudinal;
+            double fx = contact.tractionDirection.x * longitudinal;
+            double fz = contact.tractionDirection.z * longitudinal;
             forceLocalX += fx; forceLocalZ += fz;
             double rx = contact.pointMetres.x - body.centerOfMassMetres.x;
             double rz = contact.pointMetres.z - body.centerOfMassMetres.z;
@@ -59,8 +59,8 @@ public strictfp final class TerrestrialRigidBodyModel {
                 double rz = contact.pointMetres.z - body.centerOfMassMetres.z;
                 double contactX = localVelocityX + before.angularVelocityRadiansPerSecond * rz;
                 double contactZ = localVelocityZ - before.angularVelocityRadiansPerSecond * rx;
-                if (contact.rollingDirection.x != 0.0 || contact.rollingDirection.z != 0.0) {
-                    double dx = contact.rollingDirection.x, dz = contact.rollingDirection.z;
+                if (contact.tractionDirection.x != 0.0 || contact.tractionDirection.z != 0.0) {
+                    double dx = contact.tractionDirection.x, dz = contact.tractionDirection.z;
                     double longitudinal = contactX * dx + contactZ * dz;
                     double lateral = contactX * -dz + contactZ * dx;
                     double longForce = oppose(longitudinal, normalPerContact * contact.rollingFriction,

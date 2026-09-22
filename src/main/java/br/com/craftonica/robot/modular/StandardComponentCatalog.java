@@ -27,6 +27,9 @@ public final class StandardComponentCatalog {
     public static final String WHEEL_150 = "craftonica:wheel_150mm";
     public static final String CASTER = "craftonica:caster";
     public static final String TRACK_MODULE = "craftonica:track_module";
+    public static final String OMNI_WHEEL = "craftonica:omni_wheel";
+    public static final String MECANUM_LEFT = "craftonica:mecanum_wheel_left";
+    public static final String MECANUM_RIGHT = "craftonica:mecanum_wheel_right";
     public static final String HC_SR04 = "craftonica:modular_ultrasonic_sensor";
 
     private static final String RIGID = "craftonica:rigid_mount";
@@ -56,6 +59,9 @@ public final class StandardComponentCatalog {
         values.add(wheel150());
         values.add(caster());
         values.add(trackModule());
+        values.add(omniWheel());
+        values.add(mecanumWheel(MECANUM_LEFT, true));
+        values.add(mecanumWheel(MECANUM_RIGHT, false));
         values.add(ultrasonic());
         return new ComponentCatalog(values);
     }
@@ -286,6 +292,32 @@ public final class StandardComponentCatalog {
                         parameters("radius_metres", 0.12, "width_metres", 0.38,
                                 "contact_length_metres", 0.9, "longitudinal_friction", 1.15,
                                 "lateral_friction", 0.85, "rolling_friction", 0.08))).build();
+    }
+
+    private static ComponentType omniWheel() {
+        return base(OMNI_WHEEL, 0.42, ComponentMaterial.RUBBER,
+                new BoxVolume(0.05, 0.05, 0.36, 0.95, 0.95, 0.64))
+                .mechanical(mechanical("hub", Direction.WEST, Direction.EAST,
+                        MechanicalPort.Kind.WHEEL_HUB, MechanicalPort.Coupling.SOCKET, 0.8))
+                .contact(new ContactProfile("craftonica:omni_100mm", 1,
+                        ContactProfile.Kind.OMNI_WHEEL,
+                        parameters("radius_metres", 0.05, "width_metres", 0.028,
+                                "traction_angle_degrees", 0.0, "longitudinal_friction", 0.95,
+                                "lateral_friction", 0.04, "rolling_friction", 0.025))).build();
+    }
+
+    private static ComponentType mecanumWheel(String id, boolean leftHanded) {
+        return base(id, 0.58, ComponentMaterial.RUBBER,
+                new BoxVolume(0.04, 0.04, 0.31, 0.96, 0.96, 0.69))
+                .mechanical(mechanical("hub", Direction.WEST, Direction.EAST,
+                        MechanicalPort.Kind.WHEEL_HUB, MechanicalPort.Coupling.SOCKET, 0.9))
+                .contact(new ContactProfile("craftonica:mecanum_100mm", 1,
+                        ContactProfile.Kind.MECANUM_WHEEL,
+                        parameters("radius_metres", 0.05, "width_metres", 0.038,
+                                "traction_angle_degrees", 45.0,
+                                "roller_handedness", leftHanded ? 1.0 : 0.0,
+                                "longitudinal_friction", 1.0, "lateral_friction", 0.08,
+                                "rolling_friction", 0.03))).build();
     }
 
     private static ComponentType ultrasonic() {

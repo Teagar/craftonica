@@ -23,6 +23,8 @@ public final class StandardComponentCatalogTest {
                  StandardComponentCatalog.WHEEL,
                  StandardComponentCatalog.WHEEL_150,
                  StandardComponentCatalog.CASTER, StandardComponentCatalog.TRACK_MODULE,
+                 StandardComponentCatalog.OMNI_WHEEL, StandardComponentCatalog.MECANUM_LEFT,
+                 StandardComponentCatalog.MECANUM_RIGHT,
                  StandardComponentCatalog.HC_SR04 };
         for (String id : required) {
             ComponentType type = catalog.require(id);
@@ -47,7 +49,7 @@ public final class StandardComponentCatalogTest {
             assertFiniteProfile(type.getContact());
             assertFiniteProfile(type.getSensor());
         }
-        assertEquals(21, catalog.all().size());
+        assertEquals(24, catalog.all().size());
     }
 
     @Test public void profilesAndPortsDescribeRealPathsInsteadOfRobotSlots() {
@@ -81,6 +83,18 @@ public final class StandardComponentCatalogTest {
                 catalog.require(StandardComponentCatalog.CASTER).getContact().kind);
         assertEquals(ContactProfile.Kind.DRIVEN_TRACK,
                 catalog.require(StandardComponentCatalog.TRACK_MODULE).getContact().kind);
+        assertEquals(ContactProfile.Kind.OMNI_WHEEL,
+                catalog.require(StandardComponentCatalog.OMNI_WHEEL).getContact().kind);
+        assertEquals(ContactProfile.Kind.MECANUM_WHEEL,
+                catalog.require(StandardComponentCatalog.MECANUM_LEFT).getContact().kind);
+        assertEquals(45.0, catalog.require(StandardComponentCatalog.MECANUM_LEFT).getContact()
+                .getParameters().get("traction_angle_degrees").doubleValue(), 0.0);
+        assertEquals(45.0, catalog.require(StandardComponentCatalog.MECANUM_RIGHT).getContact()
+                .getParameters().get("traction_angle_degrees").doubleValue(), 0.0);
+        assertEquals(1.0, catalog.require(StandardComponentCatalog.MECANUM_LEFT).getContact()
+                .getParameters().get("roller_handedness").doubleValue(), 0.0);
+        assertEquals(0.0, catalog.require(StandardComponentCatalog.MECANUM_RIGHT).getContact()
+                .getParameters().get("roller_handedness").doubleValue(), 0.0);
         assertEquals(SensorProfile.Kind.ULTRASONIC,
                 catalog.require(StandardComponentCatalog.HC_SR04).getSensor().kind);
     }
