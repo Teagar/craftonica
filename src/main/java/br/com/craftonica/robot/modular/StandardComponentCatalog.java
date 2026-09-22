@@ -21,6 +21,8 @@ public final class StandardComponentCatalog {
     public static final String GEAR_12 = "craftonica:spur_gear_12t";
     public static final String GEAR_36 = "craftonica:spur_gear_36t";
     public static final String SERVO = "craftonica:educational_servo";
+    public static final String REVOLUTE_JOINT = "craftonica:revolute_joint";
+    public static final String PRISMATIC_JOINT = "craftonica:prismatic_joint";
     public static final String WHEEL = "craftonica:wheel";
     public static final String WHEEL_150 = "craftonica:wheel_150mm";
     public static final String CASTER = "craftonica:caster";
@@ -47,6 +49,8 @@ public final class StandardComponentCatalog {
         values.add(gear(GEAR_12, 12, 0.18, 0.00004));
         values.add(gear(GEAR_36, 36, 0.42, 0.00035));
         values.add(servo());
+        values.add(revoluteJoint());
+        values.add(prismaticJoint());
         values.add(wheel());
         values.add(wheel150());
         values.add(caster());
@@ -215,6 +219,29 @@ public final class StandardComponentCatalog {
                                 "signal_timeout_seconds", 0.1))).build();
     }
 
+    private static ComponentType revoluteJoint() {
+        return base(REVOLUTE_JOINT, 0.4, ComponentMaterial.STEEL,
+                new BoxVolume(0.15, 0.15, 0.0, 0.85, 0.85, 1.0))
+                .jointPort(jointPort("parent", Direction.NORTH, JointPort.Role.PARENT))
+                .jointPort(jointPort("child", Direction.SOUTH, JointPort.Role.CHILD))
+                .mechanical(mechanical("drive", Direction.WEST, Direction.EAST,
+                        MechanicalPort.Kind.ROTARY_SHAFT, MechanicalPort.Coupling.SOCKET, 0.5))
+                .joint(new JointProfile(JointProfile.Kind.REVOLUTE, Direction.EAST,
+                        -StrictMath.PI / 2.0, StrictMath.PI / 2.0, StrictMath.PI, 0.5,
+                        0.01, 0.02, 2.0)).build();
+    }
+
+    private static ComponentType prismaticJoint() {
+        return base(PRISMATIC_JOINT, 0.8, ComponentMaterial.STEEL,
+                new BoxVolume(0.25, 0.25, 0.0, 0.75, 0.75, 1.0))
+                .jointPort(jointPort("parent", Direction.NORTH, JointPort.Role.PARENT))
+                .jointPort(jointPort("child", Direction.SOUTH, JointPort.Role.CHILD))
+                .mechanical(mechanical("drive", Direction.WEST, Direction.NORTH,
+                        MechanicalPort.Kind.LINEAR_DRIVE, MechanicalPort.Coupling.SOCKET, 100.0))
+                .joint(new JointProfile(JointProfile.Kind.PRISMATIC, Direction.NORTH,
+                        -0.5, 0.5, 1.0, 100.0, 2.0, 5.0, 400.0)).build();
+    }
+
     private static ComponentType wheel() {
         return wheel(WHEEL, 0.5, 0.05, 0.03);
     }
@@ -297,6 +324,10 @@ public final class StandardComponentCatalog {
     private static MechanicalPort mechanical(String id, Direction face, Direction axis,
             MechanicalPort.Kind kind, MechanicalPort.Coupling coupling, double torque) {
         return new MechanicalPort(id, kind, coupling, PortPose.center(face), axis, torque);
+    }
+
+    private static JointPort jointPort(String id, Direction face, JointPort.Role role) {
+        return new JointPort(id, RIGID, role, PortPose.center(face));
     }
 
     private static Map<String, Double> parameters(Object... pairs) {

@@ -29,6 +29,8 @@ import java.util.ArrayList;
 import java.util.List;
 import br.com.craftonica.persistence.NbtMigrations;
 import br.com.craftonica.robot.modular.visual.ModularRobotVisualState;
+import br.com.craftonica.robot.modular.assembly.KinematicAssemblyAnalyzer;
+import br.com.craftonica.robot.modular.joint.JointStateSet;
 import cpw.mods.fml.common.registry.IEntityAdditionalSpawnData;
 import io.netty.buffer.ByteBuf;
 
@@ -57,6 +59,7 @@ public final class EntityModularRobot extends Entity implements IEntityAdditiona
     private NBTTagCompound preservedInvalidEnvelope;
     private ModularRobotVisualState visualState;
     private float mechanicalPhaseDegrees;
+    private JointStateSet jointStates = JointStateSet.EMPTY;
     private boolean visualElectricalFault;
     private double targetX, targetY, targetZ;
     private float targetYaw, targetPitch;
@@ -80,6 +83,7 @@ public final class EntityModularRobot extends Entity implements IEntityAdditiona
         value.boardState = board(manifest);
         value.ultrasonicSystem = new MobileUltrasonicSystem(manifest);
         value.visualState = ModularRobotVisualState.fromManifest(manifest);
+        value.jointStates = JointStateSet.initial(KinematicAssemblyAnalyzer.analyze(manifest, CATALOG));
         value.visualElectricalFault = !MobileElectricalEvaluator.evaluate(
                 manifest.getElectricalNetlist()).getDiagnostics().isEmpty();
         value.rotationYaw = yawDegrees(orientation.getForward());
@@ -132,7 +136,7 @@ public final class EntityModularRobot extends Entity implements IEntityAdditiona
         if (state == null) return;
         ensureBody();
         tag.setTag("CraftonicaModularRobotV2", ModularRobotPersistence.write(state, dynamics,
-                coupledDrive, coupledDriveState, boardState, sensorSampleCounter));
+                coupledDrive, coupledDriveState, boardState, sensorSampleCounter, jointStates));
     }
 
     @Override protected void readEntityFromNBT(NBTTagCompound tag) {
@@ -143,6 +147,7 @@ public final class EntityModularRobot extends Entity implements IEntityAdditiona
                 state = restored.robot; dynamics = restored.body; coupledDrive = restored.drive;
                 coupledDriveState = restored.driveState; boardState = restored.board;
                 sensorSampleCounter = restored.sensorCounter;
+                jointStates = restored.joints;
                 setPositionAndRotation(dynamics.x, dynamics.y, dynamics.z,
                         (float) StrictMath.toDegrees(dynamics.yawRadians), 0.0F);
             } else {
@@ -188,6 +193,7 @@ public final class EntityModularRobot extends Entity implements IEntityAdditiona
         if (StrictMath.abs(vx) > 100.0 || StrictMath.abs(vy) > 100.0 || StrictMath.abs(vz) > 100.0
                 || StrictMath.abs(angular) > 100.0) throw new IllegalArgumentException("rigid body velocity");
         dynamics = currentState(vx, vy, vz, angular);
+        jointStates = JointStateSet.initial(KinematicAssemblyAnalyzer.analyze(state.getManifest(), CATALOG));
     }
 
     @Override public boolean canBeCollidedWith() { return !isDead; }
@@ -213,6 +219,7 @@ public final class EntityModularRobot extends Entity implements IEntityAdditiona
     public RigidBodyProperties getRigidBodyProperties() { ensureBody(); return body; }
     public MobileUltrasonicSystem.Status getLastSensorStatus() { return lastSensorStatus; }
     public ModularRobotVisualState getVisualState() { return visualState; }
+    public JointStateSet getJointStates() { return jointStates; }
     public int getVisualStatus() { return dataWatcher.getWatchableObjectInt(WATCH_STATUS); }
     public int getVisualDiagnostics() { return dataWatcher.getWatchableObjectInt(WATCH_DIAGNOSTICS); }
     public float getMechanicalPhaseDegrees() { return dataWatcher.getWatchableObjectFloat(WATCH_MECHANICAL_PHASE); }
@@ -228,12 +235,21 @@ public final class EntityModularRobot extends Entity implements IEntityAdditiona
 
     @Override public void writeSpawnData(ByteBuf buffer) {
         if (visualState == null) throw new IllegalStateException("missing visual state");
-        visualState.write(buffer);
+        int lengthIndex = buffer.writerIndex(); buffer.writeShort(0); int start = buffer.writerIndex();
+        visualState.write(buffer); int length = buffer.writerIndex() - start;
+        if (length > ModularRobotVisualState.MAX_PAYLOAD_BYTES) throw new IllegalArgumentException("visual payload");
+        buffer.setShort(lengthIndex, length); jointStates.writeClient(buffer);
     }
 
     @Override public void readSpawnData(ByteBuf buffer) {
-        try { visualState = ModularRobotVisualState.read(buffer); }
-        catch (RuntimeException invalid) { visualState = null; }
+        try {
+            if (buffer.readableBytes() < 2) throw new IllegalArgumentException("spawn payload");
+            int visualBytes = buffer.readUnsignedShort();
+            if (visualBytes < 1 || visualBytes > ModularRobotVisualState.MAX_PAYLOAD_BYTES
+                    || buffer.readableBytes() < visualBytes + 2) throw new IllegalArgumentException("spawn bounds");
+            visualState = ModularRobotVisualState.read(buffer.readSlice(visualBytes));
+            jointStates = JointStateSet.readClient(buffer);
+        } catch (RuntimeException invalid) { visualState = null; jointStates = JointStateSet.EMPTY; }
     }
 
     @Override public void setPositionAndRotation2(double x, double y, double z, float yaw, float pitch,

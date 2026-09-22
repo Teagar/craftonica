@@ -11,6 +11,8 @@ import br.com.craftonica.robot.modular.assembly.AssemblyDiscoveryResult;
 import br.com.craftonica.robot.modular.assembly.AssemblyGraph;
 import br.com.craftonica.robot.modular.assembly.AssemblyLimits;
 import br.com.craftonica.robot.modular.assembly.DiscoveredComponent;
+import br.com.craftonica.robot.modular.assembly.KinematicAssembly;
+import br.com.craftonica.robot.modular.assembly.KinematicAssemblyAnalyzer;
 import br.com.craftonica.robot.modular.assembly.forge.ForgeAssemblyWorldView;
 import br.com.craftonica.robot.modular.manifest.ModularBlockSnapshot;
 import br.com.craftonica.robot.modular.manifest.ModularRobotManifest;
@@ -45,6 +47,12 @@ public final class ForgeModularAssemblyService {
         }
         if (!authorized(world, discovered.graph, player)) {
             message(player, "A RoboBoard da montagem não pertence a você."); return false;
+        }
+        KinematicAssembly kinematic = KinematicAssemblyAnalyzer.analyze(discovered.graph);
+        if (!kinematic.isValid()) {
+            KinematicAssembly.Problem problem = kinematic.getDiagnostics().get(0);
+            message(player, "Montagem articulada inválida: " + problem.code.name()
+                    + " em " + problem.position); return false;
         }
         ModularRobotManifest manifest;
         try { manifest = capture(world, discovered.graph); }

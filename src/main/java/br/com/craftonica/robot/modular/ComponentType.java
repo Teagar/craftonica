@@ -16,7 +16,9 @@ public final class ComponentType {
     private final List<StructuralPort> structuralPorts;
     private final List<ElectricalPort> electricalPorts;
     private final List<MechanicalPort> mechanicalPorts;
+    private final List<JointPort> jointPorts;
     private final TransmissionProfile transmission;
+    private final JointProfile joint;
     private final ActuatorProfile actuator;
     private final ContactProfile contact;
     private final SensorProfile sensor;
@@ -32,12 +34,15 @@ public final class ComponentType {
         structuralPorts = immutable(builder.structuralPorts);
         electricalPorts = immutable(builder.electricalPorts);
         mechanicalPorts = immutable(builder.mechanicalPorts);
+        jointPorts = immutable(builder.jointPorts);
         transmission = builder.transmission;
+        joint = builder.joint;
         actuator = builder.actuator;
         contact = builder.contact;
         sensor = builder.sensor;
         ensureUniquePortIds();
         ensureTransmissionContract();
+        ensureJointContract();
     }
 
     public static Builder builder(String id, int schemaVersion) { return new Builder(id, schemaVersion); }
@@ -49,7 +54,9 @@ public final class ComponentType {
     public List<StructuralPort> getStructuralPorts() { return structuralPorts; }
     public List<ElectricalPort> getElectricalPorts() { return electricalPorts; }
     public List<MechanicalPort> getMechanicalPorts() { return mechanicalPorts; }
+    public List<JointPort> getJointPorts() { return jointPorts; }
     public TransmissionProfile getTransmission() { return transmission; }
+    public JointProfile getJoint() { return joint; }
     public ActuatorProfile getActuator() { return actuator; }
     public ContactProfile getContact() { return contact; }
     public SensorProfile getSensor() { return sensor; }
@@ -59,6 +66,7 @@ public final class ComponentType {
         for (StructuralPort port : structuralPorts) if (!ids.add(port.id)) duplicate(port.id);
         for (ElectricalPort port : electricalPorts) if (!ids.add(port.id)) duplicate(port.id);
         for (MechanicalPort port : mechanicalPorts) if (!ids.add(port.id)) duplicate(port.id);
+        for (JointPort port : jointPorts) if (!ids.add(port.id)) duplicate(port.id);
     }
 
     private void ensureTransmissionContract() {
@@ -73,6 +81,18 @@ public final class ComponentType {
         } else if (shafts < 2 || meshes != 0) {
             throw new IllegalArgumentException("shaft transmission ports");
         }
+    }
+
+    private void ensureJointContract() {
+        if (joint == null) {
+            if (!jointPorts.isEmpty()) throw new IllegalArgumentException("joint ports without profile");
+            return;
+        }
+        int parent = 0, child = 0;
+        for (JointPort port : jointPorts) {
+            if (port.role == JointPort.Role.PARENT) parent++; else child++;
+        }
+        if (parent != 1 || child != 1) throw new IllegalArgumentException("joint requires parent and child ports");
     }
 
     private static void duplicate(String id) { throw new IllegalArgumentException("duplicate port: " + id); }
@@ -90,7 +110,9 @@ public final class ComponentType {
         private final List<StructuralPort> structuralPorts = new ArrayList<StructuralPort>();
         private final List<ElectricalPort> electricalPorts = new ArrayList<ElectricalPort>();
         private final List<MechanicalPort> mechanicalPorts = new ArrayList<MechanicalPort>();
+        private final List<JointPort> jointPorts = new ArrayList<JointPort>();
         private TransmissionProfile transmission;
+        private JointProfile joint;
         private ActuatorProfile actuator;
         private ContactProfile contact;
         private SensorProfile sensor;
@@ -102,7 +124,9 @@ public final class ComponentType {
         public Builder structural(StructuralPort port) { if (port == null) throw new IllegalArgumentException("port"); structuralPorts.add(port); return this; }
         public Builder electrical(ElectricalPort port) { if (port == null) throw new IllegalArgumentException("port"); electricalPorts.add(port); return this; }
         public Builder mechanical(MechanicalPort port) { if (port == null) throw new IllegalArgumentException("port"); mechanicalPorts.add(port); return this; }
+        public Builder jointPort(JointPort port) { if (port == null) throw new IllegalArgumentException("port"); jointPorts.add(port); return this; }
         public Builder transmission(TransmissionProfile value) { transmission = value; return this; }
+        public Builder joint(JointProfile value) { joint = value; return this; }
         public Builder actuator(ActuatorProfile value) { actuator = value; return this; }
         public Builder contact(ContactProfile value) { contact = value; return this; }
         public Builder sensor(SensorProfile value) { sensor = value; return this; }

@@ -18,7 +18,8 @@ public final class StandardComponentCatalogTest {
                  StandardComponentCatalog.H_BRIDGE_TERMINAL,
                  StandardComponentCatalog.AXLE, StandardComponentCatalog.BEARING,
                  StandardComponentCatalog.GEAR_12, StandardComponentCatalog.GEAR_36,
-                 StandardComponentCatalog.SERVO,
+                 StandardComponentCatalog.SERVO, StandardComponentCatalog.REVOLUTE_JOINT,
+                 StandardComponentCatalog.PRISMATIC_JOINT,
                  StandardComponentCatalog.WHEEL,
                 StandardComponentCatalog.WHEEL_150,
                 StandardComponentCatalog.CASTER, StandardComponentCatalog.HC_SR04 };
@@ -45,7 +46,7 @@ public final class StandardComponentCatalogTest {
             assertFiniteProfile(type.getContact());
             assertFiniteProfile(type.getSensor());
         }
-        assertEquals(18, catalog.all().size());
+        assertEquals(20, catalog.all().size());
     }
 
     @Test public void profilesAndPortsDescribeRealPathsInsteadOfRobotSlots() {
@@ -68,6 +69,11 @@ public final class StandardComponentCatalogTest {
         assertEquals(ActuatorProfile.Kind.SERVO,
                 catalog.require(StandardComponentCatalog.SERVO).getActuator().kind);
         assertEquals(3, catalog.require(StandardComponentCatalog.SERVO).getElectricalPorts().size());
+        assertEquals(JointProfile.Kind.REVOLUTE,
+                catalog.require(StandardComponentCatalog.REVOLUTE_JOINT).getJoint().kind);
+        assertEquals(JointProfile.Kind.PRISMATIC,
+                catalog.require(StandardComponentCatalog.PRISMATIC_JOINT).getJoint().kind);
+        assertEquals(2, catalog.require(StandardComponentCatalog.REVOLUTE_JOINT).getJointPorts().size());
         assertEquals(ContactProfile.Kind.DRIVEN_WHEEL,
                 catalog.require(StandardComponentCatalog.WHEEL).getContact().kind);
         assertEquals(ContactProfile.Kind.PASSIVE_CASTER,

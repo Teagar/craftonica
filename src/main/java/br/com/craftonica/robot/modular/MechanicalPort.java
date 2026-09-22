@@ -1,7 +1,7 @@
 package br.com.craftonica.robot.modular;
 
 public final class MechanicalPort {
-    public enum Kind { ROTARY_SHAFT, GEAR_MESH, WHEEL_HUB, CASTER_MOUNT }
+    public enum Kind { ROTARY_SHAFT, LINEAR_DRIVE, GEAR_MESH, WHEEL_HUB, CASTER_MOUNT }
     public enum Coupling { NEUTRAL, PLUG, SOCKET }
 
     public final String id;

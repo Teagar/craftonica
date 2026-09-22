@@ -65,6 +65,8 @@ public final class ForgeAssemblyWorldView implements AssemblyWorldView {
         if (block == ModBlocks.SPUR_GEAR_12) return StandardComponentCatalog.GEAR_12;
         if (block == ModBlocks.SPUR_GEAR_36) return StandardComponentCatalog.GEAR_36;
         if (block == ModBlocks.EDUCATIONAL_SERVO) return StandardComponentCatalog.SERVO;
+        if (block == ModBlocks.REVOLUTE_JOINT) return StandardComponentCatalog.REVOLUTE_JOINT;
+        if (block == ModBlocks.PRISMATIC_JOINT) return StandardComponentCatalog.PRISMATIC_JOINT;
         if (block == ModBlocks.ROBOT_WHEEL) return StandardComponentCatalog.WHEEL;
         if (block == ModBlocks.ROBOT_WHEEL_150) return StandardComponentCatalog.WHEEL_150;
         if (block == ModBlocks.PASSIVE_CASTER) return StandardComponentCatalog.CASTER;
@@ -73,6 +75,11 @@ public final class ForgeAssemblyWorldView implements AssemblyWorldView {
     }
 
     private static ComponentOrientation orientation(Block block, int metadata) {
+        if (block == ModBlocks.REVOLUTE_JOINT || block == ModBlocks.PRISMATIC_JOINT) {
+            Direction forward = direction(metadata & 7);
+            Direction up = forward == Direction.UP || forward == Direction.DOWN ? Direction.NORTH : Direction.UP;
+            return new ComponentOrientation(forward, up);
+        }
         if (block == ModBlocks.ROBOT_CHASSIS || block == ModBlocks.H_BRIDGE_CHANNEL
                 || block == ModBlocks.MODULAR_DC_MOTOR
                 || block == ModBlocks.MECHANICAL_AXLE || block == ModBlocks.MECHANICAL_BEARING
