@@ -78,6 +78,8 @@ public final class ModBlocks {
             BlockMechanicalComponent.Type.GEAR, "spurGear12", "craftonica:dc_motor_active");
     public static final BlockMechanicalComponent SPUR_GEAR_36 = new BlockMechanicalComponent(
             BlockMechanicalComponent.Type.GEAR, "spurGear36", "craftonica:dc_motor_active");
+    public static final BlockMechanicalComponent EDUCATIONAL_SERVO = new BlockMechanicalComponent(
+            BlockMechanicalComponent.Type.SERVO, "educationalServo", "craftonica:h_bridge");
     public static final BlockMechanicalComponent ROBOT_WHEEL = new BlockMechanicalComponent(
             BlockMechanicalComponent.Type.WHEEL, "robotWheel", "craftonica:dc_motor_active");
     public static final BlockMechanicalComponent ROBOT_WHEEL_150 = new BlockMechanicalComponent(
@@ -126,6 +128,7 @@ public final class ModBlocks {
         GameRegistry.registerBlock(MECHANICAL_BEARING, "mechanical_bearing");
         GameRegistry.registerBlock(SPUR_GEAR_12, "spur_gear_12");
         GameRegistry.registerBlock(SPUR_GEAR_36, "spur_gear_36");
+        GameRegistry.registerBlock(EDUCATIONAL_SERVO, "educational_servo");
         GameRegistry.registerBlock(ROBOT_WHEEL, "robot_wheel");
         GameRegistry.registerBlock(ROBOT_WHEEL_150, "robot_wheel_150");
         GameRegistry.registerBlock(PASSIVE_CASTER, "passive_caster");

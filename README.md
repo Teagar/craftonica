@@ -173,7 +173,7 @@ significam:
 | Manual do Craftônica | Ausente | Protótipo | Possui sprite e interface de livro vanilla. |
 | Sensor de distância HC-SR04 | **Final** | **Final** | Placa, dois transdutores, quatro terminais, pulsos e resposta acústica aprovados. |
 | Trilhos acústicos (4 materiais) | Protótipo | Protótipo | Alvos configuráveis de 5-50 cm e incidência de 0-60°. |
-| Servo | Ausente | Ausente | Planejado no roadmap; ainda não registrado. |
+| Servo | Ausente | **Protótipo** | Componente modular 180°, modelo elétrico/térmico e API `Servo` em D9/D10. |
 | Ponte H | **Final** | **Final** | Placa dupla, circuito integrado e duas fileiras de terminais aprovados. |
 | Chassi robótico móvel | **Final** | **Final** | Núcleo orientado e entidade texturizada com plataforma, para-choque e módulos aprovados. |
 | Rodas e motores móveis | **Final** | **Final** | Duas rodas laterais, motores internos e leitura independente dos lados aprovados. |
@@ -195,8 +195,8 @@ placa; assim `setup()` ainda pode configurar saídas e pull-ups.
 
 Os exemplos Arduino estão em [`examples/arduino`](examples/arduino). O PWM
 reconhecido usa a média CC de `0..255`; buzzer e motor não simulam áudio ou
-  mecânica. `pulseIn()` é suportado para o ECHO temporizado do HC-SR04; servo,
-  ponte H e `tone()` permanecem fora desta versão.
+  mecânica. `pulseIn()` é suportado para o ECHO temporizado do HC-SR04. O perfil
+  modular aceita `Servo.h` em D9/D10 com pulsos de 50 Hz; `tone()` permanece fora.
 
 ### Editor de sketch e Serial
 
@@ -455,8 +455,9 @@ gate de precisão e desempenho está em
 ## Limitações conhecidas
 
 - Não há CA, capacitores, indutores ou transistores.
-- Buzzer e `tone()` não produzem áudio; servos ainda não são simulados. A ponte H
-  móvel controla apenas o primeiro chassi diferencial suportado.
+- Buzzer e `tone()` não produzem áudio. O servo já simula sinal, torque, corrente e
+  térmica, mas só será acoplado a juntas móveis na etapa seguinte. A ponte H móvel
+  controla o primeiro perfil terrestre modular.
 - A fonte e o GND têm terminais apenas horizontais no fluxo normal de colocação.
 - Curtos são limitados pela resistência interna simplificada da fonte; não há
   ainda um modelo não linear de limitação de corrente.

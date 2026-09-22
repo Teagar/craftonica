@@ -504,6 +504,21 @@ public final class RoboBoardState {
     public int[] getPwmMode() { return pwmMode.clone(); }
     public int[] getPwmPrescaler() { return pwmPrescaler.clone(); }
     public int[] getPwmCompare() { return pwmCompare.clone(); }
+
+    /** Decodes the published Servo profile: Timer1 fast PWM, /8, TOP 39999, D9 or D10. */
+    public Integer getServoPulseWidthMicros(int pin) {
+        if (!running || (pin != 9 && pin != 10) || (outputMask & 1 << pin) == 0
+                || (pwmMask & 1 << pin) == 0 || pwmMode[pin] != 14
+                || pwmPrescaler[pin] != 8 || pwmCompare[pin] < 2000 || pwmCompare[pin] > 4000
+                || checkpoint.length == 0) return null;
+        try {
+            AvrMachineState machine = AvrCheckpointCodec.decode(checkpoint);
+            int top = machine.getMmio(0x86) | machine.getMmio(0x87) << 8;
+            return top == 39999 ? Integer.valueOf(pwmCompare[pin] / 2) : null;
+        } catch (AvrFault invalid) {
+            return null;
+        }
+    }
     public int getStableInputMask() { return stableInputMask; }
     public int getIndeterminateInputMask() { return indeterminateInputMask; }
     public byte[] getLastTx() { return serialHistory.clone(); }

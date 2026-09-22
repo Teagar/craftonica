@@ -84,6 +84,7 @@ tile.mechanicalAxle.name=Eixo mecânico
 tile.mechanicalBearing.name=Mancal mecânico
 tile.spurGear12.name=Engrenagem reta 12 dentes
 tile.spurGear36.name=Engrenagem reta 36 dentes
+tile.educationalServo.name=Servo educacional 180°
 tile.robotWheel.name=Roda robótica 100 mm
 tile.robotWheel150.name=Roda robótica 150 mm
 tile.passiveCaster.name=Rodízio passivo 50 mm

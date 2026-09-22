@@ -5,7 +5,7 @@ umask 077
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
 TEMP_DIR=$(mktemp -d -- "${TMPDIR:-/tmp}/craftonica-compiler-test.XXXXXXXX")
 trap 'rm -rf -- "$TEMP_DIR"' EXIT HUP INT TERM
-mkdir -p -- "$TEMP_DIR/blink" "$TEMP_DIR/out-a" "$TEMP_DIR/out-b" "$TEMP_DIR/hostile"
+mkdir -p -- "$TEMP_DIR/blink" "$TEMP_DIR/servo" "$TEMP_DIR/out-a" "$TEMP_DIR/out-b" "$TEMP_DIR/out-servo" "$TEMP_DIR/hostile"
 UNIT_SEQUENCE=0
 
 run_compile() {
@@ -30,6 +30,15 @@ run_compile "$TEMP_DIR/blink" Blink.ino "$TEMP_DIR/out-b"
 cmp -- "$TEMP_DIR/out-a/firmware.elf" "$TEMP_DIR/out-b/firmware.elf"
 cmp -- "$TEMP_DIR/out-a/firmware.hex" "$TEMP_DIR/out-b/firmware.hex"
 cmp -- "$TEMP_DIR/out-a/firmware.map" "$TEMP_DIR/out-b/firmware.map"
+
+cat > "$TEMP_DIR/servo/ServoDemo.ino" <<'EOF'
+#include <Servo.h>
+Servo arm;
+void setup() { arm.attach(9); arm.write(90); }
+void loop() { arm.writeMicroseconds(1750); delay(20); }
+EOF
+run_compile "$TEMP_DIR/servo" ServoDemo.ino "$TEMP_DIR/out-servo"
+[[ -s "$TEMP_DIR/out-servo/firmware.elf" && -s "$TEMP_DIR/out-servo/firmware.hex" ]]
 
 expect_rejected() {
     local label=$1
@@ -77,3 +86,4 @@ fi
 printf 'PASS: seccomp denied socket syscall\n'
 
 printf 'PASS: Blink ELF/HEX/map are byte-identical across two clean builds\n'
+printf 'PASS: Servo.h compiles for the published D9/D10 Timer1 profile\n'

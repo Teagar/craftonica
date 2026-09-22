@@ -18,14 +18,18 @@ public final class MobileElectricalEvaluator {
                 new LinkedHashMap<GridVector, MobileElectricalEvaluation.DriveBinding>();
         Map<GridVector, MobileElectricalEvaluation.SensorBinding> sensors =
                 new LinkedHashMap<GridVector, MobileElectricalEvaluation.SensorBinding>();
+        Map<GridVector, MobileElectricalEvaluation.ServoBinding> servos =
+                new LinkedHashMap<GridVector, MobileElectricalEvaluation.ServoBinding>();
         List<MobileElectricalDiagnostic> diagnostics = new ArrayList<MobileElectricalDiagnostic>();
         for (MobileTerminal terminal : netlist.getTerminals()) {
             if (StandardComponentCatalog.H_BRIDGE.equals(terminal.componentTypeId)
                     && "vcc".equals(terminal.portId)) evaluateBridge(netlist, terminal.modulePosition, drives, diagnostics);
             if (StandardComponentCatalog.HC_SR04.equals(terminal.componentTypeId)
                     && "vcc".equals(terminal.portId)) evaluateSensor(netlist, terminal.modulePosition, sensors, diagnostics);
+            if (StandardComponentCatalog.SERVO.equals(terminal.componentTypeId)
+                    && "vcc".equals(terminal.portId)) evaluateServo(netlist, terminal.modulePosition, servos, diagnostics);
         }
-        return new MobileElectricalEvaluation(drives, sensors, diagnostics);
+        return new MobileElectricalEvaluation(drives, sensors, servos, diagnostics);
     }
 
     private static void evaluateBridge(MobileElectricalNetlist netlist, GridVector position,
@@ -62,6 +66,19 @@ public final class MobileElectricalEvaluator {
             diagnostic(diagnostics, MobileElectricalDiagnostic.Code.SENSOR_ECHO_OPEN, position);
         sensors.put(position, new MobileElectricalEvaluation.SensorBinding(
                 power && ground && trigger != null && echo != null, trigger, echo, position));
+    }
+
+    private static void evaluateServo(MobileElectricalNetlist netlist, GridVector position,
+            Map<GridVector, MobileElectricalEvaluation.ServoBinding> servos,
+            List<MobileElectricalDiagnostic> diagnostics) {
+        boolean power = powered(netlist, position, "vcc");
+        boolean ground = grounded(netlist, position, "gnd");
+        String signal = connectedDigitalRole(netlist, position, "signal");
+        if (!power) diagnostic(diagnostics, MobileElectricalDiagnostic.Code.SERVO_VCC_OPEN, position);
+        if (!ground) diagnostic(diagnostics, MobileElectricalDiagnostic.Code.SERVO_GND_OPEN, position);
+        if (signal == null) diagnostic(diagnostics, MobileElectricalDiagnostic.Code.SERVO_SIGNAL_OPEN, position);
+        servos.put(position, new MobileElectricalEvaluation.ServoBinding(
+                power && ground && signal != null, signal, position));
     }
 
     private static boolean connectedToType(MobileElectricalNetlist netlist, GridVector position,

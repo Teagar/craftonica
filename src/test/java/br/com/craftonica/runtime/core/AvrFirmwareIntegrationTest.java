@@ -68,6 +68,20 @@ public final class AvrFirmwareIntegrationTest {
         }
         assertTrue("analogRead(A0) was not published as PWM on D5", observed != null);
 
+        byte[] servo = compile("ServoDemo", "#include <Servo.h>\nServo arm;\n"
+                + "void setup(){arm.attach(9);arm.writeMicroseconds(1750);}\nvoid loop(){}\n");
+        AvrMachineState servoState = new AvrMachineState(); AvrInterpreter servoInterpreter = new AvrInterpreter(servo);
+        PwmDescriptor servoPwm = null;
+        for (int slice = 0; slice < 40 && servoPwm == null; slice++) {
+            AvrExecutionResult result = servoInterpreter.executeToAbsoluteTarget(
+                    servoState, servoState.getCycles() + AvrInterpreter.QUANTUM_CYCLES, AvrInputs.allLow());
+            for (PwmDescriptor descriptor : result.getPwmDescriptors())
+                if (descriptor.getPin() == 9 && descriptor.getMode() == 14
+                        && descriptor.getPrescaler() == 8 && descriptor.getCompare() == 3500) servoPwm = descriptor;
+        }
+        assertTrue("Servo.h did not publish a 1750 us pulse on D9", servoPwm != null);
+        assertEquals(39999, servoState.getMmio(0x86) | servoState.getMmio(0x87) << 8);
+
         byte[] serial = compile("SerialTx", "void setup(){Serial.begin(9600);Serial.println(\"ok\");}\n"
                 + "void loop(){}\n");
         AvrMachineState serialState = new AvrMachineState();

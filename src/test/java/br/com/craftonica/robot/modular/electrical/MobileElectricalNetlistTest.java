@@ -169,6 +169,25 @@ public final class MobileElectricalNetlistTest {
         assertFalse(invalid.getSensors().get(sensor).enabled);
     }
 
+    @Test public void servoRequiresPowerGroundAndARealDigitalSignal() {
+        GridVector servo = p(4, 0, 0); List<MobileTerminal> terminals = new ArrayList<MobileTerminal>();
+        terminals.add(t(servo, StandardComponentCatalog.SERVO, "vcc", 0, ""));
+        terminals.add(t(p(5,0,0), StandardComponentCatalog.ROBO_PORT, "terminal", 0, "POWER_5V"));
+        terminals.add(t(servo, StandardComponentCatalog.SERVO, "gnd", 1, ""));
+        terminals.add(t(p(6,0,0), StandardComponentCatalog.ROBO_PORT, "terminal", 1, "GROUND"));
+        terminals.add(t(servo, StandardComponentCatalog.SERVO, "signal", 2, ""));
+        terminals.add(t(p(7,0,0), StandardComponentCatalog.ROBO_PORT, "terminal", 2, "D9"));
+        MobileElectricalEvaluation valid = MobileElectricalEvaluator.evaluate(new MobileElectricalNetlist(terminals));
+        assertTrue(valid.getDiagnostics().isEmpty());
+        assertTrue(valid.getServos().get(servo).enabled);
+        assertEquals("D9", valid.getServos().get(servo).signalRole);
+
+        terminals.set(4, t(servo, StandardComponentCatalog.SERVO, "signal", 3, ""));
+        MobileElectricalEvaluation invalid = MobileElectricalEvaluator.evaluate(new MobileElectricalNetlist(terminals));
+        assertFalse(invalid.getServos().get(servo).enabled);
+        assertTrue(has(invalid, MobileElectricalDiagnostic.Code.SERVO_SIGNAL_OPEN));
+    }
+
     private static MobileElectricalNetlist bridgeNetlist(boolean complete, String pwm, String direction) {
         List<MobileTerminal> values = new ArrayList<MobileTerminal>(); GridVector bridge = p(0, 0, 0), motor = p(3, 0, 0);
         values.add(t(bridge, StandardComponentCatalog.H_BRIDGE, "vcc", 0, ""));

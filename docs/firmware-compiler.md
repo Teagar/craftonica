@@ -40,8 +40,8 @@ ASCII seguro e terminar em `.ino`. O resultado contem `firmware.elf`,
 prototipos de funcoes globais simples quando necessario.
 
 Includes locais so podem nomear um `.h` no proprio bundle. A allowlist inicial
-de headers de sistema contem Arduino/core, C/avr-libc e os prefixos `avr/` e
-`util/`. Bibliotecas como Wire, SPI e Servo falham como nao suportadas. Includes
+de headers de sistema contem Arduino/core, C/avr-libc, `Servo.h` e os prefixos
+`avr/` e `util/`. Bibliotecas como Wire e SPI falham como nao suportadas. Includes
 absolutos, travessia, symlinks, assembly inline, `_Pragma`, `#pragma`, `#line`,
 `#include_next` e includes calculados sao rejeitados antes do compilador.
 
@@ -65,6 +65,12 @@ KiB. Locale, timezone e `SOURCE_DATE_EPOCH` sao fixos. Os argumentos de
 compilacao/link sao arrays fixos; nao ha `eval`, response file ou interpretacao
 de fonte pelo shell. `avr-gcc`, `avr-g++`, `avr-ar`, linker, objcopy e size vem
 sempre de `/toolchain/bin` dentro do sandbox.
+
+`Servo.h` é uma biblioteca confiável incluída pelo perfil. Ela oferece `attach`,
+`detach`, `write`, `writeMicroseconds`, `read`, `readMicroseconds` e `attached`
+somente em D9/D10. Usa Timer1 em fast PWM, prescaler 8, TOP 39999 (50 Hz) e aceita
+pulsos de 1000–2000 microssegundos. Pino ocupado, faixa inválida ou outro pino
+retorna `INVALID_SERVO`; não há fallback por software ou interrupção oculta.
 
 O supervisor Java revalida ELF32/AVR hostil, extrai apenas segmentos `PT_LOAD`
 dentro de flash/SRAM e emite `CRLFirmware` canonico. Cache de compilacao inclui

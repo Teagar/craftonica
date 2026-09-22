@@ -197,6 +197,11 @@ implementado falha com `UNSUPPORTED_PERIPHERAL` e para somente aquela placa. Nad
 é aceito silenciosamente. Servo será um capability posterior porque altera
 Timer1 e PWM D9/D10.
 
+O capability posterior foi definido pelo RFC 0005/CRL-85: `Servo.h` é permitido
+somente em D9/D10, com Timer1 fast PWM, prescaler 8, TOP 39999 e pulsos de
+1000–2000 us. O servidor valida a configuração temporal completa antes de entregar
+o setpoint ao modelo físico; `analogWrite` comum não é reinterpretado como servo.
+
 O sketch pode usar registradores GPIO, Timer0/1/2, ADC e UART0. A VM implementa
 modos com clock interno, prescalers, compare, flags e interrupções conforme
 datasheet. Timer0/1 com clock externo, input capture externo, Timer2 assíncrono,

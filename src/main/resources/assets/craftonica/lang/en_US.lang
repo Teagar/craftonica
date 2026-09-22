@@ -60,6 +60,7 @@ tile.mechanicalAxle.name=Mechanical axle
 tile.mechanicalBearing.name=Mechanical bearing
 tile.spurGear12.name=12-tooth spur gear
 tile.spurGear36.name=36-tooth spur gear
+tile.educationalServo.name=180° educational servo
 tile.robotWheel.name=100 mm robot wheel
 tile.robotWheel150.name=150 mm robot wheel
 tile.passiveCaster.name=50 mm passive caster

@@ -15,7 +15,7 @@ SAFE_MAIN = re.compile(r"^[A-Za-z][A-Za-z0-9_-]{0,63}\.ino$")
 ALLOWED_EXTENSIONS = {".ino", ".h", ".c", ".cpp"}
 SYSTEM_HEADERS = {
     "Arduino.h", "stdint.h", "stddef.h", "stdbool.h", "string.h", "stdlib.h",
-    "math.h", "limits.h", "float.h", "ctype.h", "WString.h", "Print.h",
+    "math.h", "limits.h", "float.h", "ctype.h", "WString.h", "Print.h", "Servo.h",
 }
 SYSTEM_PREFIXES = ("avr/", "util/")
 

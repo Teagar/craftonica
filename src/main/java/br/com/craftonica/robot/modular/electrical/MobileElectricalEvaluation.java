@@ -11,18 +11,22 @@ import java.util.Map;
 public final class MobileElectricalEvaluation {
     private final Map<GridVector, DriveBinding> drives;
     private final Map<GridVector, SensorBinding> sensors;
+    private final Map<GridVector, ServoBinding> servos;
     private final List<MobileElectricalDiagnostic> diagnostics;
 
     MobileElectricalEvaluation(Map<GridVector, DriveBinding> drives, Map<GridVector, SensorBinding> sensors,
+                               Map<GridVector, ServoBinding> servos,
                                List<MobileElectricalDiagnostic> diagnostics) {
         this.drives = Collections.unmodifiableMap(new LinkedHashMap<GridVector, DriveBinding>(drives));
         this.sensors = Collections.unmodifiableMap(new LinkedHashMap<GridVector, SensorBinding>(sensors));
+        this.servos = Collections.unmodifiableMap(new LinkedHashMap<GridVector, ServoBinding>(servos));
         List<MobileElectricalDiagnostic> sorted = new ArrayList<MobileElectricalDiagnostic>(diagnostics);
         Collections.sort(sorted); this.diagnostics = Collections.unmodifiableList(sorted);
     }
 
     public Map<GridVector, DriveBinding> getDrives() { return drives; }
     public Map<GridVector, SensorBinding> getSensors() { return sensors; }
+    public Map<GridVector, ServoBinding> getServos() { return servos; }
     public List<MobileElectricalDiagnostic> getDiagnostics() { return diagnostics; }
 
     public static final class DriveBinding {
@@ -46,6 +50,17 @@ public final class MobileElectricalEvaluation {
         SensorBinding(boolean enabled, String triggerRole, String echoRole, GridVector position) {
             this.enabled = enabled; this.triggerRole = triggerRole; this.echoRole = echoRole;
             this.sensorPosition = position;
+        }
+    }
+
+    public static final class ServoBinding {
+        public final boolean enabled;
+        public final String signalRole;
+        public final GridVector servoPosition;
+        ServoBinding(boolean enabled, String signalRole, GridVector position) {
+            if (position == null || (enabled && signalRole == null))
+                throw new IllegalArgumentException("servo binding");
+            this.enabled = enabled; this.signalRole = signalRole; this.servoPosition = position;
         }
     }
 }
