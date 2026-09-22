@@ -203,6 +203,17 @@ public strictfp final class CoupledDriveLoop {
         return Integer.parseInt(role.substring(1));
     }
 
+    public double motorAngularVelocity(GridVector motorPosition, State state) {
+        if (motorPosition == null || state == null || state.channels.size() != channels.size())
+            throw new IllegalArgumentException("motor state");
+        for (int i=0;i<channels.size();i++) {
+            Channel channel=channels.get(i);
+            if (channel.path != null && motorPosition.equals(channel.path.motorPosition))
+                return state.channels.get(i).drive.angularVelocityRadPerSecond;
+        }
+        return 0.0;
+    }
+
     private static final Comparator<GridVector> POSITION_ORDER = new Comparator<GridVector>() {
         @Override public int compare(GridVector a, GridVector b) {
             if (a.x != b.x) return a.x < b.x ? -1 : 1;

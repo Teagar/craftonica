@@ -9,7 +9,8 @@ import net.minecraft.world.World;
 
 /** Physical axle, bearing, spur gear, conventional wheel or passive caster. */
 public final class BlockMechanicalComponent extends Block implements IRotatableElectricalBlock {
-    public enum Type { AXLE, BEARING, GEAR, SERVO, WHEEL, CASTER, TRACK, OMNI_WHEEL, MECANUM_WHEEL }
+    public enum Type { AXLE, BEARING, GEAR, SERVO, WHEEL, CASTER, TRACK, OMNI_WHEEL, MECANUM_WHEEL,
+        ENCODER, LIMIT_SWITCH, IMU }
     private final Type type;
 
     public BlockMechanicalComponent(Type type, String name, String texture) {

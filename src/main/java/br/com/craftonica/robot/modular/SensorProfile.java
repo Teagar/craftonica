@@ -3,7 +3,7 @@ package br.com.craftonica.robot.modular;
 import java.util.Map;
 
 public final class SensorProfile extends ParameterizedProfile {
-    public enum Kind { ULTRASONIC }
+    public enum Kind { ULTRASONIC, ROTARY_ENCODER, LIMIT_SWITCH, IMU }
     public final Kind kind;
 
     public SensorProfile(String id, int schemaVersion, Kind kind, Map<String, Double> parameters) {

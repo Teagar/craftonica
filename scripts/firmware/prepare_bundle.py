@@ -16,6 +16,7 @@ ALLOWED_EXTENSIONS = {".ino", ".h", ".c", ".cpp"}
 SYSTEM_HEADERS = {
     "Arduino.h", "stdint.h", "stddef.h", "stdbool.h", "string.h", "stdlib.h",
     "math.h", "limits.h", "float.h", "ctype.h", "WString.h", "Print.h", "Servo.h",
+    "CraftonicaSensors.h",
 }
 SYSTEM_PREFIXES = ("avr/", "util/")
 

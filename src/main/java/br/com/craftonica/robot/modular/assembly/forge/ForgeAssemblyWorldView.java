@@ -74,6 +74,9 @@ public final class ForgeAssemblyWorldView implements AssemblyWorldView {
         if (block == ModBlocks.OMNI_WHEEL) return StandardComponentCatalog.OMNI_WHEEL;
         if (block == ModBlocks.MECANUM_WHEEL_LEFT) return StandardComponentCatalog.MECANUM_LEFT;
         if (block == ModBlocks.MECANUM_WHEEL_RIGHT) return StandardComponentCatalog.MECANUM_RIGHT;
+        if (block == ModBlocks.ROTARY_ENCODER) return StandardComponentCatalog.ENCODER;
+        if (block == ModBlocks.LIMIT_SWITCH) return StandardComponentCatalog.LIMIT_SWITCH;
+        if (block == ModBlocks.EDUCATIONAL_IMU) return StandardComponentCatalog.IMU;
         if (block == ModBlocks.MODULAR_ULTRASONIC_SENSOR) return StandardComponentCatalog.HC_SR04;
         return null;
     }
@@ -95,6 +98,9 @@ public final class ForgeAssemblyWorldView implements AssemblyWorldView {
                 || block == ModBlocks.OMNI_WHEEL
                 || block == ModBlocks.MECANUM_WHEEL_LEFT
                 || block == ModBlocks.MECANUM_WHEEL_RIGHT
+                || block == ModBlocks.ROTARY_ENCODER
+                || block == ModBlocks.LIMIT_SWITCH
+                || block == ModBlocks.EDUCATIONAL_IMU
                 || block == ModBlocks.POWER_SOURCE || block == ModBlocks.GROUND
                 || block == ModBlocks.MODULAR_ULTRASONIC_SENSOR)
             return new ComponentOrientation(horizontal(metadata & 7), Direction.UP);

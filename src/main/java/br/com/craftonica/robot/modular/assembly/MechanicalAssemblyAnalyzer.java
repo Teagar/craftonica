@@ -146,6 +146,7 @@ public strictfp final class MechanicalAssemblyAnalyzer {
         double ratio = 1.0, efficiency = 1.0, reflectedInertia = 0.0;
         double maximumInputTorque = shaft.maximumTorqueNewtonMetres;
         int direction = 1, stages = 0, transitions = 0;
+        List<MechanicalAssembly.EncoderTap> encoderTaps=new ArrayList<MechanicalAssembly.EncoderTap>();
 
         while (true) {
             if (!visited.add(current)) {
@@ -160,6 +161,11 @@ public strictfp final class MechanicalAssemblyAnalyzer {
             maximumInputTorque = StrictMath.min(maximumInputTorque,
                     currentPort.maximumTorqueNewtonMetres / (ratio * efficiency));
             ContactProfile contact = component.type.getContact();
+            if(StandardComponentCatalog.ENCODER.equals(component.type.getId())){
+                boolean found=false;for(MechanicalAssembly.EncoderTap tap:encoderTaps)
+                    if(tap.position.equals(component.localPosition)){found=true;break;}
+                if(!found)encoderTaps.add(new MechanicalAssembly.EncoderTap(component.localPosition,ratio,direction));
+            }
             if (contact != null && (contact.kind == ContactProfile.Kind.DRIVEN_WHEEL
                     || contact.kind == ContactProfile.Kind.DRIVEN_TRACK
                     || contact.kind == ContactProfile.Kind.OMNI_WHEEL
@@ -179,7 +185,7 @@ public strictfp final class MechanicalAssemblyAnalyzer {
                 candidates.add(new Candidate(new MechanicalAssembly.DrivePath(motor.localPosition,
                         component.localPosition, component.localOrientation.toWorld(currentPort.axis), radius,
                         tractionLever, width, maximumOutputTorque, ratio, direction, efficiency,
-                        reflectedInertia, stages)));
+                        reflectedInertia, stages, encoderTaps)));
                 return;
             }
 

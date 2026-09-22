@@ -25,7 +25,8 @@ public final class StandardComponentCatalogTest {
                  StandardComponentCatalog.CASTER, StandardComponentCatalog.TRACK_MODULE,
                  StandardComponentCatalog.OMNI_WHEEL, StandardComponentCatalog.MECANUM_LEFT,
                  StandardComponentCatalog.MECANUM_RIGHT,
-                 StandardComponentCatalog.HC_SR04 };
+                 StandardComponentCatalog.HC_SR04, StandardComponentCatalog.ENCODER,
+                 StandardComponentCatalog.LIMIT_SWITCH, StandardComponentCatalog.IMU };
         for (String id : required) {
             ComponentType type = catalog.require(id);
             assertEquals(1, type.getSchemaVersion());
@@ -49,7 +50,7 @@ public final class StandardComponentCatalogTest {
             assertFiniteProfile(type.getContact());
             assertFiniteProfile(type.getSensor());
         }
-        assertEquals(24, catalog.all().size());
+        assertEquals(27, catalog.all().size());
     }
 
     @Test public void profilesAndPortsDescribeRealPathsInsteadOfRobotSlots() {
@@ -97,6 +98,12 @@ public final class StandardComponentCatalogTest {
                 .getParameters().get("roller_handedness").doubleValue(), 0.0);
         assertEquals(SensorProfile.Kind.ULTRASONIC,
                 catalog.require(StandardComponentCatalog.HC_SR04).getSensor().kind);
+        assertEquals(SensorProfile.Kind.ROTARY_ENCODER,
+                catalog.require(StandardComponentCatalog.ENCODER).getSensor().kind);
+        assertEquals(SensorProfile.Kind.LIMIT_SWITCH,
+                catalog.require(StandardComponentCatalog.LIMIT_SWITCH).getSensor().kind);
+        assertEquals(SensorProfile.Kind.IMU,
+                catalog.require(StandardComponentCatalog.IMU).getSensor().kind);
     }
 
     @Test public void orientationSupportsVerticalAndHorizontalBlockPoses() {
