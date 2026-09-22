@@ -20,6 +20,7 @@ public final class StandardComponentCatalog {
     public static final String BEARING = "craftonica:bearing";
     public static final String GEAR_12 = "craftonica:spur_gear_12t";
     public static final String GEAR_36 = "craftonica:spur_gear_36t";
+    public static final String SERVO = "craftonica:educational_servo";
     public static final String WHEEL = "craftonica:wheel";
     public static final String WHEEL_150 = "craftonica:wheel_150mm";
     public static final String CASTER = "craftonica:caster";
@@ -45,6 +46,7 @@ public final class StandardComponentCatalog {
         values.add(bearing());
         values.add(gear(GEAR_12, 12, 0.18, 0.00004));
         values.add(gear(GEAR_36, 36, 0.42, 0.00035));
+        values.add(servo());
         values.add(wheel());
         values.add(wheel150());
         values.add(caster());
@@ -188,6 +190,29 @@ public final class StandardComponentCatalog {
                 .mechanical(mechanical("mesh", Direction.EAST, Direction.NORTH,
                         MechanicalPort.Kind.GEAR_MESH, MechanicalPort.Coupling.NEUTRAL, 1.0))
                 .transmission(TransmissionProfile.spurGear(teeth, 0.01, 0.96, inertia, 350.0)).build();
+    }
+
+    private static ComponentType servo() {
+        return base(SERVO, 0.055, ComponentMaterial.ENGINEERING_PLASTIC,
+                new BoxVolume(0.15, 0.05, 0.15, 0.85, 0.75, 0.85))
+                .structural(structural("mount_down", Direction.DOWN))
+                .electrical(electrical("vcc", Direction.UP, ElectricalPort.Domain.POWER,
+                        ElectricalPort.Flow.INPUT, 6.0, 1.2))
+                .electrical(electrical("gnd", Direction.SOUTH, ElectricalPort.Domain.POWER,
+                        ElectricalPort.Flow.PASSIVE, 6.0, 1.2))
+                .electrical(electrical("signal", Direction.WEST, ElectricalPort.Domain.DIGITAL,
+                        ElectricalPort.Flow.INPUT, 5.5, 0.001))
+                .mechanical(mechanical("output", Direction.NORTH, MechanicalPort.Kind.ROTARY_SHAFT,
+                        MechanicalPort.Coupling.PLUG, 0.22))
+                .actuator(new ActuatorProfile("craftonica:educational_servo", 1,
+                        ActuatorProfile.Kind.SERVO, parameters("nominal_voltage", 5.0,
+                                "minimum_pulse_micros", 1000.0, "maximum_pulse_micros", 2000.0,
+                                "minimum_angle_radians", 0.0, "maximum_angle_radians", StrictMath.PI,
+                                "safe_angle_radians", StrictMath.PI / 2.0, "deadband_radians",
+                                StrictMath.toRadians(1.0), "maximum_torque_nm", 0.22,
+                                "maximum_velocity_rad_per_second", StrictMath.toRadians(300.0),
+                                "maximum_current_amps", 1.2, "maximum_temperature_celsius", 65.0,
+                                "signal_timeout_seconds", 0.1))).build();
     }
 
     private static ComponentType wheel() {

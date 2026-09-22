@@ -426,7 +426,11 @@ public final class AvrInterpreter {
         int total = state.timer1PrescaleCycles + elapsed, ticks = total / divisor;
         state.timer1PrescaleCycles = total % divisor;
         int count = (state.mmio[0x84 - 0x20] & 0xff) | ((state.mmio[0x85 - 0x20] & 0xff) << 8);
-        count = (count + ticks) & 0xffff;
+        int mode = (state.mmio[0x80 - 0x20] & 3) | ((state.mmio[0x81 - 0x20] >>> 1) & 12);
+        int top = mode == 14 ? 1 + (state.mmio[0x86 - 0x20] & 0xff)
+                + ((state.mmio[0x87 - 0x20] & 0xff) << 8) : 65536;
+        if (top <= 1) return;
+        count = (count + ticks) % top;
         state.mmio[0x84 - 0x20] = (byte) count; state.mmio[0x85 - 0x20] = (byte) (count >>> 8);
     }
 
@@ -466,7 +470,7 @@ public final class AvrInterpreter {
         return (a >= 0x23 && a <= 0x2b) || (a >= 0x35 && a <= 0x37)
                 || (a >= 0x44 && a <= 0x48) || (a >= 0x5d && a <= 0x5f)
                 || (a >= 0x6e && a <= 0x70) || (a >= 0x78 && a <= 0x7a) || a == 0x7c
-                || (a >= 0x80 && a <= 0x82) || (a >= 0x84 && a <= 0x85)
+                || (a >= 0x80 && a <= 0x82) || (a >= 0x84 && a <= 0x87)
                 || (a >= 0x88 && a <= 0x8b) || (a >= 0xb0 && a <= 0xb4)
                 || (a >= 0xc0 && a <= 0xc6);
     }
@@ -478,7 +482,7 @@ public final class AvrInterpreter {
 
     private static boolean isTimerRegister(int a) {
         return (a >= 0x44 && a <= 0x48) || (a >= 0x80 && a <= 0x82)
-                || (a >= 0x84 && a <= 0x85) || (a >= 0x88 && a <= 0x8b)
+                || (a >= 0x84 && a <= 0x87) || (a >= 0x88 && a <= 0x8b)
                 || (a >= 0xb0 && a <= 0xb4);
     }
 

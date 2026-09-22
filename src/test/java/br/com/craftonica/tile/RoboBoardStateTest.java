@@ -45,6 +45,27 @@ public final class RoboBoardStateTest {
         });
     }
 
+    @Test public void servoPulseDecoderAcceptsOnlyPublishedTimer1Profile() throws Exception {
+        RoboBoardState state = new RoboBoardState(new UUID(20, 21));
+        long revision = state.installVerifiedFirmware(firmware(), 0);
+        AvrMachineState machine = new AvrMachineState();
+        Field mmioField = AvrMachineState.class.getDeclaredField("mmio"); mmioField.setAccessible(true);
+        byte[] mmio = (byte[]) mmioField.get(machine);
+        mmio[0x86 - 0x20] = (byte) (39999 & 0xff);
+        mmio[0x87 - 0x20] = (byte) (39999 >>> 8);
+        state.commitRuntimeCheckpoint(state.getGeneration(), revision, AvrCheckpointCodec.encode(machine),
+                RoboBoardState.Status.RUNNING, "", true, false,
+                Collections.singletonList(new RuntimeProtocol.Gpio(0, 9, true, false)),
+                Collections.singletonList(new RuntimeProtocol.Pwm(0, 9, 1, 14, 8, 3000, false)), new byte[0]);
+        assertEquals(Integer.valueOf(1500), state.getServoPulseWidthMicros(9));
+        assertEquals(null, state.getServoPulseWidthMicros(10));
+
+        state.commitRuntimeCheckpoint(state.getGeneration(), revision, AvrCheckpointCodec.encode(machine),
+                RoboBoardState.Status.RUNNING, "", true, false, Collections.<RuntimeProtocol.Gpio>emptyList(),
+                Collections.singletonList(new RuntimeProtocol.Pwm(1, 9, 1, 5, 8, 3000, true)), new byte[0]);
+        assertEquals(null, state.getServoPulseWidthMicros(9));
+    }
+
     @Test
     public void rejectsOversizedCheckpointAndFault() {
         final RoboBoardState state = new RoboBoardState(new UUID(1, 2));

@@ -2,12 +2,13 @@ format=craftonica-compiler-manifest-1
 profile=craftonica-avr-uno:1/core-1.8.6/gcc-7.3.0-atmel3.6.1-arduino7
 flags=-mmcu=atmega328p;-DF_CPU=16000000L;-DARDUINO=10819;-DARDUINO_AVR_UNO;-DARDUINO_ARCH_AVR;-Os;-ffunction-sections;-fdata-sections;-fno-common;-fdebug-prefix-map=/work=.;-frandom-seed=craftonica-avr-uno-1;-std=gnu++11;-fpermissive;-fno-exceptions;-fno-rtti;-fno-threadsafe-statics;-Wno-error=narrowing
 4a9a797235399a0d3b38759a048a928b58429f1dae0ff990a5dcec9733a81da1 scripts/firmware/bootstrap-avr-toolchain.sh
-b4da7e2d7cc2c94de6c4676a195d4a6c8d9666d28804542bbe418e7c2bb2e5a4 scripts/firmware/compile-sketch.sh
+2601c9338690cdd3cee410ff7f82bfc4772ff0e984617e3aab2c137780a6113c scripts/firmware/compile-sketch.sh
 0af13b68e4916b461e292c2afb9a0d62d909b3714e382315fd4b10b785cdfa00 scripts/firmware/generate-seccomp.py
-957f7cbff74c1a9d5fbd50d775a18c68544f95f8a6fcf87ca30c2a537333f4e1 scripts/firmware/prepare_bundle.py
-b9085aa57ae3546e0ae030bdc19599913507e18feaef0d8734907142c91028c0 scripts/firmware/sandbox-build.sh
+f8889294e5edb15b7f26c9be6b4e3c192553fdc752f694bad690cf7db0d5f35a scripts/firmware/prepare_bundle.py
+e878f772a71508516cc7d21fe847e62c04efa13ce13e0bbe587a7338c1620764 scripts/firmware/sandbox-build.sh
 0f0d0d8dd7c98ad0a417592637e53f6e46cedfd323b6abaafea0e2a66b9ab244 scripts/firmware/sandbox-launch.sh
 6f585dbe272d053323c58187fcffca1d57f4f6b60b291df14bb04ad51c3e217f firmware/abi/craftonica_abi.S
+d30f97f6f1ec22e3d7c866aeb57c2ed6d88aa2f60db30f7142bbabb7cbf9e891 firmware/libraries/Servo.h
 9ea193a8afc671189c0fb9490b3ba969a49fe39ab6aced040ed5647d0dbb824a firmware/patches/arduino-avr-core-1.8.6-invalid-pin-trap.patch
 575e03ac834b739349a4484de481abcd06a6f7193cefc795260a32a1943f20a5 host:/usr/bin/bash
 eb647a179dc64d035752ae4f228aeaeb09261ab5fac307d6d0d38504b7f326e2 host:/usr/bin/cp

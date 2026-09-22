@@ -17,7 +17,7 @@ export PATH=/toolchain/bin
 
 /bin/mkdir -p /work/obj/core /work/obj/user /work/result
 
-COMMON=(-mmcu=atmega328p -DF_CPU=16000000L -DARDUINO=10819 -DARDUINO_AVR_UNO -DARDUINO_ARCH_AVR -Os -ffunction-sections -fdata-sections -fno-common -fdebug-prefix-map=/work=. -frandom-seed=craftonica-avr-uno-1 -I/source -I/core/cores/arduino -I/core/variants/standard)
+COMMON=(-mmcu=atmega328p -DF_CPU=16000000L -DARDUINO=10819 -DARDUINO_AVR_UNO -DARDUINO_ARCH_AVR -Os -ffunction-sections -fdata-sections -fno-common -fdebug-prefix-map=/work=. -frandom-seed=craftonica-avr-uno-1 -I/source -I/libraries -I/core/cores/arduino -I/core/variants/standard)
 CXX=(-std=gnu++11 -fpermissive -fno-exceptions -fno-rtti -fno-threadsafe-statics -Wno-error=narrowing)
 C=(-std=gnu11)
 

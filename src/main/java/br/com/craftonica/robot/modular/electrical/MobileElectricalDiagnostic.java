@@ -5,7 +5,8 @@ import br.com.craftonica.robot.modular.GridVector;
 public final class MobileElectricalDiagnostic implements Comparable<MobileElectricalDiagnostic> {
     public enum Code {
         HBRIDGE_VCC_OPEN, HBRIDGE_GND_OPEN, HBRIDGE_PWM_OPEN, HBRIDGE_DIRECTION_OPEN,
-        HBRIDGE_OUTPUT_OPEN, SENSOR_VCC_OPEN, SENSOR_GND_OPEN, SENSOR_TRIGGER_OPEN, SENSOR_ECHO_OPEN
+        HBRIDGE_OUTPUT_OPEN, SENSOR_VCC_OPEN, SENSOR_GND_OPEN, SENSOR_TRIGGER_OPEN, SENSOR_ECHO_OPEN,
+        SERVO_VCC_OPEN, SERVO_GND_OPEN, SERVO_SIGNAL_OPEN
     }
     public final Code code;
     public final GridVector componentPosition;

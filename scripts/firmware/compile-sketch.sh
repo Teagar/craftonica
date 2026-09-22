@@ -51,7 +51,7 @@ timeout --signal=TERM --kill-after=0.25s 12s \
         --unshare-all --unshare-user --disable-userns --die-with-parent --new-session --cap-drop ALL \
         --clearenv --setenv LC_ALL C --setenv LANG C --setenv TZ UTC --setenv SOURCE_DATE_EPOCH 0 \
         --size 33554432 --tmpfs /work --proc /proc --dev /dev \
-        --dir /bin --dir /usr --dir /usr/lib --dir /toolchain --dir /core --dir /source --dir /out --dir /runner \
+        --dir /bin --dir /usr --dir /usr/lib --dir /toolchain --dir /core --dir /libraries --dir /source --dir /out --dir /runner \
         --ro-bind /usr/bin/bash /bin/bash \
         --ro-bind /usr/bin/cp /bin/cp \
         --ro-bind /usr/bin/mkdir /bin/mkdir \
@@ -66,6 +66,7 @@ timeout --signal=TERM --kill-after=0.25s 12s \
         --symlink usr/lib /lib --symlink usr/lib /lib64 \
         --ro-bind "$INSTALL_DIR/toolchain" /toolchain \
         --ro-bind "$INSTALL_DIR/core" /core \
+        --ro-bind "$SCRIPT_DIR/../../firmware/libraries" /libraries \
         --ro-bind "$STAGING_DIR" /source \
         --ro-bind "$SCRIPT_DIR/sandbox-build.sh" /runner/build.sh \
         --ro-bind "$SCRIPT_DIR/../../firmware/abi/craftonica_abi.S" /runner/craftonica_abi.S \
