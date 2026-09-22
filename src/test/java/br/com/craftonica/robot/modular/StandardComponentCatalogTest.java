@@ -21,8 +21,9 @@ public final class StandardComponentCatalogTest {
                  StandardComponentCatalog.SERVO, StandardComponentCatalog.REVOLUTE_JOINT,
                  StandardComponentCatalog.PRISMATIC_JOINT,
                  StandardComponentCatalog.WHEEL,
-                StandardComponentCatalog.WHEEL_150,
-                StandardComponentCatalog.CASTER, StandardComponentCatalog.HC_SR04 };
+                 StandardComponentCatalog.WHEEL_150,
+                 StandardComponentCatalog.CASTER, StandardComponentCatalog.TRACK_MODULE,
+                 StandardComponentCatalog.HC_SR04 };
         for (String id : required) {
             ComponentType type = catalog.require(id);
             assertEquals(1, type.getSchemaVersion());
@@ -46,7 +47,7 @@ public final class StandardComponentCatalogTest {
             assertFiniteProfile(type.getContact());
             assertFiniteProfile(type.getSensor());
         }
-        assertEquals(20, catalog.all().size());
+        assertEquals(21, catalog.all().size());
     }
 
     @Test public void profilesAndPortsDescribeRealPathsInsteadOfRobotSlots() {
@@ -78,6 +79,8 @@ public final class StandardComponentCatalogTest {
                 catalog.require(StandardComponentCatalog.WHEEL).getContact().kind);
         assertEquals(ContactProfile.Kind.PASSIVE_CASTER,
                 catalog.require(StandardComponentCatalog.CASTER).getContact().kind);
+        assertEquals(ContactProfile.Kind.DRIVEN_TRACK,
+                catalog.require(StandardComponentCatalog.TRACK_MODULE).getContact().kind);
         assertEquals(SensorProfile.Kind.ULTRASONIC,
                 catalog.require(StandardComponentCatalog.HC_SR04).getSensor().kind);
     }

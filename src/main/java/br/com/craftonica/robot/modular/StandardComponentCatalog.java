@@ -26,6 +26,7 @@ public final class StandardComponentCatalog {
     public static final String WHEEL = "craftonica:wheel";
     public static final String WHEEL_150 = "craftonica:wheel_150mm";
     public static final String CASTER = "craftonica:caster";
+    public static final String TRACK_MODULE = "craftonica:track_module";
     public static final String HC_SR04 = "craftonica:modular_ultrasonic_sensor";
 
     private static final String RIGID = "craftonica:rigid_mount";
@@ -54,6 +55,7 @@ public final class StandardComponentCatalog {
         values.add(wheel());
         values.add(wheel150());
         values.add(caster());
+        values.add(trackModule());
         values.add(ultrasonic());
         return new ComponentCatalog(values);
     }
@@ -271,6 +273,19 @@ public final class StandardComponentCatalog {
                         ContactProfile.Kind.PASSIVE_CASTER,
                         parameters("radius_metres", 0.025, "rolling_friction", 0.03,
                                 "swivel_friction", 0.01))).build();
+    }
+
+    private static ComponentType trackModule() {
+        return base(TRACK_MODULE, 3.2, ComponentMaterial.RUBBER,
+                new BoxVolume(0.1, 0.0, 0.0, 0.9, 0.65, 1.0))
+                .structural(structural("mount_up", Direction.UP))
+                .mechanical(mechanical("sprocket", Direction.WEST, Direction.EAST,
+                        MechanicalPort.Kind.WHEEL_HUB, MechanicalPort.Coupling.SOCKET, 1.2))
+                .contact(new ContactProfile("craftonica:integrated_track_1m", 1,
+                        ContactProfile.Kind.DRIVEN_TRACK,
+                        parameters("radius_metres", 0.12, "width_metres", 0.38,
+                                "contact_length_metres", 0.9, "longitudinal_friction", 1.15,
+                                "lateral_friction", 0.85, "rolling_friction", 0.08))).build();
     }
 
     private static ComponentType ultrasonic() {

@@ -25,14 +25,24 @@ public strictfp final class MechanicalAssemblyAnalyzer {
     public static MechanicalAssembly analyze(AssemblyGraph graph) {
         if (graph == null) throw new IllegalArgumentException("graph");
         Map<GridVector, DiscoveredComponent> components = new HashMap<GridVector, DiscoveredComponent>();
-        for (DiscoveredComponent component : graph.getComponents()) components.put(component.localPosition, component);
+        int trackModules = 0;
+        for (DiscoveredComponent component : graph.getComponents()) {
+            components.put(component.localPosition, component);
+            if (StandardComponentCatalog.TRACK_MODULE.equals(component.type.getId())) trackModules++;
+        }
         Map<Endpoint, List<Transition>> links = new HashMap<Endpoint, List<Transition>>();
         List<MechanicalAssembly.TransmissionDiagnostic> diagnostics =
                 new ArrayList<MechanicalAssembly.TransmissionDiagnostic>();
         Set<Endpoint> externallyConnected = new HashSet<Endpoint>();
+        Set<GridVector> mountedTracks = new HashSet<GridVector>();
 
         int mechanicalEdges = 0;
-        for (AssemblyEdge edge : graph.getEdges()) if (edge.kind == AssemblyEdge.Kind.MECHANICAL) {
+        for (AssemblyEdge edge : graph.getEdges()) {
+            if (edge.kind == AssemblyEdge.Kind.STRUCTURAL) {
+                markMountedTrack(edge.firstPosition, edge.firstPort, components, mountedTracks);
+                markMountedTrack(edge.secondPosition, edge.secondPort, components, mountedTracks);
+            }
+            if (edge.kind != AssemblyEdge.Kind.MECHANICAL) continue;
             mechanicalEdges++;
             DiscoveredComponent first = components.get(edge.firstPosition);
             DiscoveredComponent second = components.get(edge.secondPosition);
@@ -67,6 +77,10 @@ public strictfp final class MechanicalAssemblyAnalyzer {
         if (overBudget)
             diagnostic(diagnostics, MechanicalAssembly.Diagnostic.TRANSMISSION_LIMIT_EXCEEDED,
                     GridVector.ZERO, "mechanical edges");
+        boolean overTrackBudget = trackModules > TrackAssemblyAnalyzer.MAX_TRACK_MODULES;
+        if (overTrackBudget)
+            diagnostic(diagnostics, MechanicalAssembly.Diagnostic.TRANSMISSION_LIMIT_EXCEEDED,
+                    GridVector.ZERO, "track modules");
 
         for (DiscoveredComponent component : graph.getComponents()) {
             TransmissionProfile profile = component.type.getTransmission();
@@ -89,10 +103,13 @@ public strictfp final class MechanicalAssemblyAnalyzer {
         List<Candidate> candidates = new ArrayList<Candidate>();
         if (!overBudget) for (DiscoveredComponent component : graph.getComponents())
             if (StandardComponentCatalog.DC_MOTOR.equals(component.type.getId()))
-                discover(component, components, links, diagnostics, candidates);
+                discover(component, components, links, mountedTracks, diagnostics, candidates);
 
         Map<GridVector, List<Candidate>> byWheel = new HashMap<GridVector, List<Candidate>>();
         for (Candidate candidate : candidates) {
+            DiscoveredComponent output = components.get(candidate.path.wheelPosition);
+            if (overTrackBudget && output != null
+                    && StandardComponentCatalog.TRACK_MODULE.equals(output.type.getId())) continue;
             List<Candidate> values = byWheel.get(candidate.path.wheelPosition);
             if (values == null) { values = new ArrayList<Candidate>(); byWheel.put(candidate.path.wheelPosition, values); }
             values.add(candidate);
@@ -116,7 +133,8 @@ public strictfp final class MechanicalAssemblyAnalyzer {
     }
 
     private static void discover(DiscoveredComponent motor, Map<GridVector, DiscoveredComponent> components,
-            Map<Endpoint, List<Transition>> links, List<MechanicalAssembly.TransmissionDiagnostic> diagnostics,
+            Map<Endpoint, List<Transition>> links, Set<GridVector> mountedTracks,
+            List<MechanicalAssembly.TransmissionDiagnostic> diagnostics,
             List<Candidate> candidates) {
         MechanicalPort shaft = null;
         for (MechanicalPort port : motor.type.getMechanicalPorts())
@@ -142,8 +160,14 @@ public strictfp final class MechanicalAssemblyAnalyzer {
             maximumInputTorque = StrictMath.min(maximumInputTorque,
                     currentPort.maximumTorqueNewtonMetres / (ratio * efficiency));
             ContactProfile contact = component.type.getContact();
-            if (contact != null && contact.kind == ContactProfile.Kind.DRIVEN_WHEEL
+            if (contact != null && (contact.kind == ContactProfile.Kind.DRIVEN_WHEEL
+                    || contact.kind == ContactProfile.Kind.DRIVEN_TRACK)
                     && currentPort.kind == MechanicalPort.Kind.WHEEL_HUB) {
+                if (contact.kind == ContactProfile.Kind.DRIVEN_TRACK
+                        && !mountedTracks.contains(component.localPosition)) {
+                    diagnostic(diagnostics, MechanicalAssembly.Diagnostic.TRACK_MOUNT_OPEN,
+                            component.localPosition, "mount_up"); return;
+                }
                 double radius = parameter(contact, "radius_metres"), width = parameter(contact, "width_metres");
                 double wheelInertia = 0.5 * component.type.getMass().massKg * radius * radius;
                 reflectedInertia += wheelInertia / (ratio * ratio);
@@ -217,6 +241,12 @@ public strictfp final class MechanicalAssemblyAnalyzer {
         if (component == null || id == null) return null;
         for (MechanicalPort port : component.type.getMechanicalPorts()) if (port.id.equals(id)) return port;
         return null;
+    }
+    private static void markMountedTrack(GridVector position, String port,
+            Map<GridVector, DiscoveredComponent> components, Set<GridVector> mountedTracks) {
+        DiscoveredComponent component = components.get(position);
+        if (component != null && StandardComponentCatalog.TRACK_MODULE.equals(component.type.getId())
+                && "mount_up".equals(port)) mountedTracks.add(position);
     }
     private static boolean compatible(MechanicalPort a, DiscoveredComponent ac,
             MechanicalPort b, DiscoveredComponent bc) {

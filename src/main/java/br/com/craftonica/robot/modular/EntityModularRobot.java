@@ -35,6 +35,8 @@ import br.com.craftonica.robot.modular.physics.articulated.ArticulatedMechanism;
 import br.com.craftonica.robot.modular.physics.articulated.ArticulatedSolver;
 import br.com.craftonica.robot.modular.physics.articulated.ArticulatedTickBudget;
 import br.com.craftonica.robot.modular.servo.ServoJointLoop;
+import br.com.craftonica.robot.modular.assembly.TrackAssembly;
+import br.com.craftonica.robot.modular.assembly.TrackAssemblyAnalyzer;
 import cpw.mods.fml.common.registry.IEntityAdditionalSpawnData;
 import io.netty.buffer.ByteBuf;
 
@@ -71,6 +73,7 @@ public final class EntityModularRobot extends Entity implements IEntityAdditiona
     private ServoJointLoop servoJointLoop;
     private ServoJointLoop.State servoJointState;
     private ArticulatedSolver.Status articulatedStatus = ArticulatedSolver.Status.ADVANCED;
+    private TrackAssembly trackAssembly;
     private boolean visualElectricalFault;
     private double targetX, targetY, targetZ;
     private float targetYaw, targetPitch;
@@ -130,7 +133,9 @@ public final class EntityModularRobot extends Entity implements IEntityAdditiona
         pendingForces.clear();
         if (pendingControlFrame != null) {
             CoupledDriveLoop.Result drive = coupledDrive.step(coupledDriveState, pendingControlFrame,
-                    dynamics, supported, new SimulationTickBudget(), 0.05);
+                    dynamics, supported, collisionWorld.surfaceFrictionMultipliers(
+                            rootBody == null ? body : rootBody, dynamics, supported),
+                    new SimulationTickBudget(), 0.05);
             if (!drive.delayed) {
                 coupledDriveState = drive.state; forces.addAll(drive.forces); pendingControlFrame = null;
             }
@@ -231,6 +236,8 @@ public final class EntityModularRobot extends Entity implements IEntityAdditiona
                         + state.getManifest().getElectricalNetlist().getNetworkCount()
                         + ", diagnósticos=" + electrical.getDiagnostics().size()
                         + ", sensores=" + lastSensorStatus.name()
+                        + ", esteiras=" + (trackAssembly == null ? 0 : trackAssembly.getUnits().size())
+                        + ", falhasEsteira=" + (trackAssembly == null ? 0 : trackAssembly.getDiagnostics().size())
                         + (state.getDiagnostic().length() == 0 ? "" : ", estado=" + state.getDiagnostic())));
             }
         }
@@ -317,6 +324,7 @@ public final class EntityModularRobot extends Entity implements IEntityAdditiona
             if (channel.drive.thermalShutdown) diagnostics |= DIAGNOSTIC_THERMAL;
         }
         if (articulatedStatus != ArticulatedSolver.Status.ADVANCED) diagnostics |= DIAGNOSTIC_ARTICULATED;
+        if (trackAssembly != null && !trackAssembly.isValid()) diagnostics |= DIAGNOSTIC_DRIVE;
         if (servoJointState != null) for (ServoJointLoop.ChannelState channel : servoJointState.getChannels()) {
             if (channel.diagnostic != br.com.craftonica.robot.modular.servo.ServoStep.Diagnostic.NONE)
                 diagnostics |= DIAGNOSTIC_DRIVE;
@@ -441,6 +449,7 @@ public final class EntityModularRobot extends Entity implements IEntityAdditiona
 
     private void initializeArticulated(br.com.craftonica.robot.modular.manifest.ModularRobotManifest manifest) {
         articulatedMechanism = new ArticulatedMechanism(manifest, CATALOG);
+        trackAssembly = TrackAssemblyAnalyzer.analyze(manifest, CATALOG);
         rootBody = articulatedMechanism.getBodies().get(0);
         if (servoJointLoop == null) servoJointLoop = new ServoJointLoop(manifest, CATALOG,
                 articulatedMechanism.getKinematic());

@@ -101,6 +101,19 @@ public final class CoupledDriveLoopTest {
                 > StrictMath.abs(directStep.state.getChannels().get(0).drive.angularVelocityRadPerSecond));
     }
 
+    @Test public void physicalSurfaceMultiplierChangesAvailableTraction() {
+        CoupledDriveLoop loop = new CoupledDriveLoop(manifest(), StandardComponentCatalog.create());
+        CoupledDriveLoop.Result normal = loop.step(loop.initialState(), frame(0), body(0.0),
+                Collections.singletonList(0), Collections.singletonMap(0, Double.valueOf(1.0)),
+                new SimulationTickBudget(), 0.025);
+        CoupledDriveLoop.Result slippery = loop.step(loop.initialState(), frame(0), body(0.0),
+                Collections.singletonList(0), Collections.singletonMap(0, Double.valueOf(0.01)),
+                new SimulationTickBudget(), 0.025);
+        assertEquals(1, normal.forces.size()); assertEquals(1, slippery.forces.size());
+        assertTrue(normal.forces.get(0).maximumMagnitudeNewtons
+                > slippery.forces.get(0).maximumMagnitudeNewtons);
+    }
+
     private static CoupledDriveLoop.ControlFrame frame(long sequence) {
         Map<GridVector, DriveInput> commands = new HashMap<GridVector, DriveInput>();
         commands.put(p(0,0,0), new DriveInput(true, 5.0, 255, DriveInput.Mode.FORWARD, 0.0));

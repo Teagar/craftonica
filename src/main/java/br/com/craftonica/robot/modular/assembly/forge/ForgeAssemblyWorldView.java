@@ -70,6 +70,7 @@ public final class ForgeAssemblyWorldView implements AssemblyWorldView {
         if (block == ModBlocks.ROBOT_WHEEL) return StandardComponentCatalog.WHEEL;
         if (block == ModBlocks.ROBOT_WHEEL_150) return StandardComponentCatalog.WHEEL_150;
         if (block == ModBlocks.PASSIVE_CASTER) return StandardComponentCatalog.CASTER;
+        if (block == ModBlocks.TRACK_MODULE) return StandardComponentCatalog.TRACK_MODULE;
         if (block == ModBlocks.MODULAR_ULTRASONIC_SENSOR) return StandardComponentCatalog.HC_SR04;
         return null;
     }
@@ -87,6 +88,7 @@ public final class ForgeAssemblyWorldView implements AssemblyWorldView {
                 || block == ModBlocks.EDUCATIONAL_SERVO
                 || block == ModBlocks.ROBOT_WHEEL
                 || block == ModBlocks.ROBOT_WHEEL_150
+                || block == ModBlocks.TRACK_MODULE
                 || block == ModBlocks.POWER_SOURCE || block == ModBlocks.GROUND
                 || block == ModBlocks.MODULAR_ULTRASONIC_SENSOR)
             return new ComponentOrientation(horizontal(metadata & 7), Direction.UP);

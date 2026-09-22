@@ -9,11 +9,11 @@ import net.minecraft.world.World;
 
 /** Physical axle, bearing, spur gear, conventional wheel or passive caster. */
 public final class BlockMechanicalComponent extends Block implements IRotatableElectricalBlock {
-    public enum Type { AXLE, BEARING, GEAR, SERVO, WHEEL, CASTER }
+    public enum Type { AXLE, BEARING, GEAR, SERVO, WHEEL, CASTER, TRACK }
     private final Type type;
 
     public BlockMechanicalComponent(Type type, String name, String texture) {
-        super(type == Type.WHEEL ? Material.cloth : Material.iron);
+        super(type == Type.WHEEL || type == Type.TRACK ? Material.cloth : Material.iron);
         if (type == null) throw new IllegalArgumentException("type");
         this.type = type; setBlockName(name); setBlockTextureName(texture);
         setCreativeTab(CraftonicaCreativeTab.INSTANCE); setHardness(1.4F); setResistance(4.0F);

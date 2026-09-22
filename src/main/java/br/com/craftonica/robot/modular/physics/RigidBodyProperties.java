@@ -93,7 +93,7 @@ public strictfp final class RigidBodyProperties {
                 type.getVolume());
         Vector3 point = new Vector3(center.x, physicalVolume.minimum.y, center.z);
         Vector3 rolling = new Vector3(0.0, 0.0, 0.0);
-        if (profile.kind == ContactProfile.Kind.DRIVEN_WHEEL) {
+        if (profile.kind == ContactProfile.Kind.DRIVEN_WHEEL || profile.kind == ContactProfile.Kind.DRIVEN_TRACK) {
             MechanicalPort hub = null;
             for (MechanicalPort port : type.getMechanicalPorts())
                 if (port.kind == MechanicalPort.Kind.WHEEL_HUB) { hub = port; break; }
@@ -103,7 +103,8 @@ public strictfp final class RigidBodyProperties {
         }
         return new Contact(module.localPosition, profile.kind, point, rolling, radius,
                 parameter(profile, "longitudinal_friction"), parameter(profile, "lateral_friction"),
-                parameter(profile, "rolling_friction"));
+                parameter(profile, "rolling_friction"), parameter(profile, "contact_length_metres"),
+                parameter(profile, "width_metres"));
     }
 
     private static Vector3 horizontalPerpendicular(Direction axle) {
@@ -217,13 +218,16 @@ public strictfp final class RigidBodyProperties {
         public final double longitudinalFriction;
         public final double lateralFriction;
         public final double rollingFriction;
+        public final double contactLengthMetres, contactWidthMetres;
 
         Contact(GridVector modulePosition, ContactProfile.Kind kind, Vector3 point, Vector3 rolling,
-                double radius, double longitudinal, double lateral, double rollingFriction) {
+                double radius, double longitudinal, double lateral, double rollingFriction,
+                double contactLength, double contactWidth) {
             this.modulePosition = modulePosition; this.kind = kind; this.pointMetres = point;
             this.rollingDirection = rolling; this.radiusMetres = radius;
             this.longitudinalFriction = longitudinal; this.lateralFriction = lateral;
             this.rollingFriction = rollingFriction;
+            this.contactLengthMetres = contactLength; this.contactWidthMetres = contactWidth;
         }
     }
 }
