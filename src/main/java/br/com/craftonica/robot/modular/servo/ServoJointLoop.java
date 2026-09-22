@@ -14,7 +14,7 @@ import net.minecraft.nbt.NBTTagList;
 
 import java.util.*;
 
-/** Couples powered Servo.h outputs to physical revolute coordinates through torque only. */
+/** Couples powered Servo.h outputs to matching rotary or linear coordinates through effort only. */
 public strictfp final class ServoJointLoop {
     public static final int MAX_CHANNELS = 16;
     private final List<Channel> channels;
@@ -30,10 +30,13 @@ public strictfp final class ServoJointLoop {
         List<Channel> values=new ArrayList<Channel>();
         for(KinematicAssembly.Joint joint:kinematic.getJoints()) {
             GridVector drive=joint.driveConnectionPosition;
-            if(drive==null||joint.kind!=JointProfile.Kind.REVOLUTE) continue;
+            if(drive==null) continue;
             ComponentType type=components.get(drive);
             MobileElectricalEvaluation.ServoBinding binding=electrical.getServos().get(drive);
-            if(type==null||type.getActuator()==null||type.getActuator().kind!=ActuatorProfile.Kind.SERVO||binding==null) continue;
+            if(type==null||type.getActuator()==null||binding==null) continue;
+            ActuatorProfile.Kind kind=type.getActuator().kind;
+            if(joint.kind==JointProfile.Kind.REVOLUTE&&kind!=ActuatorProfile.Kind.SERVO)continue;
+            if(joint.kind==JointProfile.Kind.PRISMATIC&&kind!=ActuatorProfile.Kind.LINEAR_SERVO)continue;
             values.add(new Channel(joint,binding));
         }
         if(values.size()>MAX_CHANNELS) throw new IllegalArgumentException("maximum servo joint channels");

@@ -21,6 +21,7 @@ public final class StandardComponentCatalog {
     public static final String GEAR_12 = "craftonica:spur_gear_12t";
     public static final String GEAR_36 = "craftonica:spur_gear_36t";
     public static final String SERVO = "craftonica:educational_servo";
+    public static final String LINEAR_SERVO = "craftonica:educational_linear_servo";
     public static final String REVOLUTE_JOINT = "craftonica:revolute_joint";
     public static final String PRISMATIC_JOINT = "craftonica:prismatic_joint";
     public static final String WHEEL = "craftonica:wheel";
@@ -56,6 +57,7 @@ public final class StandardComponentCatalog {
         values.add(gear(GEAR_12, 12, 0.18, 0.00004));
         values.add(gear(GEAR_36, 36, 0.42, 0.00035));
         values.add(servo());
+        values.add(linearServo());
         values.add(revoluteJoint());
         values.add(prismaticJoint());
         values.add(wheel());
@@ -229,6 +231,28 @@ public final class StandardComponentCatalog {
                                 "safe_angle_radians", StrictMath.PI / 2.0, "deadband_radians",
                                 StrictMath.toRadians(1.0), "maximum_torque_nm", 0.22,
                                 "maximum_velocity_rad_per_second", StrictMath.toRadians(300.0),
+                                "maximum_current_amps", 1.2, "maximum_temperature_celsius", 65.0,
+                                "signal_timeout_seconds", 0.1))).build();
+    }
+
+    private static ComponentType linearServo() {
+        return base(LINEAR_SERVO, 0.18, ComponentMaterial.ENGINEERING_PLASTIC,
+                new BoxVolume(0.15, 0.05, 0.05, 0.85, 0.75, 0.95))
+                .structural(structural("mount_down", Direction.DOWN))
+                .electrical(electrical("vcc", Direction.UP, ElectricalPort.Domain.POWER,
+                        ElectricalPort.Flow.INPUT, 6.0, 1.2))
+                .electrical(electrical("gnd", Direction.SOUTH, ElectricalPort.Domain.POWER,
+                        ElectricalPort.Flow.PASSIVE, 6.0, 1.2))
+                .electrical(electrical("signal", Direction.WEST, ElectricalPort.Domain.DIGITAL,
+                        ElectricalPort.Flow.INPUT, 5.5, 0.001))
+                .mechanical(mechanical("output", Direction.NORTH, MechanicalPort.Kind.LINEAR_DRIVE,
+                        MechanicalPort.Coupling.PLUG, 100.0))
+                .actuator(new ActuatorProfile("craftonica:educational_linear_servo", 1,
+                        ActuatorProfile.Kind.LINEAR_SERVO, parameters("nominal_voltage", 5.0,
+                                "minimum_pulse_micros", 1000.0, "maximum_pulse_micros", 2000.0,
+                                "stroke_metres", 1.0, "safe_position_fraction", 0.5,
+                                "maximum_force_newtons", 0.7,
+                                "maximum_velocity_metres_per_second", 1.67,
                                 "maximum_current_amps", 1.2, "maximum_temperature_celsius", 65.0,
                                 "signal_timeout_seconds", 0.1))).build();
     }

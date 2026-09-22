@@ -94,6 +94,7 @@ tile.mecanumWheelRight.name=Roda mecanum direita 100 mm
 tile.rotaryEncoder.name=Encoder incremental 20 PPR
 tile.limitSwitch.name=Fim de curso educacional
 tile.educationalImu.name=IMU educacional de 3 eixos
+tile.linearServo.name=Servo linear educacional
 tile.robotWheel.name=Roda robótica 100 mm
 tile.robotWheel150.name=Roda robótica 150 mm
 tile.passiveCaster.name=Rodízio passivo 50 mm

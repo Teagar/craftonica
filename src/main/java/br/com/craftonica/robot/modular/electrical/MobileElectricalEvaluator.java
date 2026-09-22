@@ -26,7 +26,8 @@ public final class MobileElectricalEvaluator {
                     && "vcc".equals(terminal.portId)) evaluateBridge(netlist, terminal.modulePosition, drives, diagnostics);
             if (StandardComponentCatalog.HC_SR04.equals(terminal.componentTypeId)
                     && "vcc".equals(terminal.portId)) evaluateSensor(netlist, terminal.modulePosition, sensors, diagnostics);
-            if (StandardComponentCatalog.SERVO.equals(terminal.componentTypeId)
+            if ((StandardComponentCatalog.SERVO.equals(terminal.componentTypeId)
+                    || StandardComponentCatalog.LINEAR_SERVO.equals(terminal.componentTypeId))
                     && "vcc".equals(terminal.portId)) evaluateServo(netlist, terminal.modulePosition, servos, diagnostics);
         }
         return new MobileElectricalEvaluation(drives, sensors, servos, diagnostics);
