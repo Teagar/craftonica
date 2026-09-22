@@ -6,6 +6,7 @@ import br.com.craftonica.robot.modular.ComponentType;
 import br.com.craftonica.robot.modular.Direction;
 import br.com.craftonica.robot.modular.GridVector;
 import br.com.craftonica.robot.modular.MechanicalPort;
+import br.com.craftonica.robot.modular.JointPort;
 import br.com.craftonica.robot.modular.StructuralPort;
 
 import java.util.ArrayList;
@@ -77,6 +78,12 @@ public final class AssemblyDiscovery {
                         port, worldFace, frontier, inspected, found, edges);
                 if (result != null) return result;
             }
+            for (JointPort port : type.getJointPorts()) {
+                Direction worldFace = placed.orientation.toWorld(port.pose.face);
+                AssemblyDiscoveryResult result = inspectJoint(world, anchor, root, position, placed,
+                        port, worldFace, frontier, inspected, found, edges);
+                if (result != null) return result;
+            }
         }
 
         List<DiscoveredComponent> components = new ArrayList<DiscoveredComponent>();
@@ -122,6 +129,34 @@ public final class AssemblyDiscovery {
                     && neighbor.orientation.toWorld(candidate.pose.face) == worldFace.opposite()) {
                 return connect(position, port.id, neighborPosition, candidate.id,
                         AssemblyEdge.Kind.STRUCTURAL, neighbor, frontier, found, edges);
+            }
+        }
+        for (JointPort candidate : neighborType.getJointPorts()) {
+            if (port.connectorFamily.equals(candidate.connectorFamily)
+                    && neighbor.orientation.toWorld(candidate.pose.face) == worldFace.opposite()) {
+                return connect(position, port.id, neighborPosition, candidate.id,
+                        AssemblyEdge.Kind.JOINT, neighbor, frontier, found, edges);
+            }
+        }
+        return null;
+    }
+
+    private AssemblyDiscoveryResult inspectJoint(AssemblyWorldView world, GridVector anchor,
+            PlacedComponent root, GridVector position, PlacedComponent placed, JointPort port,
+            Direction worldFace, TreeSet<GridVector> frontier, Set<GridVector> inspected,
+            Map<GridVector, PlacedComponent> found, Map<String, AssemblyEdge> edges) {
+        GridVector neighborPosition = position.add(worldFace.vector);
+        AssemblyDiscoveryResult ready = inspect(world, anchor, root, neighborPosition, frontier, inspected, found);
+        if (ready != null) return ready;
+        PlacedComponent neighbor = found.get(neighborPosition);
+        if (neighbor == null) neighbor = world.componentAt(neighborPosition);
+        if (neighbor == null) return null;
+        ComponentType neighborType = catalog.require(neighbor.componentTypeId);
+        for (StructuralPort candidate : neighborType.getStructuralPorts()) {
+            if (port.connectorFamily.equals(candidate.connectorFamily)
+                    && neighbor.orientation.toWorld(candidate.pose.face) == worldFace.opposite()) {
+                return connect(position, port.id, neighborPosition, candidate.id,
+                        AssemblyEdge.Kind.JOINT, neighbor, frontier, found, edges);
             }
         }
         return null;

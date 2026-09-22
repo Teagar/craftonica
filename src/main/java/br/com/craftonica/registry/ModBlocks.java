@@ -22,6 +22,7 @@ import br.com.craftonica.block.BlockHBridgeChannel;
 import br.com.craftonica.block.BlockModularDcMotor;
 import br.com.craftonica.block.BlockModularUltrasonicSensor;
 import br.com.craftonica.block.BlockMechanicalComponent;
+import br.com.craftonica.block.BlockJointComponent;
 import br.com.craftonica.sensor.AcousticMaterialProfile;
 import br.com.craftonica.item.ItemBlockElectricalWire;
 import br.com.craftonica.item.ItemBlockLed;
@@ -80,6 +81,10 @@ public final class ModBlocks {
             BlockMechanicalComponent.Type.GEAR, "spurGear36", "craftonica:dc_motor_active");
     public static final BlockMechanicalComponent EDUCATIONAL_SERVO = new BlockMechanicalComponent(
             BlockMechanicalComponent.Type.SERVO, "educationalServo", "craftonica:h_bridge");
+    public static final BlockJointComponent REVOLUTE_JOINT = new BlockJointComponent(
+            BlockJointComponent.Type.REVOLUTE, "revoluteJoint", "craftonica:h_bridge");
+    public static final BlockJointComponent PRISMATIC_JOINT = new BlockJointComponent(
+            BlockJointComponent.Type.PRISMATIC, "prismaticJoint", "craftonica:robot_chassis");
     public static final BlockMechanicalComponent ROBOT_WHEEL = new BlockMechanicalComponent(
             BlockMechanicalComponent.Type.WHEEL, "robotWheel", "craftonica:dc_motor_active");
     public static final BlockMechanicalComponent ROBOT_WHEEL_150 = new BlockMechanicalComponent(
@@ -129,6 +134,8 @@ public final class ModBlocks {
         GameRegistry.registerBlock(SPUR_GEAR_12, "spur_gear_12");
         GameRegistry.registerBlock(SPUR_GEAR_36, "spur_gear_36");
         GameRegistry.registerBlock(EDUCATIONAL_SERVO, "educational_servo");
+        GameRegistry.registerBlock(REVOLUTE_JOINT, "revolute_joint");
+        GameRegistry.registerBlock(PRISMATIC_JOINT, "prismatic_joint");
         GameRegistry.registerBlock(ROBOT_WHEEL, "robot_wheel");
         GameRegistry.registerBlock(ROBOT_WHEEL_150, "robot_wheel_150");
         GameRegistry.registerBlock(PASSIVE_CASTER, "passive_caster");

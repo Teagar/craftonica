@@ -68,9 +68,10 @@ O modelo expõe três políticas explícitas para o perfil que consumir o servo:
 Componente sem alimentação sempre fica sem torque, independentemente da política.
 Pulso fora da faixa é diagnosticado e não substitui o último alvo válido.
 
-## Limitação desta etapa
+## Integração mecânica
 
-O CRL-85 entrega componente, fiação, API temporal e atuador físico isolado. A porta
-`output` ainda não move módulos por conta própria: juntas rotativas/lineares e o
-acoplamento do torque ao grafo cinemático pertencem ao CRL-86. Não há animação usada
-para esconder essa fronteira.
+A porta `output` conecta-se fisicamente à entrada rotativa da dobradiça, diretamente
+ou por um caminho de transmissão compatível. O CRL-86 fornece a topologia, a
+coordenada e os batentes; a composição de poses, colisão articulada e dinâmica
+multicorpo são responsabilidade do solver do CRL-87. Não há animação usada para
+esconder essa fronteira.

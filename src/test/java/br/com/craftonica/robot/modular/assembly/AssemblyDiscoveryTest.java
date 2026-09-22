@@ -111,6 +111,49 @@ public final class AssemblyDiscoveryTest {
         assertEquals(2, graph.edgeCount(AssemblyEdge.Kind.MECHANICAL));
     }
 
+    @Test public void jointPortsDiscoverHorizontalAndVerticalParentChildBodies() {
+        FakeWorld horizontal = loadedWorld();
+        placeChassis(horizontal, 0, 0, 0);
+        horizontal.put(p(0, 0, 1), StandardComponentCatalog.REVOLUTE_JOINT,
+                ComponentOrientation.NORTH_UP);
+        placeChassis(horizontal, 0, 0, 2);
+        AssemblyGraph horizontalGraph = valid(new AssemblyDiscovery(catalog, AssemblyLimits.PROFILE_1)
+                .discover(horizontal, p(0, 0, 0)));
+        assertEquals(2, horizontalGraph.edgeCount(AssemblyEdge.Kind.JOINT));
+        assertTrue(KinematicAssemblyAnalyzer.analyze(horizontalGraph).isValid());
+
+        FakeWorld vertical = loadedWorld();
+        placeChassis(vertical, 0, 0, 0);
+        vertical.put(p(0, 1, 0), StandardComponentCatalog.PRISMATIC_JOINT,
+                new ComponentOrientation(Direction.DOWN, Direction.NORTH));
+        placeChassis(vertical, 0, 2, 0);
+        AssemblyGraph verticalGraph = valid(new AssemblyDiscovery(catalog, AssemblyLimits.PROFILE_1)
+                .discover(vertical, p(0, 0, 0)));
+        assertEquals(2, verticalGraph.edgeCount(AssemblyEdge.Kind.JOINT));
+        KinematicAssembly kinematic = KinematicAssemblyAnalyzer.analyze(verticalGraph);
+        assertTrue(kinematic.isValid());
+        assertEquals(Direction.DOWN, kinematic.getJoints().get(0).axis);
+    }
+
+    @Test public void mountedServoConnectsToHingeOnlyThroughMatchingMechanicalPorts() {
+        FakeWorld world = loadedWorld();
+        placeChassis(world, 0, 0, 0); placeChassis(world, 0, 0, 2);
+        world.put(p(0, 0, 1), StandardComponentCatalog.REVOLUTE_JOINT,
+                ComponentOrientation.NORTH_UP);
+        world.put(p(-1, 0, 1), StandardComponentCatalog.SERVO,
+                new ComponentOrientation(Direction.EAST, Direction.UP));
+        placeChassis(world, -1, -1, 1); placeChassis(world, -1, -1, 0);
+        placeChassis(world, 0, -1, 0);
+
+        AssemblyGraph graph = valid(new AssemblyDiscovery(catalog, AssemblyLimits.PROFILE_1)
+                .discover(world, p(0, 0, 0)));
+        assertEquals(1, graph.edgeCount(AssemblyEdge.Kind.MECHANICAL));
+        KinematicAssembly kinematic = KinematicAssemblyAnalyzer.analyze(graph);
+        assertTrue(kinematic.getDiagnostics().toString(), kinematic.isValid());
+        assertTrue(kinematic.getJoints().get(0).hasDriveConnection());
+        assertEquals(new GridVector(-1, 0, 1), kinematic.getJoints().get(0).driveConnectionPosition);
+    }
+
     @Test public void physicalBridgeTerminalConnectsCoreToSupportedStructure() {
         FakeWorld world = loadedWorld();
         placeChassis(world, 0, 0, 0);

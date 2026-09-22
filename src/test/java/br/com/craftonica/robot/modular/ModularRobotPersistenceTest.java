@@ -4,6 +4,8 @@ import br.com.craftonica.robot.modular.drive.CoupledDriveLoop;
 import br.com.craftonica.robot.modular.manifest.ModularBlockSnapshot;
 import br.com.craftonica.robot.modular.manifest.ModularRobotManifest;
 import br.com.craftonica.robot.modular.physics.TerrestrialRigidBodyModel;
+import br.com.craftonica.robot.modular.assembly.KinematicAssemblyAnalyzer;
+import br.com.craftonica.robot.modular.joint.JointStateSet;
 import br.com.craftonica.tile.RoboBoardState;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.CompressedStreamTools;
@@ -48,6 +50,23 @@ public final class ModularRobotPersistenceTest {
         encoded.getCompoundTag("Payload").getCompoundTag("RigidBody").setDouble("VelocityX", 99.0);
         assertRejected(encoded);
         NBTTagCompound future = envelope(); future.setInteger("Schema", 99); assertRejected(future);
+    }
+
+    @Test public void articulatedCoordinatesAreChecksummedAndRestored() {
+        ModularRobotManifest manifest = articulatedManifest();
+        ModularRobotState robot = new ModularRobotState(new UUID(40, 41), new UUID(42, 43),
+                new GridVector(0, 64, 0), ComponentOrientation.NORTH_UP, manifest);
+        CoupledDriveLoop drive = new CoupledDriveLoop(manifest, StandardComponentCatalog.create());
+        JointStateSet joints = JointStateSet.initial(KinematicAssemblyAnalyzer.analyze(
+                manifest, StandardComponentCatalog.create()));
+        NBTTagCompound envelope = ModularRobotPersistence.write(robot,
+                new TerrestrialRigidBodyModel.State(0.5, 64, 0.5, 0, 0, 0, 0, 0),
+                drive, drive.initialState(), null, 0, joints);
+
+        ModularRobotPersistence.Snapshot restored = ModularRobotPersistence.read(
+                envelope, StandardComponentCatalog.create());
+        assertEquals(1, restored.joints.getEntries().size());
+        assertEquals(new GridVector(0, 0, 1), restored.joints.getEntries().get(0).position);
     }
 
     @Test public void developmentSchemaMigratesOnceToCurrentEnvelope() {
@@ -109,5 +128,18 @@ public final class ModularRobotPersistenceTest {
                 new GridVector(0,0,0), ComponentOrientation.NORTH_UP, StandardComponentCatalog.CHASSIS, 0, null);
         return new ModularRobotManifest(new UUID(5,6), Collections.singletonList(chassis),
                 Collections.<AssemblyEdge>emptyList());
+    }
+    private static ModularRobotManifest articulatedManifest() {
+        GridVector parent = new GridVector(0,0,0), joint = new GridVector(0,0,1), child = new GridVector(0,0,2);
+        return new ModularRobotManifest(new UUID(44,45), java.util.Arrays.asList(
+                new ModularBlockSnapshot(StandardComponentCatalog.CHASSIS, 1, parent,
+                        ComponentOrientation.NORTH_UP, StandardComponentCatalog.CHASSIS, 0, null),
+                new ModularBlockSnapshot(StandardComponentCatalog.REVOLUTE_JOINT, 1, joint,
+                        ComponentOrientation.NORTH_UP, StandardComponentCatalog.REVOLUTE_JOINT, 0, null),
+                new ModularBlockSnapshot(StandardComponentCatalog.CHASSIS, 1, child,
+                        ComponentOrientation.NORTH_UP, StandardComponentCatalog.CHASSIS, 0, null)),
+                java.util.Arrays.asList(
+                        new AssemblyEdge(AssemblyEdge.Kind.JOINT, parent, "mount_south", joint, "parent"),
+                        new AssemblyEdge(AssemblyEdge.Kind.JOINT, joint, "child", child, "mount_north")));
     }
 }

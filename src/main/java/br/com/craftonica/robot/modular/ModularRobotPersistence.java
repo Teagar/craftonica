@@ -3,6 +3,9 @@ package br.com.craftonica.robot.modular;
 import br.com.craftonica.persistence.NbtMigrations;
 import br.com.craftonica.robot.modular.drive.CoupledDriveLoop;
 import br.com.craftonica.robot.modular.physics.TerrestrialRigidBodyModel;
+import br.com.craftonica.robot.modular.assembly.KinematicAssembly;
+import br.com.craftonica.robot.modular.assembly.KinematicAssemblyAnalyzer;
+import br.com.craftonica.robot.modular.joint.JointStateSet;
 import br.com.craftonica.tile.RoboBoardState;
 import br.com.craftonica.tile.RoboBoardStateNbtCodec;
 import net.minecraft.nbt.NBTTagCompound;
@@ -25,7 +28,13 @@ public final class ModularRobotPersistence {
     public static NBTTagCompound write(ModularRobotState robot, TerrestrialRigidBodyModel.State body,
             CoupledDriveLoop drive, CoupledDriveLoop.State driveState, RoboBoardState board,
             long sensorCounter) {
-        if (robot == null || body == null || drive == null || driveState == null || sensorCounter < 0)
+        return write(robot, body, drive, driveState, board, sensorCounter, JointStateSet.EMPTY);
+    }
+
+    public static NBTTagCompound write(ModularRobotState robot, TerrestrialRigidBodyModel.State body,
+            CoupledDriveLoop drive, CoupledDriveLoop.State driveState, RoboBoardState board,
+            long sensorCounter, JointStateSet joints) {
+        if (robot == null || body == null || drive == null || driveState == null || sensorCounter < 0 || joints == null)
             throw new IllegalArgumentException("modular persistence state");
         NBTTagCompound payload = new NBTTagCompound(); payload.setTag("Robot", robot.write());
         NBTTagCompound rigid = new NBTTagCompound();
@@ -40,6 +49,7 @@ public final class ModularRobotPersistence {
             payload.setTag("Board", boardTag);
         }
         payload.setLong("SensorCounter", sensorCounter);
+        payload.setTag("Joints", joints.write());
         byte[] hash = hash(payload);
         NBTTagCompound envelope = new NBTTagCompound(); envelope.setInteger("Schema", SCHEMA_VERSION);
         envelope.setString("Kind", "modular_robot"); envelope.setTag("Payload", payload);
@@ -80,7 +90,13 @@ public final class ModularRobotPersistence {
         }
         long sensorCounter = payload.getLong("SensorCounter");
         if (sensorCounter < 0) throw new IllegalArgumentException("sensor counter");
-        return new Snapshot(robot, body, drive, driveState, board, sensorCounter);
+        KinematicAssembly kinematic = KinematicAssemblyAnalyzer.analyze(robot.getManifest(), catalog);
+        if (!kinematic.isValid()) throw new IllegalArgumentException("invalid kinematic assembly");
+        JointStateSet joints;
+        if (payload.hasKey("Joints")) joints = JointStateSet.read(payload.getCompoundTag("Joints"), kinematic);
+        else if (kinematic.getJoints().isEmpty()) joints = JointStateSet.EMPTY;
+        else throw new IllegalArgumentException("missing joint state");
+        return new Snapshot(robot, body, drive, driveState, board, sensorCounter, joints);
     }
 
     public static NBTTagCompound preserve(NBTTagCompound source) {
@@ -125,11 +141,12 @@ public final class ModularRobotPersistence {
         public final CoupledDriveLoop.State driveState;
         public final RoboBoardState board;
         public final long sensorCounter;
+        public final JointStateSet joints;
 
         Snapshot(ModularRobotState robot, TerrestrialRigidBodyModel.State body, CoupledDriveLoop drive,
-                CoupledDriveLoop.State driveState, RoboBoardState board, long sensorCounter) {
+                CoupledDriveLoop.State driveState, RoboBoardState board, long sensorCounter, JointStateSet joints) {
             this.robot = robot; this.body = body; this.drive = drive; this.driveState = driveState;
-            this.board = board; this.sensorCounter = sensorCounter;
+            this.board = board; this.sensorCounter = sensorCounter; this.joints = joints;
         }
     }
 }
