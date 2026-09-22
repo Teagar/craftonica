@@ -161,7 +161,9 @@ public strictfp final class MechanicalAssemblyAnalyzer {
                     currentPort.maximumTorqueNewtonMetres / (ratio * efficiency));
             ContactProfile contact = component.type.getContact();
             if (contact != null && (contact.kind == ContactProfile.Kind.DRIVEN_WHEEL
-                    || contact.kind == ContactProfile.Kind.DRIVEN_TRACK)
+                    || contact.kind == ContactProfile.Kind.DRIVEN_TRACK
+                    || contact.kind == ContactProfile.Kind.OMNI_WHEEL
+                    || contact.kind == ContactProfile.Kind.MECANUM_WHEEL)
                     && currentPort.kind == MechanicalPort.Kind.WHEEL_HUB) {
                 if (contact.kind == ContactProfile.Kind.DRIVEN_TRACK
                         && !mountedTracks.contains(component.localPosition)) {
@@ -169,12 +171,15 @@ public strictfp final class MechanicalAssemblyAnalyzer {
                             component.localPosition, "mount_up"); return;
                 }
                 double radius = parameter(contact, "radius_metres"), width = parameter(contact, "width_metres");
+                double angle = StrictMath.toRadians(parameter(contact, "traction_angle_degrees"));
+                double tractionLever = radius * StrictMath.abs(StrictMath.cos(angle));
                 double wheelInertia = 0.5 * component.type.getMass().massKg * radius * radius;
                 reflectedInertia += wheelInertia / (ratio * ratio);
                 double maximumOutputTorque = maximumInputTorque * ratio * efficiency;
                 candidates.add(new Candidate(new MechanicalAssembly.DrivePath(motor.localPosition,
-                        component.localPosition, component.localOrientation.toWorld(currentPort.axis), radius, width,
-                        maximumOutputTorque, ratio, direction, efficiency, reflectedInertia, stages)));
+                        component.localPosition, component.localOrientation.toWorld(currentPort.axis), radius,
+                        tractionLever, width, maximumOutputTorque, ratio, direction, efficiency,
+                        reflectedInertia, stages)));
                 return;
             }
 

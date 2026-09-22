@@ -93,6 +93,12 @@ public final class ModBlocks {
             BlockMechanicalComponent.Type.CASTER, "passiveCaster", "craftonica:robot_chassis");
     public static final BlockMechanicalComponent TRACK_MODULE = new BlockMechanicalComponent(
             BlockMechanicalComponent.Type.TRACK, "trackModule", "craftonica:track_module");
+    public static final BlockMechanicalComponent OMNI_WHEEL = new BlockMechanicalComponent(
+            BlockMechanicalComponent.Type.OMNI_WHEEL, "omniWheel", "craftonica:omni_wheel");
+    public static final BlockMechanicalComponent MECANUM_WHEEL_LEFT = new BlockMechanicalComponent(
+            BlockMechanicalComponent.Type.MECANUM_WHEEL, "mecanumWheelLeft", "craftonica:mecanum_wheel_left");
+    public static final BlockMechanicalComponent MECANUM_WHEEL_RIGHT = new BlockMechanicalComponent(
+            BlockMechanicalComponent.Type.MECANUM_WHEEL, "mecanumWheelRight", "craftonica:mecanum_wheel_right");
     public static final BlockCalibrationTarget TARGET_MDF = new BlockCalibrationTarget("targetMdf",
             "craftonica:target_mdf", AcousticMaterialProfile.MDF);
     public static final BlockCalibrationTarget TARGET_PLASTIC = new BlockCalibrationTarget("targetPlastic",
@@ -142,6 +148,9 @@ public final class ModBlocks {
         GameRegistry.registerBlock(ROBOT_WHEEL_150, "robot_wheel_150");
         GameRegistry.registerBlock(PASSIVE_CASTER, "passive_caster");
         GameRegistry.registerBlock(TRACK_MODULE, "track_module");
+        GameRegistry.registerBlock(OMNI_WHEEL, "omni_wheel");
+        GameRegistry.registerBlock(MECANUM_WHEEL_LEFT, "mecanum_wheel_left");
+        GameRegistry.registerBlock(MECANUM_WHEEL_RIGHT, "mecanum_wheel_right");
         GameRegistry.registerBlock(TARGET_MDF, "target_mdf");
         GameRegistry.registerBlock(TARGET_PLASTIC, "target_plastic");
         GameRegistry.registerBlock(TARGET_STYROFOAM, "target_styrofoam");

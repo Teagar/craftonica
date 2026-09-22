@@ -45,6 +45,14 @@ public final class MechanicalAssemblyAnalyzerTest {
         assertEquals(1.0, small, 0.0); assertEquals(1.5, large, 1.0e-12);
     }
 
+    @Test public void mecanumRollerAngleProjectsPhysicalDriveLever(){
+        Fixture fixture=new Fixture();fixture.chain(0,StandardComponentCatalog.MECANUM_LEFT,true);
+        MechanicalAssembly.DrivePath drive=MechanicalAssemblyAnalyzer.analyze(fixture.graph()).getDrives().get(0);
+        assertEquals(0.05,drive.wheelRadiusMetres,0.0);
+        assertEquals(0.05/StrictMath.sqrt(2.0),drive.tractionLeverArmMetres,1.0e-12);
+        assertEquals(0.5/StrictMath.sqrt(2.0),drive.linearSpeedMetresPerSecond(10.0),1.0e-12);
+    }
+
     @Test public void twoWdCasterAndFourWdAreCountsDerivedFromSameGraphTraversal() {
         Fixture two = new Fixture(); two.chain(-2, StandardComponentCatalog.WHEEL, true);
         two.chain(2, StandardComponentCatalog.WHEEL, true); two.caster(0, 0, -2);
