@@ -70,6 +70,7 @@ tile.mecanumWheelRight.name=100 mm right mecanum wheel
 tile.rotaryEncoder.name=20 PPR incremental encoder
 tile.limitSwitch.name=Educational limit switch
 tile.educationalImu.name=Educational 3-axis IMU
+tile.linearServo.name=Educational linear servo
 tile.robotWheel.name=100 mm robot wheel
 tile.robotWheel150.name=150 mm robot wheel
 tile.passiveCaster.name=50 mm passive caster

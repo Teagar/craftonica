@@ -77,6 +77,7 @@ public final class ForgeAssemblyWorldView implements AssemblyWorldView {
         if (block == ModBlocks.ROTARY_ENCODER) return StandardComponentCatalog.ENCODER;
         if (block == ModBlocks.LIMIT_SWITCH) return StandardComponentCatalog.LIMIT_SWITCH;
         if (block == ModBlocks.EDUCATIONAL_IMU) return StandardComponentCatalog.IMU;
+        if (block == ModBlocks.LINEAR_SERVO) return StandardComponentCatalog.LINEAR_SERVO;
         if (block == ModBlocks.MODULAR_ULTRASONIC_SENSOR) return StandardComponentCatalog.HC_SR04;
         return null;
     }
@@ -101,6 +102,7 @@ public final class ForgeAssemblyWorldView implements AssemblyWorldView {
                 || block == ModBlocks.ROTARY_ENCODER
                 || block == ModBlocks.LIMIT_SWITCH
                 || block == ModBlocks.EDUCATIONAL_IMU
+                || block == ModBlocks.LINEAR_SERVO
                 || block == ModBlocks.POWER_SOURCE || block == ModBlocks.GROUND
                 || block == ModBlocks.MODULAR_ULTRASONIC_SENSOR)
             return new ComponentOrientation(horizontal(metadata & 7), Direction.UP);

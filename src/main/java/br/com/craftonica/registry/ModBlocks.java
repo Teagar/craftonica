@@ -105,6 +105,8 @@ public final class ModBlocks {
             BlockMechanicalComponent.Type.LIMIT_SWITCH, "limitSwitch", "craftonica:limit_switch");
     public static final BlockMechanicalComponent EDUCATIONAL_IMU = new BlockMechanicalComponent(
             BlockMechanicalComponent.Type.IMU, "educationalImu", "craftonica:educational_imu");
+    public static final BlockMechanicalComponent LINEAR_SERVO = new BlockMechanicalComponent(
+            BlockMechanicalComponent.Type.LINEAR_SERVO, "linearServo", "craftonica:linear_servo");
     public static final BlockCalibrationTarget TARGET_MDF = new BlockCalibrationTarget("targetMdf",
             "craftonica:target_mdf", AcousticMaterialProfile.MDF);
     public static final BlockCalibrationTarget TARGET_PLASTIC = new BlockCalibrationTarget("targetPlastic",
@@ -160,6 +162,7 @@ public final class ModBlocks {
         GameRegistry.registerBlock(ROTARY_ENCODER, "rotary_encoder");
         GameRegistry.registerBlock(LIMIT_SWITCH, "limit_switch");
         GameRegistry.registerBlock(EDUCATIONAL_IMU, "educational_imu");
+        GameRegistry.registerBlock(LINEAR_SERVO, "linear_servo");
         GameRegistry.registerBlock(TARGET_MDF, "target_mdf");
         GameRegistry.registerBlock(TARGET_PLASTIC, "target_plastic");
         GameRegistry.registerBlock(TARGET_STYROFOAM, "target_styrofoam");
