@@ -85,6 +85,22 @@ public final class CoupledDriveLoopTest {
         assertEquals(expected.diagnostic, actual.diagnostic);
     }
 
+    @Test public void reductionChangesRuntimeTorqueDirectionAndMotorFeedback() {
+        CoupledDriveLoop direct = new CoupledDriveLoop(manifest(), StandardComponentCatalog.create());
+        CoupledDriveLoop reduced = new CoupledDriveLoop(reductionManifest(), StandardComponentCatalog.create());
+        CoupledDriveLoop.Result directStep = direct.step(direct.initialState(), frame(0), body(1.0),
+                Collections.singletonList(0), new SimulationTickBudget(), 0.025);
+        CoupledDriveLoop.Result reducedStep = reduced.step(reduced.initialState(), frame(0), body(1.0),
+                Collections.singletonList(0), new SimulationTickBudget(), 0.025);
+        assertEquals(1, reducedStep.forces.size());
+        assertTrue(directStep.forces.get(0).longitudinalForceNewtons > 0.0);
+        assertTrue(reducedStep.forces.get(0).longitudinalForceNewtons < 0.0);
+        assertTrue(StrictMath.abs(reducedStep.forces.get(0).longitudinalForceNewtons)
+                > StrictMath.abs(directStep.forces.get(0).longitudinalForceNewtons) * 2.5);
+        assertTrue(StrictMath.abs(reducedStep.state.getChannels().get(0).drive.angularVelocityRadPerSecond)
+                > StrictMath.abs(directStep.state.getChannels().get(0).drive.angularVelocityRadPerSecond));
+    }
+
     private static CoupledDriveLoop.ControlFrame frame(long sequence) {
         Map<GridVector, DriveInput> commands = new HashMap<GridVector, DriveInput>();
         commands.put(p(0,0,0), new DriveInput(true, 5.0, 255, DriveInput.Mode.FORWARD, 0.0));
@@ -108,6 +124,24 @@ public final class CoupledDriveLoopTest {
         if (completeMechanicalPath) edges.add(new AssemblyEdge(
                 AssemblyEdge.Kind.MECHANICAL,axle,"shaft_out",wheel,"hub"));
         return new ModularRobotManifest(new UUID(11,12), modules, edges, netlist(bridge,motor));
+    }
+    private static ModularRobotManifest reductionManifest() {
+        GridVector bridge=p(0,0,0), motor=p(3,0,0), small=p(3,0,1), large=p(4,0,1);
+        GridVector axle=p(4,0,2), wheel=p(4,0,3);
+        List<ModularBlockSnapshot> modules = Arrays.asList(module(StandardComponentCatalog.H_BRIDGE, bridge,
+                        ComponentOrientation.NORTH_UP), module(StandardComponentCatalog.DC_MOTOR, motor,
+                        ComponentOrientation.NORTH_UP), module(StandardComponentCatalog.GEAR_12, small,
+                        ComponentOrientation.NORTH_UP), module(StandardComponentCatalog.GEAR_36, large,
+                        new ComponentOrientation(Direction.SOUTH, Direction.UP)),
+                module(StandardComponentCatalog.AXLE, axle, ComponentOrientation.NORTH_UP),
+                module(StandardComponentCatalog.WHEEL, wheel,
+                        new ComponentOrientation(Direction.EAST, Direction.UP)));
+        List<AssemblyEdge> edges = new ArrayList<AssemblyEdge>();
+        edges.add(new AssemblyEdge(AssemblyEdge.Kind.MECHANICAL,motor,"shaft",small,"shaft_in"));
+        edges.add(new AssemblyEdge(AssemblyEdge.Kind.MECHANICAL,small,"mesh",large,"mesh"));
+        edges.add(new AssemblyEdge(AssemblyEdge.Kind.MECHANICAL,large,"shaft_out",axle,"shaft_in"));
+        edges.add(new AssemblyEdge(AssemblyEdge.Kind.MECHANICAL,axle,"shaft_out",wheel,"hub"));
+        return new ModularRobotManifest(new UUID(13,14), modules, edges, netlist(bridge,motor));
     }
     private static MobileElectricalNetlist netlist(GridVector bridge, GridVector motor) {
         List<MobileTerminal> t = new ArrayList<MobileTerminal>();

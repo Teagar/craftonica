@@ -72,6 +72,12 @@ public final class ModBlocks {
     public static final BlockModularDcMotor MODULAR_DC_MOTOR = new BlockModularDcMotor();
     public static final BlockMechanicalComponent MECHANICAL_AXLE = new BlockMechanicalComponent(
             BlockMechanicalComponent.Type.AXLE, "mechanicalAxle", "craftonica:h_bridge");
+    public static final BlockMechanicalComponent MECHANICAL_BEARING = new BlockMechanicalComponent(
+            BlockMechanicalComponent.Type.BEARING, "mechanicalBearing", "craftonica:h_bridge");
+    public static final BlockMechanicalComponent SPUR_GEAR_12 = new BlockMechanicalComponent(
+            BlockMechanicalComponent.Type.GEAR, "spurGear12", "craftonica:dc_motor_active");
+    public static final BlockMechanicalComponent SPUR_GEAR_36 = new BlockMechanicalComponent(
+            BlockMechanicalComponent.Type.GEAR, "spurGear36", "craftonica:dc_motor_active");
     public static final BlockMechanicalComponent ROBOT_WHEEL = new BlockMechanicalComponent(
             BlockMechanicalComponent.Type.WHEEL, "robotWheel", "craftonica:dc_motor_active");
     public static final BlockMechanicalComponent ROBOT_WHEEL_150 = new BlockMechanicalComponent(
@@ -117,6 +123,9 @@ public final class ModBlocks {
         GameRegistry.registerBlock(H_BRIDGE_TERMINAL, "h_bridge_terminal");
         GameRegistry.registerBlock(MODULAR_DC_MOTOR, "modular_dc_motor");
         GameRegistry.registerBlock(MECHANICAL_AXLE, "mechanical_axle");
+        GameRegistry.registerBlock(MECHANICAL_BEARING, "mechanical_bearing");
+        GameRegistry.registerBlock(SPUR_GEAR_12, "spur_gear_12");
+        GameRegistry.registerBlock(SPUR_GEAR_36, "spur_gear_36");
         GameRegistry.registerBlock(ROBOT_WHEEL, "robot_wheel");
         GameRegistry.registerBlock(ROBOT_WHEEL_150, "robot_wheel_150");
         GameRegistry.registerBlock(PASSIVE_CASTER, "passive_caster");

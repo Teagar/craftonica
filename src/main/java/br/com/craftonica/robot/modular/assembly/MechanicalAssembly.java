@@ -9,15 +9,29 @@ import java.util.Collections;
 import java.util.List;
 
 /** Derived mechanical paths and ground contacts; no blueprint labels are used. */
-public final class MechanicalAssembly {
+public strictfp final class MechanicalAssembly {
+    public enum Diagnostic {
+        OPEN_PATH,
+        UNKNOWN_PORT,
+        INCOMPATIBLE_CONNECTION,
+        INCOMPATIBLE_GEAR_MESH,
+        TRANSMISSION_LOOP_UNSUPPORTED,
+        TRANSMISSION_BRANCH_UNSUPPORTED,
+        TRANSMISSION_LIMIT_EXCEEDED,
+        MULTIPLE_INPUTS
+    }
     private final List<DrivePath> drives;
     private final List<GroundContact> contacts;
-    MechanicalAssembly(List<DrivePath> drives, List<GroundContact> contacts) {
+    private final List<TransmissionDiagnostic> diagnostics;
+    MechanicalAssembly(List<DrivePath> drives, List<GroundContact> contacts,
+                       List<TransmissionDiagnostic> diagnostics) {
         this.drives = Collections.unmodifiableList(new ArrayList<DrivePath>(drives));
         this.contacts = Collections.unmodifiableList(new ArrayList<GroundContact>(contacts));
+        this.diagnostics = Collections.unmodifiableList(new ArrayList<TransmissionDiagnostic>(diagnostics));
     }
     public List<DrivePath> getDrives() { return drives; }
     public List<GroundContact> getContacts() { return contacts; }
+    public List<TransmissionDiagnostic> getDiagnostics() { return diagnostics; }
     public int drivenWheelCount() { return drives.size(); }
     public int passiveCasterCount() {
         int count = 0;
@@ -30,15 +44,59 @@ public final class MechanicalAssembly {
         public final GridVector motorPosition, wheelPosition;
         public final Direction axleAxis;
         public final double wheelRadiusMetres, wheelWidthMetres, maximumTorqueNm;
+        public final double speedRatio, efficiency, reflectedInertiaKgM2;
+        public final int directionSign, gearStages;
         DrivePath(GridVector motorPosition, GridVector wheelPosition, Direction axleAxis,
-                  double radius, double width, double maximumTorqueNm) {
+                  double radius, double width, double maximumTorqueNm, double speedRatio,
+                  int directionSign, double efficiency, double reflectedInertiaKgM2, int gearStages) {
             this.motorPosition = motorPosition; this.wheelPosition = wheelPosition; this.axleAxis = axleAxis;
             this.wheelRadiusMetres = radius; this.wheelWidthMetres = width; this.maximumTorqueNm = maximumTorqueNm;
+            if (!finite(speedRatio) || speedRatio <= 0.0 || (directionSign != -1 && directionSign != 1)
+                    || !finite(efficiency) || efficiency <= 0.0 || efficiency > 1.0
+                    || !finite(reflectedInertiaKgM2) || reflectedInertiaKgM2 < 0.0 || gearStages < 0)
+                throw new IllegalArgumentException("drive transmission");
+            this.speedRatio = speedRatio; this.directionSign = directionSign; this.efficiency = efficiency;
+            this.reflectedInertiaKgM2 = reflectedInertiaKgM2; this.gearStages = gearStages;
         }
         public double linearSpeedMetresPerSecond(double angularVelocityRadPerSecond) {
-            if (Double.isNaN(angularVelocityRadPerSecond) || Double.isInfinite(angularVelocityRadPerSecond))
-                throw new IllegalArgumentException("angular velocity");
-            return angularVelocityRadPerSecond * wheelRadiusMetres;
+            return outputAngularVelocity(angularVelocityRadPerSecond) * wheelRadiusMetres;
+        }
+        public double outputAngularVelocity(double motorAngularVelocity) {
+            requireFinite(motorAngularVelocity, "motor angular velocity");
+            return directionSign * motorAngularVelocity / speedRatio;
+        }
+        public double motorAngularVelocity(double outputAngularVelocity) {
+            requireFinite(outputAngularVelocity, "output angular velocity");
+            return directionSign * outputAngularVelocity * speedRatio;
+        }
+        public double outputTorque(double motorTorque) {
+            requireFinite(motorTorque, "motor torque");
+            return directionSign * motorTorque * speedRatio * efficiency;
+        }
+        public double motorLoadTorque(double outputLoadTorque) {
+            requireFinite(outputLoadTorque, "output load torque");
+            return directionSign * outputLoadTorque / (speedRatio * efficiency);
+        }
+        public double reflectedInertiaAtMotor(double outputInertiaKgM2) {
+            if (!finite(outputInertiaKgM2) || outputInertiaKgM2 < 0.0)
+                throw new IllegalArgumentException("output inertia");
+            return reflectedInertiaKgM2 + outputInertiaKgM2 / (speedRatio * speedRatio);
+        }
+        private static void requireFinite(double value, String label) {
+            if (!finite(value)) throw new IllegalArgumentException(label);
+        }
+        private static boolean finite(double value) {
+            return !Double.isNaN(value) && !Double.isInfinite(value);
+        }
+    }
+
+    public static final class TransmissionDiagnostic {
+        public final Diagnostic code;
+        public final GridVector position;
+        public final String detail;
+        TransmissionDiagnostic(Diagnostic code, GridVector position, String detail) {
+            if (code == null || position == null) throw new IllegalArgumentException("transmission diagnostic");
+            this.code = code; this.position = position; this.detail = detail == null ? "" : detail;
         }
     }
 
