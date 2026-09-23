@@ -204,6 +204,20 @@ clientSimulation=false
 """
 }
 
+task roboticsSoakProfile(type: Test, dependsOn: testClasses) {
+    include "**/robot/modular/validation/ModularRobotSoakProfileTest.class"
+    systemProperty "craftonica.soak.report", file("${buildDir}/reports/runtime/crl-95-soak.txt")
+}
+
+task roboticsFailureProfile(type: Test, dependsOn: [testClasses, runtimeWorkerJar]) {
+    include "**/runtime/server/RuntimeSupervisorIntegrationTest.class"
+    include "**/runtime/server/RuntimeStressGateTest.class"
+    include "**/robot/modular/ModularRobotPersistenceTest.class"
+    systemProperty "craftonica.runtime.workerJar", runtimeWorkerJar.archivePath
+    systemProperty "craftonica.runtime.launcher", file("scripts/runtime/launch-worker.sh")
+    systemProperty "craftonica.runtime.javaHome", System.getProperty("java.home")
+}
+
 task electricalProfile(dependsOn: verifyElectricalGates) << {
     def report = file("${buildDir}/reports/electrical/crl-26-profile.txt")
     report.parentFile.mkdirs()
@@ -230,5 +244,7 @@ build.dependsOn verifyElectricalGates
 build.dependsOn verifyFirmwareGates
 build.dependsOn verifyRuntimeGates
 build.dependsOn runtimeProfile
+build.dependsOn roboticsSoakProfile
+build.dependsOn roboticsFailureProfile
 build.dependsOn verifyRuntimeWorkerJar
 build.dependsOn verifyMigrationGates
