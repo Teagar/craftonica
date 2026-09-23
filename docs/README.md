@@ -12,6 +12,7 @@
 - [Migração 1.2 para 2.0 e rollback verificado](migracao-1.2-para-2.0.md)
 - [Solucao de problemas](troubleshooting.md)
 - [Laboratorios completos](curriculum/0.4-laboratorios.md)
+- [Currículo 2.0 de robótica modular](curriculum/2.0-robotica-modular.md)
 - [Desempenho e acessibilidade](reports/crl-33-performance-accessibility-1.0.md)
 - [Checklist de release](../RELEASE_CHECKLIST.md)
 - [Licencas de terceiros](../THIRD_PARTY_NOTICES.md)

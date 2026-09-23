@@ -37,6 +37,13 @@ resultado, nao uma sequencia fixa de coordenadas.
 
 ## Robo movel
 
+Para a prévia 2.0, construa bases 2WD e 4WD e um braço articulado somente com
+blocos públicos seguindo o
+[`currículo de robótica modular`](curriculum/2.0-robotica-modular.md). Ele inclui
+pinagem, firmware, conversão física e falhas elétricas, mecânicas e estruturais.
+
+O roteiro abaixo documenta o chassi fixo da linha 1.2:
+
 Para montar os oito modulos fisicos, compilar o sketch Arduino e executar a
 navegacao com HC-SR04, siga o
 [`manual guiado do robo movel`](robo-movel-guiado.md). O manual distingue timeout
