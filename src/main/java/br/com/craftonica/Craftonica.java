@@ -2,6 +2,7 @@ package br.com.craftonica;
 
 import br.com.craftonica.proxy.CommonProxy;
 import br.com.craftonica.command.CommandCraftonica;
+import br.com.craftonica.server.LanPlayerCapacity;
 import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.SidedProxy;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
@@ -40,6 +41,7 @@ public final class Craftonica {
 
     @Mod.EventHandler
     public void serverStarting(FMLServerStartingEvent event) {
+        LanPlayerCapacity.configure(event.getServer());
         event.registerServerCommand(new CommandCraftonica());
     }
 }
