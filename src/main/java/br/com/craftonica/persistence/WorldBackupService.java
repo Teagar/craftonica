@@ -15,6 +15,7 @@ import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.DirectoryStream;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
@@ -47,6 +48,11 @@ public final class WorldBackupService {
     private WorldBackupService() {}
 
     public static Path prepare(Path worldDirectory) throws IOException {
+        return prepare(worldDirectory, FILE_STORE_SPACE);
+    }
+
+    static Path prepare(Path worldDirectory, SpaceProbe space) throws IOException {
+        if (space == null) throw new IOException("Storage probe is required");
         Path world = requireDirectory(worldDirectory);
         Path control = world.resolve(CONTROL_RELATIVE);
         Path parent = world.getParent();
@@ -72,7 +78,7 @@ public final class WorldBackupService {
         try {
             Path snapshot = partial.resolve(SNAPSHOT_NAME);
             Files.createDirectory(snapshot);
-            List<Entry> entries = copyStableWorld(world, snapshot);
+            List<Entry> entries = copyStableWorld(world, snapshot, space);
             Path manifest = partial.resolve(MANIFEST_NAME);
             writeManifest(manifest, entries);
             forceTreeDirectories(partial);
@@ -84,6 +90,67 @@ public final class WorldBackupService {
             return complete;
         } catch (IOException failure) {
             deleteTree(partial);
+            throw failure;
+        }
+    }
+
+    /** Restores a verified snapshot into a missing or empty save directory and publishes it atomically. */
+    public static Path restore(Path backupDirectory, Path targetWorldDirectory) throws IOException {
+        return restore(backupDirectory, targetWorldDirectory, FILE_STORE_SPACE, NO_RESTORE_HOOK);
+    }
+
+    static Path restore(Path backupDirectory, Path targetWorldDirectory, SpaceProbe space,
+            RestoreHook hook) throws IOException {
+        if (space == null || hook == null || targetWorldDirectory == null)
+            throw new IOException("Restore arguments are required");
+        Path backup = requireDirectory(backupDirectory);
+        verifyBackup(backup);
+        Path target = targetWorldDirectory.toAbsolutePath().normalize();
+        if (target.startsWith(backup) || backup.startsWith(target))
+            throw new IOException("Restore target must not overlap the backup");
+        Path parent = target.getParent();
+        if (parent == null) throw new IOException("Restore target has no parent");
+        parent = requireDirectory(parent);
+        rejectSymlinkAncestors(target);
+        boolean emptyTarget = false;
+        if (Files.exists(target, LinkOption.NOFOLLOW_LINKS)) {
+            if (Files.isSymbolicLink(target) || !Files.isDirectory(target, LinkOption.NOFOLLOW_LINKS))
+                throw new IOException("Restore target must be a missing or empty directory");
+            DirectoryStream<Path> entries = Files.newDirectoryStream(target);
+            try { emptyTarget = !entries.iterator().hasNext(); } finally { entries.close(); }
+            if (!emptyTarget) throw new IOException("Restore target is not empty");
+        }
+        Path partial = parent.resolve(".craftonica-restore-" + safeName(target.getFileName().toString())
+                + "-" + UUID.randomUUID() + ".partial");
+        Files.createDirectory(partial);
+        try {
+            List<Entry> manifest = readManifest(backup.resolve(MANIFEST_NAME));
+            long totalBytes = 0L;
+            for (Entry entry : manifest) {
+                if (Long.MAX_VALUE - totalBytes < entry.size) throw new IOException("Backup size overflow");
+                totalBytes += entry.size;
+            }
+            requireSpace(space, partial, totalBytes);
+            Path snapshot = backup.resolve(SNAPSHOT_NAME);
+            for (Entry entry : manifest) {
+                Path source = safeResolve(snapshot, entry.relative), destination = safeResolve(partial, entry.relative);
+                Path destinationParent = destination.getParent();
+                if (destinationParent != null) Files.createDirectories(destinationParent);
+                byte[] copied = copyAndHash(source, destination);
+                if (Files.size(destination) != entry.size || !Arrays.equals(copied, entry.hash))
+                    throw new IOException("Restored entry failed verification: " + entry.relative);
+            }
+            if (!listSnapshotFiles(partial).equals(relativePaths(manifest)))
+                throw new IOException("Restored tree differs from backup manifest");
+            forceTreeDirectories(partial);
+            hook.beforePublish(partial, target);
+            if (emptyTarget) Files.delete(target);
+            moveAtomic(partial, target);
+            forceDirectory(parent);
+            return target;
+        } catch (IOException failure) {
+            deleteTree(partial);
+            if (emptyTarget && !Files.exists(target, LinkOption.NOFOLLOW_LINKS)) Files.createDirectory(target);
             throw failure;
         }
     }
@@ -107,7 +174,7 @@ public final class WorldBackupService {
             throw new IOException("Backup tree differs from its manifest");
     }
 
-    private static List<Entry> copyStableWorld(final Path world, Path destination) throws IOException {
+    private static List<Entry> copyStableWorld(final Path world, Path destination, SpaceProbe space) throws IOException {
         final List<String> files = new ArrayList<String>();
         final long[] totalBytes = new long[1];
         Files.walkFileTree(world, new SimpleFileVisitor<Path>() {
@@ -134,9 +201,7 @@ public final class WorldBackupService {
                 return FileVisitResult.CONTINUE;
             }
         });
-        long usable = Files.getFileStore(destination).getUsableSpace();
-        if (usable < RESERVED_FREE_BYTES || totalBytes[0] > usable - RESERVED_FREE_BYTES)
-            throw new IOException("Insufficient free space for verified world backup");
+        requireSpace(space, destination, totalBytes[0]);
         Collections.sort(files);
         List<Entry> entries = new ArrayList<Entry>(files.size());
         for (String relative : files) {
@@ -164,6 +229,18 @@ public final class WorldBackupService {
         if (!listSourceFiles(world).equals(expected))
             throw new IOException("World file set changed before backup publication");
         return entries;
+    }
+
+    private static void requireSpace(SpaceProbe probe, Path destination, long bytes) throws IOException {
+        long usable = probe.usableSpace(destination);
+        if (usable < 0L || usable < RESERVED_FREE_BYTES || bytes > usable - RESERVED_FREE_BYTES)
+            throw new IOException("Insufficient free space for verified world backup or restore");
+    }
+
+    private static Set<String> relativePaths(List<Entry> entries) {
+        Set<String> values = new HashSet<String>();
+        for (Entry entry : entries) values.add(entry.relative);
+        return values;
     }
 
     private static byte[] copyAndHash(Path source, Path target) throws IOException {
@@ -493,4 +570,13 @@ public final class WorldBackupService {
             this.writerVersion = writerVersion; this.backupId = backupId; this.manifestHash = manifestHash.clone();
         }
     }
+
+    interface SpaceProbe { long usableSpace(Path path) throws IOException; }
+    interface RestoreHook { void beforePublish(Path partial, Path target) throws IOException; }
+    private static final SpaceProbe FILE_STORE_SPACE = new SpaceProbe() {
+        @Override public long usableSpace(Path path) throws IOException { return Files.getFileStore(path).getUsableSpace(); }
+    };
+    private static final RestoreHook NO_RESTORE_HOOK = new RestoreHook() {
+        @Override public void beforePublish(Path partial, Path target) { }
+    };
 }

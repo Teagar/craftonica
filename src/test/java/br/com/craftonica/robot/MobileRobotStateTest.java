@@ -54,6 +54,14 @@ public final class MobileRobotStateTest {
         MobileRobotState migrated = MobileRobotState.read(released);
         assertEquals(MobileRobotState.Status.LEGACY_INERT, migrated.getStatus());
         assertEquals("LEGACY_1_2_INERT", migrated.getDiagnostic());
+        assertEquals(original.getRobotId(), migrated.getRobotId());
+        assertEquals(original.getOwnerId(), migrated.getOwnerId());
+        assertEquals(original.getBoardState().getBoardId(), migrated.getBoardState().getBoardId());
+        assertEquals(original.getModules().size(), migrated.getModules().size());
+        for (int i=0;i<original.getModules().size();i++) {
+            assertEquals(original.getModules().get(i).id,migrated.getModules().get(i).id);
+            assertEquals(original.getModules().get(i).type,migrated.getModules().get(i).type);
+        }
         NBTTagCompound current = migrated.write(); assertEquals(MobileRobotState.SCHEMA_VERSION,
                 current.getInteger("Schema"));
         assertEquals(MobileRobotState.Status.LEGACY_INERT, MobileRobotState.read(current).getStatus());
