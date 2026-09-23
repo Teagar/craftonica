@@ -245,6 +245,11 @@ O percurso completo, da montagem física à navegação, está no
 [`manual guiado do robô móvel`](docs/robo-movel-guiado.md). A
 [`matriz de compatibilidade`](docs/compatibilidade-1.2.md) separa APIs suportadas,
 aproximações educacionais e diferenças para hardware real.
+
+A geração modular 2.0 possui um percurso separado, sem geradores ou comandos de
+direção: o [`currículo de construção robótica modular`](docs/curriculum/2.0-robotica-modular.md)
+ensina estrutura, energia, pontes H, transmissão, rodas, juntas, servos, sensores,
+firmware e diagnóstico construindo bases 2WD/4WD e um braço de um eixo.
 Os limites, gates de soak e a matriz dedicada/multiplayer estão em
 [`docs/validacao-runtime-movel.md`](docs/validacao-runtime-movel.md).
 

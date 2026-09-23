@@ -68,6 +68,9 @@ public final class AvrFirmwareIntegrationTest {
         }
         assertTrue("analogRead(A0) was not published as PWM on D5", observed != null);
 
+        byte[] modularDrive = compileExample("ModularDifferentialDrive", "modular_differential_drive");
+        assertTrue("modular curriculum firmware is empty", modularDrive.length > 0);
+
         byte[] servo = compile("ServoDemo", "#include <Servo.h>\nServo arm;\n"
                 + "void setup(){arm.attach(9);arm.writeMicroseconds(1750);}\nvoid loop(){}\n");
         AvrMachineState servoState = new AvrMachineState(); AvrInterpreter servoInterpreter = new AvrInterpreter(servo);

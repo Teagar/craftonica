@@ -20,6 +20,20 @@
 O avaliador aceita alternativas eletricamente corretas e nunca confia em valores
 calculados pelo cliente.
 
+## Robótica modular 2.0
+
+Use o [`currículo progressivo`](curriculum/2.0-robotica-modular.md) em um mundo de
+teste separado. Não entregue comandos de geração ou direção. Avalie se o aluno:
+
+1. conclui 2WD, 4WD e uma articulação usando somente blocos públicos;
+2. distingue suporte estrutural, rede elétrica e transmissão mecânica;
+3. encontra uma falha em cada domínio sem pedir uma física alternativa;
+4. explica por que atuadores aplicam esforço em vez de atribuir pose;
+5. salva, reabre e desmonta sem duplicar componentes.
+
+As coordenadas podem variar. A evidência é o diagnóstico do servidor e o
+comportamento físico, não a cópia exata de um desenho.
+
 ## Atividades autorais
 
 ```text
