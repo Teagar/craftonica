@@ -79,3 +79,32 @@ por isso não é iniciada automaticamente pelo build.
 Registre TPS, heap, bytes de Serial, colisões, timeouts e divergências. Uma
 aprovação manual só é válida quando não houver divergência entre clientes e
 servidor e nenhum chunk for carregado pelo movimento ou sonar.
+
+### Execução CRL-94 — 22 de setembro de 2026
+
+O ensaio foi executado com um servidor Forge dedicado e dois processos de cliente
+Forge independentes, identificados como `ClientA` e `ClientB`. O servidor ficou
+restrito a `127.0.0.1`; `online-mode=false` foi usado somente para criar as duas
+identidades locais de desenvolvimento.
+
+| Caso | Observação | Resultado |
+|---|---|---|
+| Conexão simultânea | `list` retornou `ClientA, ClientB` e ambos receberam o mesmo tempo e dimensão | aprovado |
+| Autoridade de controle | A criou e comandou o chassi; B recebeu `You do not have permission to use this command` ao tentar criar e dirigir | aprovado |
+| Montagem pública | A converteu `robot_chassis` com a chave inglesa; o servidor persistiu uma entidade modular | aprovado |
+| Ownership | B mirou a entidade de A com uma chave inglesa e recebeu `Somente o proprietário pode desmontar.` | aprovado |
+| Consenso de estado | A e B receberam o mesmo UUID, `ACTIVE`, contagem de redes, diagnósticos, sensores e movimento | aprovado |
+| Sensor sem alimentação | montagem com chassi e ultrassônico apresentou nos dois clientes `redes=4`, `diagnósticos=4`, `sensores=IDLE`, falhando de forma segura | aprovado |
+| Reconexão | B foi encerrado e reconectado como novo processo; o servidor registrou saída e nova entrada sem criar robô adicional | aprovado |
+| Unload/reload | ambos foram movidos para mais de 1.000 blocos e retornaram; havia uma única entidade com NBT e SHA-256 idênticos antes, durante e depois | aprovado |
+| Colisão do chassi de teste | o ensaio encontrou mutação indevida da caixa autoritativa pela sonda de apoio; corrigido e coberto por regressão | aprovado após correção |
+
+As poses e identidades persistidas foram lidas dos arquivos de região somente
+depois de `save-all`; essa inspeção não participou das decisões da simulação. A
+execução também confirmou que o observador não incrementa medições nem produz
+comandos no servidor.
+
+Durante o primeiro ensaio de colisão, `AxisAlignedBB.offset` deslocava a própria
+caixa da entidade em cada subpasso. A sonda passou a usar
+`getOffsetBoundingBox`, que cria uma caixa independente; o teste
+`groundSupportProbeNeverMutatesAuthoritativeCollisionBox` impede regressão.

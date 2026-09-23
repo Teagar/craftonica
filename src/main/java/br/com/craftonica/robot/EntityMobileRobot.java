@@ -3,6 +3,7 @@ package br.com.craftonica.robot;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.ChatComponentTranslation;
 import net.minecraft.world.World;
 
@@ -246,12 +247,17 @@ public final class EntityMobileRobot extends Entity {
         for (int cx = minChunkX; cx <= maxChunkX; cx++) for (int cz = minChunkZ; cz <= maxChunkZ; cz++) {
             if (!worldObj.getChunkProvider().chunkExists(cx, cz)) { stopDrive(); return; }
         }
-        if (worldObj.getCollidingBoundingBoxes(this, boundingBox.offset(0.0, -0.11, 0.0)).isEmpty()) {
+        if (worldObj.getCollidingBoundingBoxes(this, supportProbe(boundingBox)).isEmpty()) {
             stopDrive(); return;
         }
         moveEntity(step.deltaX, 0.0, step.deltaZ);
         rotationYaw = wrapAngle(rotationYaw + (float) step.deltaYawDegrees);
         if (isCollidedHorizontally) stopDrive();
+    }
+
+    static AxisAlignedBB supportProbe(AxisAlignedBB box) {
+        if (box == null) throw new IllegalArgumentException("box");
+        return box.getOffsetBoundingBox(0.0, -0.11, 0.0);
     }
 
     @Override public boolean canBeCollidedWith() { return !isDead; }
