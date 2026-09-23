@@ -72,25 +72,25 @@ public final class ModBlocks {
     public static final BlockHBridgeTerminal H_BRIDGE_TERMINAL = new BlockHBridgeTerminal();
     public static final BlockModularDcMotor MODULAR_DC_MOTOR = new BlockModularDcMotor();
     public static final BlockMechanicalComponent MECHANICAL_AXLE = new BlockMechanicalComponent(
-            BlockMechanicalComponent.Type.AXLE, "mechanicalAxle", "craftonica:h_bridge");
+            BlockMechanicalComponent.Type.AXLE, "mechanicalAxle", "craftonica:mechanical_axle");
     public static final BlockMechanicalComponent MECHANICAL_BEARING = new BlockMechanicalComponent(
-            BlockMechanicalComponent.Type.BEARING, "mechanicalBearing", "craftonica:h_bridge");
+            BlockMechanicalComponent.Type.BEARING, "mechanicalBearing", "craftonica:mechanical_bearing");
     public static final BlockMechanicalComponent SPUR_GEAR_12 = new BlockMechanicalComponent(
-            BlockMechanicalComponent.Type.GEAR, "spurGear12", "craftonica:dc_motor_active");
+            BlockMechanicalComponent.Type.GEAR, "spurGear12", "craftonica:spur_gear_12");
     public static final BlockMechanicalComponent SPUR_GEAR_36 = new BlockMechanicalComponent(
-            BlockMechanicalComponent.Type.GEAR, "spurGear36", "craftonica:dc_motor_active");
+            BlockMechanicalComponent.Type.GEAR, "spurGear36", "craftonica:spur_gear_36");
     public static final BlockMechanicalComponent EDUCATIONAL_SERVO = new BlockMechanicalComponent(
-            BlockMechanicalComponent.Type.SERVO, "educationalServo", "craftonica:h_bridge");
+            BlockMechanicalComponent.Type.SERVO, "educationalServo", "craftonica:educational_servo");
     public static final BlockJointComponent REVOLUTE_JOINT = new BlockJointComponent(
             BlockJointComponent.Type.REVOLUTE, "revoluteJoint", "craftonica:h_bridge");
     public static final BlockJointComponent PRISMATIC_JOINT = new BlockJointComponent(
             BlockJointComponent.Type.PRISMATIC, "prismaticJoint", "craftonica:robot_chassis");
     public static final BlockMechanicalComponent ROBOT_WHEEL = new BlockMechanicalComponent(
-            BlockMechanicalComponent.Type.WHEEL, "robotWheel", "craftonica:dc_motor_active");
+            BlockMechanicalComponent.Type.WHEEL, "robotWheel", "craftonica:robot_wheel");
     public static final BlockMechanicalComponent ROBOT_WHEEL_150 = new BlockMechanicalComponent(
-            BlockMechanicalComponent.Type.WHEEL, "robotWheel150", "craftonica:dc_motor_active");
+            BlockMechanicalComponent.Type.WHEEL, "robotWheel150", "craftonica:robot_wheel_150");
     public static final BlockMechanicalComponent PASSIVE_CASTER = new BlockMechanicalComponent(
-            BlockMechanicalComponent.Type.CASTER, "passiveCaster", "craftonica:robot_chassis");
+            BlockMechanicalComponent.Type.CASTER, "passiveCaster", "craftonica:passive_caster");
     public static final BlockMechanicalComponent TRACK_MODULE = new BlockMechanicalComponent(
             BlockMechanicalComponent.Type.TRACK, "trackModule", "craftonica:track_module");
     public static final BlockMechanicalComponent OMNI_WHEEL = new BlockMechanicalComponent(
