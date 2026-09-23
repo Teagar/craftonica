@@ -9,6 +9,7 @@
 - [Gerador Arduino Uno R3](uno-r3-generator.md)
 - [Compatibilidade e sandbox Arduino](firmware-compiler.md)
 - [Migracao e rollback](../README.md#migracao-e-rollback-de-mundos)
+- [Migração 1.2 para 2.0 e rollback verificado](migracao-1.2-para-2.0.md)
 - [Solucao de problemas](troubleshooting.md)
 - [Laboratorios completos](curriculum/0.4-laboratorios.md)
 - [Desempenho e acessibilidade](reports/crl-33-performance-accessibility-1.0.md)

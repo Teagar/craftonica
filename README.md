@@ -76,9 +76,19 @@ save.
 
 Para rollback, feche completamente o Minecraft/servidor e preserve a pasta
 migrada para diagnóstico. O backup é revalidado integralmente em toda abertura
-do mundo; depois de uma abertura bem-sucedida com o JAR atual, restaure o
-conteúdo da pasta `world` do backup em uma pasta de save vazia. Nunca abra o
-diretório já migrado diretamente com uma versão antiga do mod.
+do mundo. A partir da raiz do projeto, valide e restaure de forma transacional:
+
+```sh
+./scripts/rollback-world.sh "/caminho/.craftonica-backups/Mundo/<id>"
+./scripts/rollback-world.sh "/caminho/.craftonica-backups/Mundo/<id>" "/caminho/saves/Mundo-restaurado"
+```
+
+O destino precisa estar ausente ou vazio. Cada arquivo restaurado é conferido
+contra tamanho e SHA-256 do manifesto; somente a árvore completa é publicada por
+troca atômica. Falta de espaço, interrupção, symlink, backup alterado ou destino
+ocupado deixam o destino anterior intacto. Nunca abra o diretório já migrado
+diretamente com uma versão antiga do mod. Para downgrade à 1.2, abra **somente a
+cópia restaurada**, com o JAR 1.2.0, e mantenha o mundo 2.0 separado.
 
 Para desenvolvimento:
 
