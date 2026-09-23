@@ -3,7 +3,7 @@ package br.com.craftonica.robot.modular.assembly;
 import br.com.craftonica.robot.modular.GridVector;
 
 public final class AssemblyEdge {
-    public enum Kind { STRUCTURAL, MECHANICAL, JOINT }
+    public enum Kind { STRUCTURAL, MECHANICAL, JOINT, ELECTRICAL }
 
     public final Kind kind;
     public final GridVector firstPosition;

@@ -7,6 +7,7 @@ import br.com.craftonica.robot.modular.manifest.ModularBlockSnapshot;
 import br.com.craftonica.robot.modular.manifest.ModularRobotManifest;
 import br.com.craftonica.robot.modular.transaction.AssemblyTransactionWorld;
 import net.minecraft.block.Block;
+import net.minecraft.init.Blocks;
 import net.minecraft.entity.Entity;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
@@ -36,13 +37,16 @@ final class ForgeAssemblyTransactionWorld implements AssemblyTransactionWorld {
     }
 
     @Override public boolean remove(GridVector p, ModularBlockSnapshot expected) {
-        return loaded(p) && matches(p, expected) && world.setBlockToAir(p.x, p.y, p.z);
+        if (!loaded(p)) return false;
+        if (world.isAirBlock(p.x, p.y, p.z)) return true;
+        world.setBlock(p.x, p.y, p.z, Blocks.air, 0, 2);
+        return world.isAirBlock(p.x, p.y, p.z);
     }
 
     @Override public boolean restore(GridVector p, ModularBlockSnapshot snapshot) {
         if (!loaded(p)) return false;
         Block block = (Block) Block.blockRegistry.getObject(snapshot.blockRegistryName);
-        if (block == null || !world.setBlock(p.x, p.y, p.z, block, snapshot.metadata, 3)) return false;
+        if (block == null || !world.setBlock(p.x, p.y, p.z, block, snapshot.metadata, 2)) return false;
         NBTTagCompound tileData = snapshot.getTileData();
         if (tileData != null) {
             TileEntity tile = world.getTileEntity(p.x, p.y, p.z);

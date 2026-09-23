@@ -68,7 +68,9 @@ public final class ForgeModularAssemblyService {
                 player.getUniqueID(), anchor, discovered.graph.anchorOrientation, manifest);
         if (result.status != AssemblyTransactionResult.Status.RECOVERY_REQUIRED) journal.remove(transactionId);
         if (!result.committed()) {
-            message(player, "Conversão cancelada com rollback: " + result.status.name()); return false;
+            message(player, "Conversão cancelada com rollback: " + result.status.name()
+                    + " (" + result.detail + (result.position == null ? "" : " em " + result.position) + ")");
+            return false;
         }
         message(player, "Montagem convertida em robô modular terrestre (" + manifest.getModules().size() + " blocos).");
         return true;

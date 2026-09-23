@@ -4,6 +4,7 @@ import br.com.craftonica.robot.modular.ComponentCatalog;
 import br.com.craftonica.robot.modular.ComponentOrientation;
 import br.com.craftonica.robot.modular.ComponentType;
 import br.com.craftonica.robot.modular.Direction;
+import br.com.craftonica.robot.modular.ElectricalPort;
 import br.com.craftonica.robot.modular.GridVector;
 import br.com.craftonica.robot.modular.MechanicalPort;
 import br.com.craftonica.robot.modular.JointPort;
@@ -75,6 +76,13 @@ public final class AssemblyDiscovery {
             for (MechanicalPort port : type.getMechanicalPorts()) {
                 Direction worldFace = placed.orientation.toWorld(port.pose.face);
                 AssemblyDiscoveryResult result = inspectMechanical(world, anchor, root, position, placed,
+                        port, worldFace, frontier, inspected, found, edges);
+                if (result != null) return result;
+            }
+            for (ElectricalPort port : type.getElectricalPorts()) {
+                if (!GridVector.ZERO.equals(port.pose.cell)) continue;
+                Direction worldFace = placed.orientation.toWorld(port.pose.face);
+                AssemblyDiscoveryResult result = inspectElectrical(world, anchor, root, position, placed,
                         port, worldFace, frontier, inspected, found, edges);
                 if (result != null) return result;
             }
@@ -183,6 +191,28 @@ public final class AssemblyDiscovery {
         return null;
     }
 
+    private AssemblyDiscoveryResult inspectElectrical(AssemblyWorldView world, GridVector anchor,
+            PlacedComponent root, GridVector position, PlacedComponent placed, ElectricalPort port,
+            Direction worldFace, TreeSet<GridVector> frontier, Set<GridVector> inspected,
+            Map<GridVector, PlacedComponent> found, Map<String, AssemblyEdge> edges) {
+        GridVector neighborPosition = position.add(worldFace.vector);
+        AssemblyDiscoveryResult ready = inspect(world, anchor, root, neighborPosition, frontier, inspected, found);
+        if (ready != null) return ready;
+        PlacedComponent neighbor = found.get(neighborPosition);
+        if (neighbor == null) neighbor = world.componentAt(neighborPosition);
+        if (neighbor == null) return null;
+        ComponentType neighborType = catalog.require(neighbor.componentTypeId);
+        for (ElectricalPort candidate : neighborType.getElectricalPorts()) {
+            if (!GridVector.ZERO.equals(candidate.pose.cell)) continue;
+            if (electricallyCompatible(placed.componentTypeId, port, neighbor.componentTypeId, candidate)
+                    && neighbor.orientation.toWorld(candidate.pose.face) == worldFace.opposite()) {
+                return connect(position, port.id, neighborPosition, candidate.id,
+                        AssemblyEdge.Kind.ELECTRICAL, neighbor, frontier, found, edges);
+            }
+        }
+        return null;
+    }
+
     private AssemblyDiscoveryResult inspect(AssemblyWorldView world, GridVector anchor, PlacedComponent root,
             GridVector position, TreeSet<GridVector> frontier, Set<GridVector> inspected,
             Map<GridVector, PlacedComponent> found) {
@@ -242,6 +272,13 @@ public final class AssemblyDiscovery {
         Direction aAxis = aOrientation.toWorld(a.axis);
         Direction bAxis = bOrientation.toWorld(b.axis);
         return coupling && kind && (aAxis == bAxis || aAxis == bAxis.opposite());
+    }
+
+    private static boolean electricallyCompatible(String aType, ElectricalPort a,
+            String bType, ElectricalPort b) {
+        return br.com.craftonica.robot.modular.StandardComponentCatalog.WIRE.equals(aType)
+                || br.com.craftonica.robot.modular.StandardComponentCatalog.WIRE.equals(bType)
+                || a.domain == b.domain;
     }
 
     private static AssemblyDiscoveryResult failure(AssemblyDiscoveryResult.Status status,

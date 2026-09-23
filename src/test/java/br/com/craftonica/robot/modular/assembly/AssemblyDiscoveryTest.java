@@ -111,6 +111,19 @@ public final class AssemblyDiscoveryTest {
         assertEquals(2, graph.edgeCount(AssemblyEdge.Kind.MECHANICAL));
     }
 
+    @Test public void electricalLeadOnMotorTerminalIsCapturedWithoutStructuralMount() {
+        FakeWorld world = loadedWorld();
+        placeChassis(world, 0, 0, 0);
+        world.put(p(0, 1, 0), StandardComponentCatalog.DC_MOTOR, ComponentOrientation.NORTH_UP);
+        world.put(p(0, 2, 0), StandardComponentCatalog.WIRE, ComponentOrientation.NORTH_UP);
+
+        AssemblyGraph graph = valid(new AssemblyDiscovery(catalog, AssemblyLimits.PROFILE_1)
+                .discover(world, p(0, 0, 0)));
+
+        assertEquals(3, graph.getComponents().size());
+        assertEquals(1, graph.edgeCount(AssemblyEdge.Kind.ELECTRICAL));
+    }
+
     @Test public void jointPortsDiscoverHorizontalAndVerticalParentChildBodies() {
         FakeWorld horizontal = loadedWorld();
         placeChassis(horizontal, 0, 0, 0);
