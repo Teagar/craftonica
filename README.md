@@ -1,4 +1,4 @@
-# Craftônica: Robotics Lab 1.2.0
+# Craftônica: Robotics Lab 2.0.0
 
 MVP educacional para Minecraft 1.7.10 e Forge 10.13.4.1614. O mundo funciona
 como uma bancada: fonte, fios, botão, resistores, LED e GND são blocos reais. A
@@ -8,7 +8,7 @@ O histórico do plano do MVP até a placa Arduino-compatible está em
 [`ROADMAP.md`](ROADMAP.md).
 
 Para instalar e operar a versão estável, comece em
-[`docs/installation-1.2.md`](docs/installation-1.2.md). Os roteiros de aluno,
+[`docs/installation-2.0.md`](docs/installation-2.0.md). Os roteiros de aluno,
 professor, solução de problemas e release estão no [`docs/README.md`](docs/README.md).
 
 Um operador pode gerar automaticamente uma sala superplana com seis projetos
@@ -45,7 +45,7 @@ O projeto não suporta Java posterior ao 8 porque usa ForgeGradle 1.2.
 
 O script baixa uma distribuição Temurin 8 fixada, verifica o SHA-256 e a guarda
 em `~/.cache/craftonica`, sem alterar o Java padrão. O artefato instalável é
-`build/libs/craftonica-1.2.0.jar`.
+`build/libs/craftonica-2.0.0.jar`.
 
 Para reconstruir e instalar com segurança na instância dedicada do Prism:
 
@@ -243,10 +243,10 @@ RoboBoard vazia por `/craftonica robot sketch autonomous`; ele filtra três
 tentativas, preserva timeouts e mantém o robô em estado seguro se o sensor falhar.
 O percurso completo, da montagem física à navegação, está no
 [`manual guiado do robô móvel`](docs/robo-movel-guiado.md). A
-[`matriz de compatibilidade`](docs/compatibilidade-1.2.md) separa APIs suportadas,
+[`matriz de compatibilidade 2.0`](docs/compatibilidade-2.0.md) separa APIs suportadas,
 aproximações educacionais e diferenças para hardware real.
 
-A geração modular 2.0 possui um percurso separado, sem geradores ou comandos de
+A geração modular 2.0 possui um percurso sem geradores ou comandos de
 direção: o [`currículo de construção robótica modular`](docs/curriculum/2.0-robotica-modular.md)
 ensina estrutura, energia, pontes H, transmissão, rodas, juntas, servos, sensores,
 firmware e diagnóstico construindo bases 2WD/4WD e um braço de um eixo.

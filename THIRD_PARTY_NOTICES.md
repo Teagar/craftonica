@@ -16,5 +16,5 @@ trademark of Arduino SA. No affiliation or endorsement is implied.
 The bootstrap records archive hashes and installed-tree hashes. Before
 redistributing a toolchain archive, preserve every license/notice included by
 its upstream distribution and complete a separate compliance review. Craftonica
-1.0 downloads these archives into the local cache and does not place them in the
+2.0 downloads these archives into the local cache and does not place them in the
 mod JAR.

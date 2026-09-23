@@ -15,7 +15,7 @@ buildscript {
 
 apply plugin: "forge"
 
-version = "1.2.0"
+version = "2.0.0"
 group = "br.com.craftonica"
 archivesBaseName = "craftonica"
 
@@ -64,7 +64,32 @@ processResources {
     }
 }
 
-task verifyReleaseJar(dependsOn: reobf) << {
+task normalizeReleaseJar(dependsOn: reobf) << {
+    def original = file("${buildDir}/libs/${archivesBaseName}-${version}.jar")
+    def normalized = file("${original}.normalized")
+    def input = new java.util.zip.ZipFile(original)
+    def output = new java.util.zip.ZipOutputStream(new FileOutputStream(normalized))
+    try {
+        def entries = java.util.Collections.list(input.entries()).sort { a, b -> a.name <=> b.name }
+        entries.each { entry ->
+            def copy = new java.util.zip.ZipEntry(entry.name)
+            copy.time = 315532800000L
+            output.putNextEntry(copy)
+            if (!entry.directory) {
+                def contents = input.getInputStream(entry)
+                try { output.write(contents.bytes) } finally { contents.close() }
+            }
+            output.closeEntry()
+        }
+    } finally {
+        output.close()
+        input.close()
+    }
+    if (!original.delete() || !normalized.renameTo(original))
+        throw new GradleException("Could not publish normalized release JAR")
+}
+
+task verifyReleaseJar(dependsOn: normalizeReleaseJar) << {
     def jarFile = file("${buildDir}/libs/${archivesBaseName}-${version}.jar")
     def archive = new java.util.zip.ZipFile(jarFile)
     try {

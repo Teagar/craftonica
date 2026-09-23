@@ -1,8 +1,12 @@
-# Documentacao Craftonica 1.2
+# Documentação Craftônica 2.0
 
-- [Instalacao de cliente e servidor](installation-1.2.md)
+- [Instalação 2.0](installation-2.0.md)
+- [Compatibilidade e limitações 2.0](compatibilidade-2.0.md)
+- [Inventário visual 2.0](inventario-visual-2.0.md)
+
+- [Instalação histórica 1.2](installation-1.2.md)
 - [Robo movel: montagem guiada](robo-movel-guiado.md)
-- [Compatibilidade e limitacoes 1.2](compatibilidade-1.2.md)
+- [Compatibilidade histórica 1.2](compatibilidade-1.2.md)
 - [Guia do aluno](student-guide.md)
 - [Guia do professor](teacher-guide.md)
 - [Mapa laboratório Arduino](showcase-map.md)
@@ -17,5 +21,6 @@
 - [Checklist de release](../RELEASE_CHECKLIST.md)
 - [Licencas de terceiros](../THIRD_PARTY_NOTICES.md)
 
-Os RFCs registram decisoes tecnicas; os guias acima sao a referencia operacional
-da versao `1.2.0`.
+Os RFCs registram decisões técnicas; os guias 2.0 acima são a referência
+operacional da versão `2.0.0`. Os documentos 1.2 permanecem para migração e
+rollback da release pública anterior.

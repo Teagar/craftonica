@@ -7,7 +7,7 @@ import java.nio.file.LinkOption;
 import java.nio.file.Path;
 
 final class CompilerManifest {
-    static final String HASH_HEX = "56eb8ebcb1b1592dbe00261ec0ee09463310ccf16062b0b7b982108fbcd88965";
+    static final String HASH_HEX = "8c6e51c5c2b60a525b862d69f8751d345d6e9facb76fca71a31f1cf424e0b2ac";
     private static final String MANIFEST_PATH = "firmware/compiler-manifest-v1.txt";
 
     private CompilerManifest() {

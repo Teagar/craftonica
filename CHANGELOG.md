@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+## 2.0.0 - 2026-09-23
+
+- Plataforma robótica modular construída somente com blocos públicos, estrutura e fiação físicas.
+- Massa, inércia, centro de massa, contatos, colisões e sensores derivados da montagem.
+- Motores CC, pontes H, eixos, mancais, engrenagens, rodas, esteiras, omni e mecanum.
+- Juntas rotativas/prismáticas e servos que aplicam esforço sem teleportar mecanismos.
+- Sensores móveis alimentados: HC-SR04, encoder, fim de curso e IMU educacional.
+- Migração 1.2 transacional com backup verificado, legado inerte e rollback sem duplicação.
+- Currículo público para 2WD, 4WD e braço articulado, sem geradores de robôs prontos.
+- Servidor dedicado e dois clientes reais validados em autoridade, consenso, colisão e unload.
+- Soak de 256 mil robô-ticks, budgets explícitos e isolamento de workers/NBT/fila.
+- Auditoria física e metrológica versionada, com aproximações e omissões declaradas.
+- Pacote reproduzível com mod, worker, exemplos, documentação, notices e checksums.
+
 ## 1.2.0 - 2026-09-20
 
 - Multimetro com tela vanilla configuravel, pontas visuais, cabos no mundo e modelo renovado.

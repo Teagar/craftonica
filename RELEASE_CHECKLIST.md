@@ -1,35 +1,39 @@
-# Release checklist 1.2.0
+# Release checklist 2.0.0
 
-## Fonte e metadados
+## Fonte, assets e metadados
 
 - [ ] Worktree limpo e commit de release identificado.
-- [ ] `build.gradle`, `Craftonica.VERSION`, `mcmod.info` e README resolvem para `1.2.0`.
-- [ ] `CHANGELOG.md`, `LICENSE` e `THIRD_PARTY_NOTICES.md` presentes.
-- [ ] Schemas persistentes e manifestos permanecem compativeis/verificados.
+- [ ] `build.gradle`, `Craftonica.VERSION`, `mcmod.info` e README resolvem para `2.0.0`.
+- [ ] `CHANGELOG.md`, `LICENSE`, notices e inventário visual presentes.
+- [ ] Nenhum asset provisório está classificado como final.
+- [ ] Schemas, migração 1.2 e rollback permanecem verificados.
 
 ## Gates
 
 ```sh
-./scripts/gradle-java8.sh clean test build verifyReleaseJar verifyReleaseMetadata verifyMigrationGates electricalProfile firmwareIntegration
+./scripts/gradle-java8.sh clean test build verifyReleaseJar verifyReleaseMetadata
+./scripts/gradle-java8.sh verifyMigrationGates electricalProfile firmwareIntegration
+./scripts/gradle-java8.sh physicsAudit roboticsSoakProfile roboticsFailureProfile
 scripts/firmware/bootstrap-avr-toolchain.sh --verify-only
 scripts/firmware/test-compiler.sh
 (cd tools/mcp && python3 -m unittest test_craftonica_mcp.py)
 git diff --check
-./scripts/package-release.sh
+./scripts/verify-reproducible-release.sh
 ```
 
-## Instalacao limpa
+## Instalação limpa e smoke
 
-- [ ] Instalar em cliente Prism vazio com `scripts/install-prism.sh`.
-- [ ] Instalar em servidor Forge vazio com `scripts/install-instance.sh <diretorio>`.
-- [ ] Confirmar mod `1.2.0`, mundo novo, mundo migrado e backup verificado.
-- [ ] Seguir `docs/robo-movel-guiado.md` em mundo novo até o firmware `RUNNING`.
-- [ ] Executar circuito nominal, seis laboratorios, Blink, Serial e multiplayer.
-- [ ] Confirmar log sem excecao Craftonica e registrar SHA-256 do mod/worker/manifesto.
+- [ ] Extrair o `.tar.gz` e validar o `.sha256` e `SHA256SUMS`.
+- [ ] Executar `verify-release-examples.sh` a partir do pacote extraído.
+- [ ] Instalar em diretórios vazios de cliente e servidor com `install-release.sh`.
+- [ ] Confirmar mod `2.0.0`, mundo novo, migração 1.2 e backup verificado.
+- [ ] Construir 2WD, 4WD e braço seguindo o currículo, sem comandos geradores.
+- [ ] Executar circuito nominal, Blink, Serial, servos, sensores e multiplayer.
+- [ ] Confirmar log sem exceção Craftônica e registrar hashes do mod/worker.
 
-## Publicacao
+## Publicação
 
-- [ ] Publicar JAR reobfuscado, commit/tag e checksums; nao publicar JAR de desenvolvimento.
-- [ ] Publicar requisitos Linux, Java 8, Forge fixado e limitacoes conhecidas.
-- [ ] Anexar changelog, guias, notices e procedimento de rollback.
-- [ ] Validar os artefatos baixados novamente antes de anunciar a release.
+- [ ] Publicar somente o tar reproduzível, SHA-256, commit e tag `v2.0.0`.
+- [ ] Publicar requisitos Linux, Java 8, Forge fixado e limitações conhecidas.
+- [ ] Anexar changelog, currículo, notices, auditorias e rollback.
+- [ ] Baixar a release publicada, validar checksums e instalar novamente antes do anúncio.

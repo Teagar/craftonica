@@ -37,7 +37,7 @@ resultado, nao uma sequencia fixa de coordenadas.
 
 ## Robo movel
 
-Para a prévia 2.0, construa bases 2WD e 4WD e um braço articulado somente com
+Na versão 2.0, construa bases 2WD e 4WD e um braço articulado somente com
 blocos públicos seguindo o
 [`currículo de robótica modular`](curriculum/2.0-robotica-modular.md). Ele inclui
 pinagem, firmware, conversão física e falhas elétricas, mecânicas e estruturais.
