@@ -218,6 +218,12 @@ task roboticsFailureProfile(type: Test, dependsOn: [testClasses, runtimeWorkerJa
     systemProperty "craftonica.runtime.javaHome", System.getProperty("java.home")
 }
 
+task physicsAudit(type: Test, dependsOn: testClasses) {
+    include "**/robot/modular/assembly/PhysicalMetrologyAuditTest.class"
+    systemProperty "craftonica.physicsAudit.report", file("${buildDir}/reports/runtime/crl-96-physics.csv")
+    systemProperty "craftonica.physicsAudit.baseline", file("docs/data/fidelidade-fisica-2.0.csv")
+}
+
 task electricalProfile(dependsOn: verifyElectricalGates) << {
     def report = file("${buildDir}/reports/electrical/crl-26-profile.txt")
     report.parentFile.mkdirs()
@@ -246,5 +252,6 @@ build.dependsOn verifyRuntimeGates
 build.dependsOn runtimeProfile
 build.dependsOn roboticsSoakProfile
 build.dependsOn roboticsFailureProfile
+build.dependsOn physicsAudit
 build.dependsOn verifyRuntimeWorkerJar
 build.dependsOn verifyMigrationGates

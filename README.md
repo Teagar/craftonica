@@ -254,6 +254,8 @@ Os limites, gates de soak e a matriz dedicada/multiplayer estão em
 [`docs/validacao-runtime-movel.md`](docs/validacao-runtime-movel.md). O perfil de
 frotas 2.0, incluindo CPU, heap, GC, payload e falhas injetadas, está em
 [`docs/validacao-soak-2.0.md`](docs/validacao-soak-2.0.md).
+A separação entre equações, parâmetros educacionais e medições reais está na
+[`auditoria física e metrológica 2.0`](docs/auditoria-fisica-metrologica-2.0.md).
 
 ## Lições verificáveis
 

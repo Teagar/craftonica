@@ -1,0 +1,13 @@
+protocol,unit,reference,model,relative_error,tolerance,source,scope
+motor_stall_current,A,1.000000000,1.000000000,0.000000000,0.000000001,dc_motor_equations,"valid at zero speed; ideal current clamp"
+motor_stall_torque,N*m,0.040000000,0.040000000,0.000000000,0.000000001,dc_motor_equations,"catalog constants, not a commercial motor guarantee"
+motor_no_load_speed,rad/s,83.168316832,83.168272556,0.000000532,0.002000000,dc_motor_equations,"steady state of averaged PWM model; inductance and brush ripple omitted"
+gear_12_36_speed,rad/s,-10.000000000,-10.000000000,0.000000000,0.000000001,spur_gear_ratio,"external 3:1 mesh reverses direction"
+gear_12_36_torque,N*m,-2.880000000,-2.880000000,0.000000000,0.000000001,spur_gear_ratio,"3:1 ideal ratio times declared 96% efficiency"
+wheel_100mm_linear_speed,m/s,-0.500000000,-0.500000000,0.000000000,0.000000001,rolling_kinematics,"no-slip v=omega*r; tyre deformation omitted"
+wheel_static_friction_cap,N,8.825985000,8.825985000,0.000000000,0.000000001,coulomb_friction,"normalized 1 kg load; model shares normal force equally among supports"
+servo_1000us_target,deg,0.000000000,0.000000000,0.000000000,0.000000001,arduino_servo_pulse,"educational mapping; hardware endpoints require calibration"
+servo_1500us_target,deg,90.000000000,90.000000000,0.000000000,0.000000001,arduino_servo_pulse,"educational midpoint; not a measured horn angle"
+servo_2000us_target,deg,180.000000000,180.000000000,0.000000000,0.000000001,arduino_servo_pulse,"target only; torque, inertia and stops determine position"
+hc_sr04_time_of_flight,us/cm,58.309037901,58.000000000,0.005300000,0.006000000,hc_sr04_datasheet,"58 us/cm convention versus 343 m/s at nominal room conditions"
+hc_sr04_echo_quantization,us,5826.524069401,5826.500000000,0.000004131,0.000020000,hc_sr04_datasheet,"deterministic synthetic echo; environment and unit variation omitted"

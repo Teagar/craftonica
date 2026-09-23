@@ -5,6 +5,7 @@ import br.com.craftonica.block.IRotatableElectricalBlock;
 import br.com.craftonica.client.render.ElectricalBlockRenderer;
 import br.com.craftonica.client.sketch.SketchClientController;
 import br.com.craftonica.block.BlockRoboBoard;
+import br.com.craftonica.block.BlockMechanicalComponent;
 import br.com.craftonica.registry.ModItems;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import net.minecraft.block.Block;
@@ -89,6 +90,7 @@ public final class ClientEventHandler {
     private boolean hasEducationalTooltip(ItemStack stack) {
         Block block = Block.getBlockFromItem(stack.getItem());
         return block instanceof IElectricalBlock
+                || block instanceof BlockMechanicalComponent
                 || block instanceof BlockRoboBoard
                 || stack.getItem() == ModItems.MULTIMETER
                 || stack.getItem() == ModItems.WRENCH
