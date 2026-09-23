@@ -251,7 +251,9 @@ direção: o [`currículo de construção robótica modular`](docs/curriculum/2.
 ensina estrutura, energia, pontes H, transmissão, rodas, juntas, servos, sensores,
 firmware e diagnóstico construindo bases 2WD/4WD e um braço de um eixo.
 Os limites, gates de soak e a matriz dedicada/multiplayer estão em
-[`docs/validacao-runtime-movel.md`](docs/validacao-runtime-movel.md).
+[`docs/validacao-runtime-movel.md`](docs/validacao-runtime-movel.md). O perfil de
+frotas 2.0, incluindo CPU, heap, GC, payload e falhas injetadas, está em
+[`docs/validacao-soak-2.0.md`](docs/validacao-soak-2.0.md).
 
 ## Lições verificáveis
 
